@@ -1,0 +1,23 @@
+<!-- Example configuration file for XBMC ROM utilities -->
+<ROMcollections>
+
+<!-- Nintendo ROMS -->
+<collection name="SNES NoIntro" shortname="snes">
+  <source>/cygdrive/e/Mendi/Misc/test-rom-source/</source>
+  <dest>/cygdrive/e/Mendi/Misc/test-rom-source-dest/</dest>
+  <filterUpTags>Europe, World, Rev 1</filterUpTags>
+  <filterDownTags>Japan, Beta, Proto, France</filterDownTags>
+  <includeTags>Europe, USA</includeTags>
+  <excludeTags>Japan</excludeTags>
+</collection>
+
+<!-- Sega ROMS -->
+<collection name="Sega Mega Drive NoIntro" shortname="genesis">
+  <source>/cygdrive/e/Mendi/Misc/test-rom-source/</source>
+  <dest>/cygdrive/e/Mendi/Misc/test-rom-source-dest/</dest>
+  <filterUpTags>Europe, World, Rev 1</filterUpTags>
+  <filterDownTags>Japan, Beta, Proto</filterDownTags>
+  <includeTags>Europe, USA</includeTags>
+  <excludeTags>Japan</excludeTags>
+</collection>
+</ROMcollections>
