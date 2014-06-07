@@ -26,6 +26,7 @@ configuration = ConfigFile();
 # Program options (from command line)
 __prog_option_dry_run = 0;
 __prog_option_print_report = 0;
+__prog_option_generate_NFO = 0;
 __prog_option_sync = 0;
 
 # --- Global DEBUG variables
@@ -438,6 +439,14 @@ def parse_MAME_merged_XML():
 
         elif child_game.tag == 'category':
           romObject.category = child_game.text;
+        
+        # --- Copy information to generate NFO files
+        elif child_game.tag == 'description':
+          romObject.description = child_game.text;
+        elif child_game.tag == 'year':
+          romObject.year = child_game.text;
+        elif child_game.tag == 'manufacturer':
+          romObject.manufacturer = child_game.text;
         
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
@@ -1164,7 +1173,58 @@ def do_copy_ROMs(filterName):
       if __prog_option_print_report:
         report_f.write('[Copied] ' + romFileName + '\n');
 
-  # If user wants to sync...
+  # Generate NFO XML files with information for launchers
+  if __prog_option_generate_NFO:
+    __debug_generate_NFO_files = 1;
+    print '[Generating NFO files]';
+    for rom_name in rom_copy_dic:
+      romObj = mame_filtered_dic[rom_name];
+      NFO_filename = rom_name + '.nfo';
+      if destDir[-1] != '/': destDir = destDir + '/';
+      NFO_full_filename =  destDir + NFO_filename;
+
+      # --- XML structure
+      tree_output = ET.ElementTree();
+      root_output = a = ET.Element('game');
+      tree_output._setroot(root_output);
+      
+      # <title>1944 - The Loop Master</title>
+      sub_element = ET.SubElement(root_output, 'title');
+      sub_element.text = romObj.description;
+
+      # <platform>MAME</platform>
+      sub_element = ET.SubElement(root_output, 'platform');
+      sub_element.text = 'MAME';
+      
+      # <year>2000</year>
+      sub_element = ET.SubElement(root_output, 'year');
+      sub_element.text = romObj.year;
+
+      # <publisher></publisher>
+      sub_element = ET.SubElement(root_output, 'publisher');
+      sub_element.text = romObj.manufacturer;
+      
+      # <genre>Shooter / Flying Vertical</genre>
+      sub_element = ET.SubElement(root_output, 'genre');
+      sub_element.text = romObj.category;
+
+      # <plot></plot>
+      # Probably need to merge information from history.dat or
+      # mameinfo.dat
+      sub_element = ET.SubElement(root_output, 'plot');
+      sub_element.text = '';
+
+      # --- Write output file
+      rough_string = ET.tostring(root_output, 'utf-8');
+      reparsed = minidom.parseString(rough_string);
+      if __debug_generate_NFO_files:
+        print '[DEBUG] Writing ' + NFO_full_filename;
+      f = open(NFO_full_filename, "w")
+      f.write(reparsed.toprettyxml(indent="  "))
+      f.close()  
+  
+  # If sync is on then delete unknown files.
+  # Maybe this should be an option rather than a command...
   if 0:
     if __prog_option_sync:
       # Delete ROMs present in destDir not present in the filtered list
@@ -1240,15 +1300,22 @@ if updated are needed.
 
   \033[35m--printReport\033[0m
     Writes a TXT file reporting the operation of the ROM filters and the
-    operations performed."""
+    operations performed.
+    
+   \033[35m--generateNFO\033[0m
+    Generates NFO files with game information for the launchers.
+    
+   \033[35m--cleanROMs\033[0m
+    Deletes ROMs in destDir not present in the filtered ROM list."""
 
 # =============================================================================
 def main(argv):
   # - Command line parser
-  parser = argparse.ArgumentParser()
+  parser = argparse.ArgumentParser() 
   parser.add_argument("--version", help="print version", action="store_true")
   parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
   parser.add_argument("--printReport", help="print report", action="store_true")
+  parser.add_argument("--generateNFO", help="generate NFO files", action="store_true")
   parser.add_argument("command", help="usage, reduce-XML, make-filters, list-redux, list-redux-long, list-categories, copy, update")
   parser.add_argument("filterName", help="MAME ROM filter name", nargs='?')
   args = parser.parse_args();
@@ -1260,12 +1327,12 @@ def main(argv):
   # --- Optional arguments
   global __prog_option_dry_run;
   global __prog_option_print_report;
+  global __prog_option_generate_NFO;
   global __prog_option_sync;
 
-  if args.dryRun:
-    __prog_option_dry_run = 1;
-  if args.printReport:
-    __prog_option_print_report = 1;
+  if args.dryRun:      __prog_option_dry_run = 1;
+  if args.printReport: __prog_option_print_report = 1;
+  if args.generateNFO: __prog_option_generate_NFO = 1;
 
   # --- Positional arguments
   if args.command == 'usage':
