@@ -2,6 +2,9 @@
 # XBMC ROM utilities - MAME version
 # Wintermute0110 <wintermute0110@gmail.com>
 
+# MAME XML is written by this file:
+#   http://www.mamedev.org/source/src/emu/info.c.html
+
 import sys, os, re, shutil
 import operator, argparse
 # XML parser (ElementTree)
@@ -351,6 +354,22 @@ def parse_MAME_merged_XML():
       else:
         romObject.sourcefile = 'unknown'; # sourcefile (driver) defaults to unknown
 
+      # --- Parse child tags
+      for child_game in game_EL:
+        if child_game.tag == 'driver':
+          driver_attrib = child_game.attrib;
+          
+          # Driver status is good, imperfect, preliminary
+          # prelimiray games don't work or have major emulation problems
+          # imperfect games are emulated with some minor issues
+          # good games are perfectly emulated
+          if 'status' in driver_attrib:
+            romObject.driver_status = driver_attrib['status'];
+            if __debug_parse_MAME_XML_reading:
+              print ' Driver status = ' + driver_attrib['status'];
+          else:
+            romObject.driver_status = 'unknown';
+        
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
   del tree;
@@ -401,7 +420,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # This is a special filter, and MUST be done first.
   # Also, remove crap like chips, etc.
   if 'NoClones' in filter_config.mainFilter:
-    print '[Filtering clones out]';
+    print '[Filtering out clones]';
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -438,7 +457,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
 
   # --- Apply MainFilter: NoMechanical
   if 'NoMechanical' in filter_config.mainFilter:
-    print '[Filtering mechanical games out]';
+    print '[Filtering out mechanical games]';
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -454,9 +473,32 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   else:
     print '[User wants mechanical games]';
 
-  # --- Apply MainFilter: NoUnplayable
-  # NOTE: don't know how to do this... check 
+  # --- Apply MainFilter: NoNonworking
+  # http://www.mamedev.org/source/src/emu/info.c.html
   # <driver color="good" emulation="good" graphic="good" savestate="supported" sound="good" status="good"/> 
+  # /* The status entry is an hint for frontend authors */
+  # /* to select working and not working games without */
+  # /* the need to know all the other status entries. */
+  # /* Games marked as status=good are perfectly emulated, games */
+  # /* marked as status=imperfect are emulated with only */
+  # /* some minor issues, games marked as status=preliminary */
+  # /* don't work or have major emulation problems. */
+  if 'NoNonworking' in filter_config.mainFilter:
+    print '[Filtering out Non Working games]';
+    mame_filtered_dic_temp = {};
+    filtered_out_games = 0;
+    for key in mame_filtered_dic:
+      romObject = mame_filtered_dic[key];
+      if romObject.driver_status == 'preliminary':
+        filtered_out_games += 1;
+      else:
+        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print ' Removed   = ' + str(filtered_out_games);
+    print ' Remaining = ' + str(len(mame_filtered_dic));
+  else:
+    print '[User wants Non Working games]';
 
   # --- Apply Driver filter
   __debug_apply_MAME_filters_Driver_tag = 0;
@@ -514,6 +556,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   else:
     print '[User wants all drivers]';
   
+  sys.exit(0);
   return mame_filtered_dic;
 
 # rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
@@ -672,12 +715,10 @@ def do_list_reduced():
   print 'Done!';
 
   # Root element (Reduced MAME XML):
-  #
   # <mame build="0.153 (Apr  7 2014)" debug="no" mameconfig="10">
   root = tree.getroot();
 
   # Child elements (Reduced MAME XML):
-  #
   # <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
   #   <description>005</description>
   #   <year>1981</year>
