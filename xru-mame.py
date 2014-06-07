@@ -1199,21 +1199,24 @@ if updated are needed.
     Print usage information (this text)
 
  \033[31m reduce-XML\033[0m
-    Takes MAME XML as input, picks the useful information, and writes and output
-    XML with the "useful" information. The reason for doing this is because 
-    MAME XML file is huge and takes a long time to process it. After reducing 
-    it, all subsequent processing should be much quicker.
+    Takes MAME XML as input, picks the useful information, and writes an 
+    stripped XML with only meaningful information. The reason for doing this
+    is because MAME XML file is huge and takes a long time to process it. After
+    reducing it, all subsequent processing should be much quicker.
 
  \033[31m make-filters\033[0m
-    Takes MAME XML info file, Catver.ini and nplayers.ini, and makes an
-    output XML file with all the necessary information for proper game 
-    filtering.
+    Takes MAME XML info file and Catver.ini and makes an output XML file with
+    all the necessary information for proper game filtering.
 
  \033[31m list-redux\033[0m
     List every ROM set system defined in the reduced MAME XML information file.
   
  \033[31m list-redux-long\033[0m
     Like list, but also list all the information.
+
+ \033[31m list-categories\033[0m
+    Reads Catver.ini and makes a histogram of the categories (prints all available
+    categories and tells how many ROMs every category has).
 
  \033[31m copy <filterName>\033[0m
     Applies ROM filters defined in the configuration file and copies the 
