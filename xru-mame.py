@@ -625,7 +625,9 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     
   # --- Apply Categories filter
   __debug_apply_MAME_filters_Category_tag = 0;
-  if filter_config.driver is not None and filter_config.driver is not '':
+  if hasattr(filter_config, 'categories') and \
+             filter_config.categories is not None and \
+             filter_config.categories is not '':
     print '[Filtering Categories]';
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
