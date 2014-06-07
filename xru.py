@@ -8,18 +8,21 @@ import operator, argparse
 import xml.etree.ElementTree as ET
 
 # Global variables
+__software_version = '0.1';
 __config_configFileName = 'xru-config.xml';
-__conf_dry_run = 0;
-__conf_delete_NFO = 0;
-__conf_print_report = 0;
-__conf_sync = 0;
+
+# Program options (from command line)
+__prog_option_dry_run = 0;
+__prog_option_delete_NFO = 0;
+__prog_option_print_report = 0;
+__prog_option_sync = 0;
 
 # Global DEBUG variables
 __debug_propertyParsers = 0;
 __debug_copy_ROM_file = 0;
 __debug_main_ROM_list = 0;
-__debug_filtered_ROM_list = 1;
-__debug_total_filtered_ROM_list = 1;
+__debug_filtered_ROM_list = 0;
+__debug_total_filtered_ROM_list = 0;
 __debug_config_file_parser = 0;
 
 # =============================================================================
@@ -111,11 +114,51 @@ def copy_ROM_file(fileName, sourceDir, destDir):
     print '  Copying ' + sourceFullFilename;
     print '  Into    ' + destFullFilename;
   
-  if not __conf_dry_run:
+  if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
       print "copy_ROM_file >> Error happened";
+
+def update_ROM_file(fileName, sourceDir, destDir):
+  if sourceDir[-1] != '/':
+    sourceDir = sourceDir + '/';
+  if destDir[-1] != '/':
+    destDir = destDir + '/';
+
+  sourceFullFilename = sourceDir + fileName;
+  destFullFilename = destDir + fileName;
+  
+  existsSource = os.path.isfile(sourceFullFilename);
+  existsDest = os.path.isfile(destFullFilename);
+  if not existsSource:
+    print "Source file not found";
+    sys.exit(10);
+
+  sizeSource = os.path.getsize(sourceFullFilename);
+  if existsDest:
+    sizeDest = os.path.getsize(destFullFilename);
+  else:
+    sizeDest = -1;
+
+  # If sizes are equal
+  if sizeSource == sizeDest:
+    # Skip copy and return 1
+    return 1;
+
+  # destFile does not exist or sizes are different, copy.
+  print '[Copy] ' + fileName;
+  if __debug_copy_ROM_file:
+    print '  Copying ' + sourceFullFilename;
+    print '  Into    ' + destFullFilename;
+  
+  if not __prog_option_dry_run:
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      print "copy_ROM_file >> Error happened";
+
+  return 0
 
 def delete_ROM_file(fileName, dir):
   if dir[-1] != '/':
@@ -124,7 +167,7 @@ def delete_ROM_file(fileName, dir):
   fullFilename = dir + fileName;
   print '[Delete] ' + fileName;
 
-  if not __conf_dry_run:
+  if not __prog_option_dry_run:
     try:
       os.remove(fullFilename);
     except EnvironmentError:
@@ -198,7 +241,6 @@ def parse_File_Config(romSetName):
           text_string = collectionEL.text;
           list = text_string.split(",");
           configFile.excludeTags = list;
-  print '\n';
 
   # --- Trim blank spaces on lists
   if configFile.filterUpTags is not None:
@@ -222,7 +264,6 @@ def parse_File_Config(romSetName):
     print 'filterDownTags :', configFile.filterDownTags;
     print 'includeTags    :', configFile.includeTags;
     print 'excludeTags    :', configFile.excludeTags;
-    print '\n';
 
   # --- Check for errors
   if not systemNameFound:
@@ -424,30 +465,34 @@ def do_update(configFile):
   excludeTag_list = configFile.excludeTags;
 
   # User wants to log operations performed to a file
-  if __conf_print_report:
+  if __prog_option_print_report:
     reportFileName = 'xru-' + configFile.romSetName + '.txt';
-    print 'Writing report into ' + reportFileName + '\n';
+    print '[Writing report into ' + reportFileName + ']';
     report_f = open(reportFileName, 'w');
-
+  
   # Check if dest directory exists
   if not os.path.isdir(sourceDir):
     print 'Source directory does not exist'
-    print folderName;
+    print sourceDir;
     sys.exit(10);
 
   if not os.path.isdir(destDir):
     print 'Source directory does not exist'
-    print folderName;
+    print destDir;
     sys.exit(10);
 
   # Parse sourceDir ROM list and extract tags and base names. Create main ROM list
   # Give scores to main ROM list based on filters
+  print '[Reading ROMs in source dir]';
   romMainList_dict = {};
+  num_ROMs_sourceDir = 0;
   for file in os.listdir(sourceDir):
     if file.endswith(".zip"):
+      num_ROMs_sourceDir += 1;
       romObject = ROM(file);
       romObject.scoreROM(upTag_list, downTag_list);
       romMainList_dict[file] = romObject;
+  print ' Found', str(num_ROMs_sourceDir), 'ROMs';
 
   # --- DEBUG main ROM list
   if __debug_main_ROM_list:
@@ -463,6 +508,7 @@ def do_update(configFile):
   # Pick ROMs with highest scores among ROMs with same Base Name
   # Algol: iterate the main ROM list. Create a dictionary with key the base
   # names and values the ROM file name.
+  print '[Filtering ROMs]';
   highScoreUniqueRoms = {};
   highScoreUniqueRoms_scores = {};
   for key in romMainList_dict:
@@ -500,6 +546,7 @@ def do_update(configFile):
 
     if includeThisROM:
       uniqueAndFilteredRoms.append(romFileName);
+  print ' After filtering there are', str(len(uniqueAndFilteredRoms)), 'ROMs';
 
   # --- DEBUG filtered ROM list
   if __debug_total_filtered_ROM_list:
@@ -508,14 +555,38 @@ def do_update(configFile):
       print romFileName;
     print "\n";
 
-  # Copy filtered files into destDir
-  for romFileName in uniqueAndFilteredRoms:
-   copy_ROM_file(romFileName, sourceDir, destDir);
-   if __conf_print_report:
-     report_f.write('[Copied] ' + romFileName + '\n');
-   
-  # Delete NFO files of ROMs not present in the destination directory.
-  if __conf_delete_NFO:
+  # --- Copy filtered files into destDir
+  if __prog_option_sync: 
+    print '[Updating ROMs]';
+    num_checked_ROMs = 0;
+    num_copied_ROMs = 0;
+    for romFileName in uniqueAndFilteredRoms:
+      # If we are synchronising, only copy ROMs if size in sourceDir/destDir
+      # is different
+      retVal = update_ROM_file(romFileName, sourceDir, destDir);
+      if retVal: num_checked_ROMs += 1;
+      else:      num_copied_ROMs += 1;
+      if __prog_option_print_report:
+        if retVal:
+          report_f.write('[Updated] ' + romFileName + '\n');
+        else:
+          report_f.write('[Copied] ' + romFileName + '\n');
+    print ' Checked', str(num_checked_ROMs), 'ROMs';
+    print ' Copied', str(num_copied_ROMs), 'ROMs';
+  else: 
+    print '[Copying ROMs]';
+    num_copied_ROMs = 0;
+    for romFileName in uniqueAndFilteredRoms:
+      copy_ROM_file(romFileName, sourceDir, destDir);
+      num_copied_ROMs += 1;
+      if __prog_option_print_report:
+        report_f.write('[Copied] ' + romFileName + '\n');
+    print ' Copied', str(num_copied_ROMs), 'ROMs';
+
+  # --- Delete NFO files of ROMs not present in the destination directory.
+  if __prog_option_delete_NFO:
+    print '[Deleting redundant NFO files]';
+    num_deletedNFO_files = 0;
     for file in os.listdir(destDir):
       if file.endswith(".nfo"):
         # Chech if there is a corresponding ROM for this NFO file
@@ -523,39 +594,36 @@ def do_update(configFile):
         romFileName_temp = thisFileName + '.zip';
         if not exists_ROM_file(romFileName_temp, destDir):
           delete_ROM_file(file, destDir);
-          if __conf_print_report:
-            report_f.write('[Deleted] ' + file + '\n');
+          num_deletedNFO_files += 1;
+          if __prog_option_print_report:
+            report_f.write('[Deleted NFO] ' + file + '\n');
+    print ' Deleted', str(num_deletedNFO_files), 'redundant NFO files';
 
-  # If user wants to sync...
-  if __conf_sync:
+  # --- Update command deletes redundant ROMs
+  if __prog_option_sync:
+    print '[Deleting filtered out/redundant ROMs in destination directory]';
     # Delete ROMs present in destDir not present in the filtered list
+    num_deletedROMs_files = 0;
     for file in os.listdir(destDir):
       if file.endswith(".zip"):
         if file not in uniqueAndFilteredRoms:
           delete_ROM_file(file, destDir);
-          if __conf_print_report:
+          num_deletedROMs_files += 1;
+          if __prog_option_print_report:
             report_f.write('[Deleted] ' + file + '\n');
+    print ' Deleted', str(num_deletedROMs_files), 'filtered out/redundant ROMs';
 
   # Close log file
-  if __conf_print_report:
+  if __prog_option_print_report:
     report_f.close();
 
 def do_printHelp():
-  print """XBMC ROM utility
-
+  print """
 usage: xru.py [options] <command> [romSetName]
 
 Commands:
   usage
     Print usage information (this text)
-
-  update
-    Applies ROM filters defined in the configuration file and copies the 
-    contents of sourceDir into destDir. This overwrites ROMs in destDir.
-
-  sync
-    Like update, but also delete ROMs in destDir not present in the filtered
-    ROM list.
 
   list
     List every ROM set system defined in the configuration file and some basic
@@ -568,6 +636,14 @@ Commands:
     Scan the source directory and reports the total number of ROM files, all the
     tags found, and the number of ROMs that have each tag. It also display 
     tagless ROMs.
+
+  copy
+    Applies ROM filters defined in the configuration file and copies the 
+    contents of sourceDir into destDir. This overwrites ROMs in destDir.
+
+  update
+    Like update, but also delete ROMs in destDir not present in the filtered
+    ROM list.
 
 Options:
   -h, --help
@@ -595,40 +671,27 @@ def main(argv):
   parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
   parser.add_argument("--deleteNFO", help="delete NFO files of filtered ROMs", action="store_true")
   parser.add_argument("--printReport", help="print report", action="store_true")
-  parser.add_argument("command", help="usage, update, sync, list, list-long, taglist")
+  parser.add_argument("command", help="usage, list, list-long, taglist, copy, update")
   parser.add_argument("romSetName", help="ROM collection name", nargs='?')
   args = parser.parse_args();
   
+  print 'XBMC ROM Utilities ' + __software_version;
+
   # --- Optional arguments
   # Needed to modify global copy of globvar
-  global __conf_dry_run, __conf_delete_NFO, __conf_print_report;
-  global __conf_sync;
+  global __prog_option_dry_run, __prog_option_delete_NFO, __prog_option_print_report;
+  global __prog_option_sync;
 
   if args.dryRun:
-    __conf_dry_run = 1;
+    __prog_option_dry_run = 1;
   if args.deleteNFO:
-    __conf_delete_NFO = 1;
+    __prog_option_delete_NFO = 1;
   if args.printReport:
-    __conf_print_report = 1;
+    __prog_option_print_report = 1;
 
   # --- Positional arguments
   if args.command == 'usage':
     do_printHelp();
-
-  elif args.command == 'update':
-    if args.romSetName == None:
-      print 'romSetName required';
-      sys.exit(10);
-    configFile = parse_File_Config(args.romSetName);
-    do_update(configFile);
-
-  elif args.command == 'sync':
-    __conf_sync = 1;
-    if args.romSetName == None:
-      print 'romSetName required';
-      sys.exit(10);
-    configFile = parse_File_Config(args.romSetName);
-    do_update(configFile);  
 
   elif args.command == 'list':
     do_list(__config_configFileName);
@@ -642,6 +705,21 @@ def main(argv):
       sys.exit(10);
     configFile = parse_File_Config(args.romSetName);
     do_taglist(configFile);
+
+  elif args.command == 'copy':
+    if args.romSetName == None:
+      print 'romSetName required';
+      sys.exit(10);
+    configFile = parse_File_Config(args.romSetName);
+    do_update(configFile);
+
+  elif args.command == 'update':
+    __prog_option_sync = 1;
+    if args.romSetName == None:
+      print 'romSetName required';
+      sys.exit(10);
+    configFile = parse_File_Config(args.romSetName);
+    do_update(configFile);  
 
   else:
     print 'Unrecognised command';

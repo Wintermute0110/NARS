@@ -3,8 +3,8 @@
 
 <!-- Nintendo ROMS -->
 <collection name="SNES NoIntro" shortname="snes">
-  <source>/cygdrive/e/Mendi/Misc/test-rom-source/</source>
-  <dest>/cygdrive/e/Mendi/Misc/test-rom-source-dest/</dest>
+  <source>/home/xbmc/roms/roms-snes/</source>
+  <dest>/home/xbmc/NUC/ROMs/roms-snes/</dest>
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto, France</filterDownTags>
   <includeTags>Europe, USA</includeTags>
@@ -13,8 +13,8 @@
 
 <!-- Sega ROMS -->
 <collection name="Sega Mega Drive NoIntro" shortname="genesis">
-  <source>/cygdrive/e/Mendi/Misc/test-rom-source/</source>
-  <dest>/cygdrive/e/Mendi/Misc/test-rom-source-dest/</dest>
+  <source>/home/xbmc/roms/roms-genesis/</source>
+  <dest>/home/xbmc/NUC/ROMs/roms-genesis/</dest>
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto</filterDownTags>
   <includeTags>Europe, USA</includeTags>
