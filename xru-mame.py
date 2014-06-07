@@ -27,6 +27,8 @@ configuration = ConfigFile();
 __prog_option_dry_run = 0;
 __prog_option_print_report = 0;
 __prog_option_generate_NFO = 0;
+__prog_option_withArtWork = 0;
+__prog_option_cleanROMs = 0;
 __prog_option_sync = 0;
 
 # --- Global DEBUG variables
@@ -62,6 +64,72 @@ def dumpclean(obj):
 # =============================================================================
 # Filesystem interaction functions
 # =============================================================================
+def copy_ArtWork_file(fileName, sourceDir, destDir):
+  if sourceDir[-1] != '/':
+    sourceDir = sourceDir + '/';
+  if destDir[-1] != '/':
+    destDir = destDir + '/';
+
+  sourceFullFilename = sourceDir + fileName;
+  destFullFilename = destDir + fileName;
+  
+  # Maybe artwork does not exist...
+  if not os.path.isfile(sourceFullFilename):
+    # Then do nothing
+    return;
+
+  print '[Copy] ' + fileName;
+  if __debug_copy_ROM_file:
+    print '  Copying ' + sourceFullFilename;
+    print '  Into    ' + destFullFilename;
+  
+  if not __prog_option_dry_run:
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      print "copy_ROM_file >> Error happened";
+
+def update_ArtWork_file(fileName, sourceDir, destDir):
+  if sourceDir[-1] != '/':
+    sourceDir = sourceDir + '/';
+  if destDir[-1] != '/':
+    destDir = destDir + '/';
+
+  sourceFullFilename = sourceDir + fileName;
+  destFullFilename = destDir + fileName;
+  
+  existsSource = os.path.isfile(sourceFullFilename);
+  existsDest = os.path.isfile(destFullFilename);
+  # Maybe artwork does not exist...
+  if not existsSource:
+    # Then do nothing
+    return 1;
+
+  sizeSource = os.path.getsize(sourceFullFilename);
+  if existsDest:
+    sizeDest = os.path.getsize(destFullFilename);
+  else:
+    sizeDest = -1;
+
+  # If sizes are equal
+  if sizeSource == sizeDest:
+    # Skip copy and return 1
+    return 1;
+
+  # destFile does not exist or sizes are different, copy.
+  print '[Copy] ' + fileName;
+  if __debug_copy_ROM_file:
+    print '  Copying ' + sourceFullFilename;
+    print '  Into    ' + destFullFilename;
+  
+  if not __prog_option_dry_run:
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      print "copy_ROM_file >> Error happened";
+
+  return 0
+
 def copy_ROM_file(fileName, sourceDir, destDir):
   if sourceDir[-1] != '/':
     sourceDir = sourceDir + '/';
@@ -208,15 +276,35 @@ def parse_File_Config():
         sourceDirFound = 0;
         destDirFound = 0;
         for filter_child in root_child:
-          if filter_child.tag == 'source':
-            if __debug_config_file_parser: print ' source = ' + filter_child.text;
+          if filter_child.tag == 'ROMsSource':
+            if __debug_config_file_parser: print ' ROMsSource = ' + filter_child.text;
             sourceDirFound = 1;
             filter_class.sourceDir = filter_child.text
 
-          elif filter_child.tag == 'dest':
-            if __debug_config_file_parser: print ' dest = ' + filter_child.text;
+          elif filter_child.tag == 'ROMsDest':
+            if __debug_config_file_parser: print ' ROMsDest = ' + filter_child.text;
             destDirFound = 1;
             filter_class.destDir = filter_child.text
+
+          elif filter_child.tag == 'FanartSource':
+            if __debug_config_file_parser: print ' FanartSource = ' + filter_child.text;
+            sourceDirFound = 1;
+            filter_class.fanartSourceDir = filter_child.text
+
+          elif filter_child.tag == 'FanartDest':
+            if __debug_config_file_parser: print ' FanartDest = ' + filter_child.text;
+            destDirFound = 1;
+            filter_class.fanartDestDir = filter_child.text
+
+          elif filter_child.tag == 'ThumbsSource':
+            if __debug_config_file_parser: print ' ThumbsSource = ' + filter_child.text;
+            sourceDirFound = 1;
+            filter_class.thumbsSourceDir = filter_child.text
+
+          elif filter_child.tag == 'ThumbsDest':
+            if __debug_config_file_parser: print ' ThumbsDest = ' + filter_child.text;
+            destDirFound = 1;
+            filter_class.thumbsDestDir = filter_child.text
             
           elif filter_child.tag == 'MainFilter':
             if __debug_config_file_parser: print ' MainFilter = ' + filter_child.text;
@@ -1175,7 +1263,7 @@ def do_copy_ROMs(filterName):
 
   # Generate NFO XML files with information for launchers
   if __prog_option_generate_NFO:
-    __debug_generate_NFO_files = 1;
+    __debug_generate_NFO_files = 0;
     print '[Generating NFO files]';
     for rom_name in rom_copy_dic:
       romObj = mame_filtered_dic[rom_name];
@@ -1222,18 +1310,52 @@ def do_copy_ROMs(filterName):
       f = open(NFO_full_filename, "w")
       f.write(reparsed.toprettyxml(indent="  "))
       f.close()  
-  
+ 
+  # Artwork should be copied
+  if __prog_option_withArtWork:
+    print '[Copy/Update ArtWork]';
+    fanartSourceDir = filter_config.fanartSourceDir;
+    fanartDestDir = filter_config.fanartDestDir;
+    thumbsSourceDir = filter_config.thumbsSourceDir;
+    thumbsDestDir = filter_config.thumbsDestDir;
+    for rom_copy_item in rom_copy_dic:
+      romFileName = rom_copy_item + '.png';
+      # If we are synchronising, only copy ROMs if size in sourceDir/destDir
+      # is different
+      if __prog_option_sync:
+        retVal = update_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
+        if __prog_option_print_report:
+          if retVal:
+            report_f.write('[Updated] ' + romFileName + '\n');
+          else:
+            report_f.write('[Copied] ' + romFileName + '\n');
+            
+        retVal = update_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
+        if __prog_option_print_report:
+          if retVal:
+            report_f.write('[Updated] ' + romFileName + '\n');
+          else:
+            report_f.write('[Copied] ' + romFileName + '\n');            
+      else:
+        copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
+        if __prog_option_print_report:
+          report_f.write('[Copied] ' + romFileName + '\n');
+
+        copy_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
+        if __prog_option_print_report:
+          report_f.write('[Copied] ' + romFileName + '\n');
+
   # If sync is on then delete unknown files.
   # Maybe this should be an option rather than a command...
-  if 0:
-    if __prog_option_sync:
-      # Delete ROMs present in destDir not present in the filtered list
-      for file in os.listdir(destDir):
-        if file.endswith(".zip"):
-          if file not in mame_filtered_dic:
-            delete_ROM_file(file, destDir);
-            if __conf_print_report:
-              report_f.write('[Deleted] ' + file + '\n');
+  if __prog_option_cleanROMs:
+    print '[Cleaning ROMs in ROMsDest]';
+    # Delete ROMs present in destDir not present in the filtered list
+    for file in os.listdir(destDir):
+      if file.endswith(".zip"):
+        if file not in mame_filtered_dic:
+          delete_ROM_file(file, destDir);
+          if __conf_print_report:
+            report_f.write('[Deleted] ' + file + '\n');
 
   # Close log file
   if __prog_option_print_report:
@@ -1283,10 +1405,9 @@ if updated are needed.
     contents of sourceDir into destDir. This overwrites ROMs in destDir.
 
  \033[31m update <filterName>\033[0m
-    Like copy, but also copies files if file size is different (this saves
+    Like copy, but only copies files if file size is different (this saves
     a lot of time, particularly if sourceDir and/or destDir are on a 
-    network-mounted filesystem). It also  deletes ROMs in destDir not present 
-    in the filtered ROM list.
+    network-mounted filesystem).
 
 \033[32mOptions:\033[0m
   \033[35m-h\033[0m, \033[35m--help\033[0m
@@ -1304,6 +1425,9 @@ if updated are needed.
     
    \033[35m--generateNFO\033[0m
     Generates NFO files with game information for the launchers.
+
+   \033[35m--withArtWork\033[0m
+    Copies/Updates art work: fanart and thumbs for the launchers.
     
    \033[35m--cleanROMs\033[0m
     Deletes ROMs in destDir not present in the filtered ROM list."""
@@ -1316,6 +1440,8 @@ def main(argv):
   parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
   parser.add_argument("--printReport", help="print report", action="store_true")
   parser.add_argument("--generateNFO", help="generate NFO files", action="store_true")
+  parser.add_argument("--withArtWork", help="copy/update artwork", action="store_true")
+  parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", action="store_true")
   parser.add_argument("command", help="usage, reduce-XML, make-filters, list-redux, list-redux-long, list-categories, copy, update")
   parser.add_argument("filterName", help="MAME ROM filter name", nargs='?')
   args = parser.parse_args();
@@ -1328,11 +1454,15 @@ def main(argv):
   global __prog_option_dry_run;
   global __prog_option_print_report;
   global __prog_option_generate_NFO;
+  global __prog_option_withArtWork;
+  global __prog_option_cleanROMs;
   global __prog_option_sync;
 
   if args.dryRun:      __prog_option_dry_run = 1;
   if args.printReport: __prog_option_print_report = 1;
   if args.generateNFO: __prog_option_generate_NFO = 1;
+  if args.withArtWork: __prog_option_withArtWork = 1;
+  if args.cleanROMs:   __prog_option_cleanROMs = 1;
 
   # --- Positional arguments
   if args.command == 'usage':
