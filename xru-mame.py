@@ -175,7 +175,7 @@ def parse_File_Config():
   configFile.MAME_XML_redux = '';
   configFile.Catver = '';
   configFile.NPlayers = '';
-  configFile.MergedInfo = '';
+  configFile.MergedInfo_XML = '';
   configFile.filter_dic = {};
 
   # --- Parse general options
@@ -188,7 +188,7 @@ def parse_File_Config():
         elif general_child.tag == 'MAME_XML_redux': configFile.MAME_XML_redux = general_child.text;
         elif general_child.tag == 'Catver':         configFile.Catver = general_child.text;
         elif general_child.tag == 'NPlayers':       configFile.NPlayers = general_child.text;
-        elif general_child.tag == 'MergedInfo':     configFile.MergedInfo = general_child.text;
+        elif general_child.tag == 'MergedInfo':     configFile.MergedInfo_XML = general_child.text;
         else:
           print 'Unrecognised tag inside <General>';
           sys.exit(10);
@@ -235,6 +235,14 @@ def parse_File_Config():
             list = text_string.split(",");
             filter_class.machineType = trim_list(list);
 
+          elif filter_child.tag == 'Categories':
+            if __debug_config_file_parser: print ' Categories = ' + filter_child.text;
+            text_string = filter_child.text;
+            if text_string != None:
+              list = text_string.split(",");
+              filter_class.categories = trim_list(list);
+            else:
+              filter_class.categories = '';
           else:
             print 'Unrecognised tag inside <MAMEFilter>';
             sys.exit(10);
@@ -261,13 +269,71 @@ def parse_File_Config():
 
   return configFile;
 
+def parse_catver_ini():
+  "Parses Catver.ini and returns a"
+  
+  # --- Parse Catver.ini
+  # --- Create a histogram with the categories
+  print '[Parsing Catver.ini]';
+  cat_filename = configuration.Catver;
+  print ' Opening ' + cat_filename;
+  final_categories_dic = {};
+  f = open(cat_filename, 'r');
+  # 0 -> Looking for '[Category]' tag
+  # 1 -> Reading categories
+  # 2 -> Categories finished. STOP
+  read_status = 0;
+  for cat_line in f:
+    stripped_line = cat_line.strip();
+    if read_status == 0:
+      if stripped_line == '[Category]':
+        read_status = 1;
+    elif read_status == 1:
+      line_list = stripped_line.split("=");
+      if len(line_list) == 1:
+        read_status = 2;
+        continue;
+      else:
+        game_name = line_list[0];
+        category = line_list[1];
+        # --- Sub-categories  
+        sub_categories = category.split("/");
+        main_category = sub_categories[0].strip();
+        second_category = sub_categories[0].strip();
+          
+        # NOTE: Only use the main category for filtering.
+        # -Rename some categories
+        final_category = main_category;
+        if category == 'System / BIOS':
+          final_category = 'BIOS';
+        elif main_category == 'Electromechanical - PinMAME':
+          final_category = 'PinMAME';
+        elif main_category == 'Ball & Paddle':
+          final_category = 'Ball and Paddle';
+        
+        # - If there is *Mature* in any category or subcategory, then
+        #   the game belongs to the Mature category
+        if category.find('*Mature*') >= 0:
+          final_category = 'Mature';
+        
+        # - Create final categories dictionary
+        final_categories_dic[game_name] = final_category;
+    elif read_status == 2:
+      break;
+    else:
+      print 'Unknown read_status FSM value';
+      sys.exit(10);
+  f.close();
+
+  return final_categories_dic;
+
 def parse_MAME_merged_XML():
   "Parses a MAME merged XML and creates a parent/clone list"
-  filename = configuration.MergedInfo;
+  filename = configuration.MergedInfo_XML;
   print '[Parsing MAME merged XML]';
-  print "Parsing MAME merged XML file '" + filename + "'...";
+  print " Parsing MAME merged XML file '" + filename + "'...";
   tree = ET.parse(filename);
-  print 'Done!';
+  print ' Done!';
   
   # --- Raw list: literal information from the XML
   rom_raw_dict = {};
@@ -369,13 +435,16 @@ def parse_MAME_merged_XML():
               print ' Driver status = ' + driver_attrib['status'];
           else:
             romObject.driver_status = 'unknown';
+
+        elif child_game.tag == 'category':
+          romObject.category = child_game.text;
         
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
   del tree;
-  print 'Total number of games = ' + str(num_games);
-  print 'Number of parents = ' + str(num_parents);
-  print 'Number of clones = ' + str(num_clones);
+  print ' Total number of games = ' + str(num_games);
+  print ' Number of parents = ' + str(num_parents);
+  print ' Number of clones = ' + str(num_clones);
 
   # --- Create a parent-clone list
   # NOTE: a parent/clone hierarchy is not needed for MAME. In the ROM list
@@ -398,7 +467,7 @@ def get_Filter_Config(filterName):
 def apply_MAME_filters(mame_xml_dic, filter_config):
   "Apply filters to main parent/clone dictionary"
 
-  print '[apply_MAME_filters]';
+  print '[Applying MAME filters]';
   
   # --- Default filters: remove crap
   # What is "crap"?
@@ -413,8 +482,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       filtered_out_games += 1;
       continue;
     mame_filtered_dic[key] = mame_xml_dic[key];
-  print ' Removed   = ' + str(filtered_out_games);
-  print ' Remaining = ' + str(len(mame_filtered_dic));
+  print ' Removed   = ' + str(filtered_out_games) + \
+        ' / Remaining = ' + str(len(mame_filtered_dic));
 
   # --- Apply MainFilter: NoClones
   # This is a special filter, and MUST be done first.
@@ -431,8 +500,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         filtered_out_games += 1;
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games);
-    print ' Remaining = ' + str(len(mame_filtered_dic));
+    print ' Removed   = ' + str(filtered_out_games) + \
+          ' / Remaining = ' + str(len(mame_filtered_dic));
   else:
     print '[User wants clones]';
 
@@ -450,8 +519,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games);
-    print ' Remaining = ' + str(len(mame_filtered_dic));
+    print ' Removed   = ' + str(filtered_out_games) + \
+          ' / Remaining = ' + str(len(mame_filtered_dic));
   else:
     print '[User wants games with samples]';
 
@@ -468,8 +537,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games);
-    print ' Remaining = ' + str(len(mame_filtered_dic));
+    print ' Removed   = ' + str(filtered_out_games) + \
+          ' / Remaining = ' + str(len(mame_filtered_dic));
   else:
     print '[User wants mechanical games]';
 
@@ -495,15 +564,15 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games);
-    print ' Remaining = ' + str(len(mame_filtered_dic));
+    print ' Removed   = ' + str(filtered_out_games) + \
+          ' / Remaining = ' + str(len(mame_filtered_dic));
   else:
     print '[User wants Non Working games]';
 
   # --- Apply Driver filter
   __debug_apply_MAME_filters_Driver_tag = 0;
-  if filter_config.driver is not None:
-    print '[Filtering drivers]';
+  if filter_config.driver is not None and filter_config.driver is not '':
+    print '[Filtering Drivers]';
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -516,19 +585,19 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # - Example: filter_config.driver = ['not cps1', 'not cps2', 'not cps3']
       boolean_list = [];
       for filter_str in filter_config.driver:
-        list = filter_str.split(" ");
+        fsub_list = filter_str.split(" ");
         if __debug_apply_MAME_filters_Driver_tag:
-          print 'Filter sublist = ', list;
-        if len(list) == 2:
-          if list[0] == 'not':
+          print 'Filter sublist = ', fsub_list;
+        if len(fsub_list) == 2:
+          if fsub_list[0] == 'not':
             not_operator = 1;
-            f_string = list[1];
+            f_string = fsub_list[1];
           else:
             print 'Logical operator is not "not"';
             sys.exit(10);
-        elif len(list) == 1:
+        elif len(fsub_list) == 1:
           not_operator = 0;
-          f_string = list[0];
+          f_string = fsub_list[0];
         else:
           print 'Wrong number of tokens in Driver filter string';
           sys.exit(10);
@@ -551,29 +620,88 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games);
-    print ' Remaining = ' + str(len(mame_filtered_dic));
+    print ' Removed   = ' + str(filtered_out_games) + \
+          ' / Remaining = ' + str(len(mame_filtered_dic));
+    
+  # --- Apply Categories filter
+  __debug_apply_MAME_filters_Category_tag = 0;
+  if filter_config.driver is not None and filter_config.driver is not '':
+    print '[Filtering Categories]';
+    mame_filtered_dic_temp = {};
+    filtered_out_games = 0;
+    for key in mame_filtered_dic:
+      romObject = mame_filtered_dic[key];
+      category_name = romObject.category;
+      if __debug_apply_MAME_filters_Category_tag:
+        print '[DEBUG] Category name = ' + category_name;
+        print '[DEBUG] Filter list = ', filter_config.categories;
+      # - Iterate thorugh the list of expressions of the filter
+      boolean_list = [];
+      for filter_str in filter_config.categories:
+        fsub_list = filter_str.split(" ");
+        # Filter name has spaces. Merge list elements 2 to end into
+        # element 2
+        if len(fsub_list) > 2:
+          list_temp = list(fsub_list);
+          fsub_list = [];
+          fsub_list.append(list_temp[0]);
+          fsub_list.append(' '.join(list_temp[1:]));
+        if __debug_apply_MAME_filters_Category_tag:
+          print '[DEBUG] Filter sublist = ', fsub_list;
+        if len(fsub_list) == 2:
+          if fsub_list[0] == 'not':
+            not_operator = 1;
+            f_string = fsub_list[1];
+          else:
+            print 'Logical operator is not "not"';
+            sys.exit(10);
+        elif len(fsub_list) == 1:
+          not_operator = 0;
+          f_string = fsub_list[0];
+        else:
+          print 'Logical error';
+          sys.exit(10);
+
+        # Do filter
+        if not_operator: boolResult = category_name != f_string;
+        else:            boolResult = category_name == f_string;
+        boolean_list.append(boolResult);
+      if __debug_apply_MAME_filters_Category_tag:
+        print '[DEBUG] Boolean array =', boolean_list
+      # If not all items are true, the game is NOT copied (filtered)
+      if not all(boolean_list):
+        filtered_out_games += 1;
+        if __debug_apply_MAME_filters_Category_tag:
+          print '[DEBUG] Filtered';
+      else:
+        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print ' Removed   = ' + str(filtered_out_games) + \
+          ' / Remaining = ' + str(len(mame_filtered_dic));
   else:
     print '[User wants all drivers]';
   
-  sys.exit(0);
   return mame_filtered_dic;
 
 # rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
 def create_copy_list(mame_filtered_dic, rom_main_list):
   "With list of filtered ROMs and list of source ROMs, create list of files to be copied"
-  __debug_create_copy_list = 1;
+  __debug_create_copy_list = 0;
 
   print '[Creating list of ROMs to be copied/updated]';
   copy_list = [];
+  num_added_roms = 0;
   for key_rom_main in rom_main_list:
     rom_name = key_rom_main;
     # If the ROM is in the mame filtered list, then add to the copy list
     if rom_name in mame_filtered_dic:
       copy_list.append(rom_name);
+      num_added_roms += 1;
       if __debug_create_copy_list:
         print '[Added ROM] ' + rom_name;
-
+  print ' Added ' + str(num_added_roms) + ' ROMs';
+  
   return copy_list;
 
 def get_ROM_main_list(sourceDir):
@@ -596,14 +724,13 @@ def get_ROM_main_list(sourceDir):
 
   return romMainList_dict;
 
+
 # =============================================================================
 def do_reduce_XML():
   "Short list of MAME XML file"
 
-  input_filename = "mame-0153b.xml";
-  output_filename = "mame-0153b-reduced.xml";
-  # input_filename = "mame-test.xml";
-  # output_filename = "mame-test-reduced.xml";
+  input_filename = configuration.MAME_XML;
+  output_filename = configuration.MAME_XML_redux;
 
   # --- Build XML output file ---
   tree_output = ET.ElementTree();
@@ -703,8 +830,93 @@ def do_reduce_XML():
 def do_make_filters():
   "Make main MAME database ready for filtering"
 
-  print 'Implement me!';
-  sys.exit(10);
+  mame_redux_filename = configuration.MAME_XML_redux;
+  merged_filename = configuration.MergedInfo_XML;
+  
+  # --- Get categories from Catver.ini
+  categories_dic = parse_catver_ini();
+  
+  # --- Read MAME XML or reduced MAME XML and incorporate categories
+  # NOTE: this piece of code is very similar to do_reduce_XML()
+  # --- Build XML output file ---
+  tree_output = ET.ElementTree();
+  root_output = a = ET.Element('mame');
+  tree_output._setroot(root_output);
+
+  # --- Read MAME XML input file ---
+  print '[Parsing (reduced) MAME XML file]';
+  print ' NOTE: this may take a looong time...';
+  print " Parsing MAME XML file '" + mame_redux_filename + "'...";
+  tree = ET.parse(mame_redux_filename);
+  print ' Done!';
+
+  # --- Traverse MAME XML input file ---
+  root = tree.getroot();
+  root_output.attrib = root.attrib; # Copy mame attributes in output XML
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      game_output = ET.SubElement(root_output, 'game');
+      game_output.attrib = game_EL.attrib; # Copy game attributes in output XML
+
+      # --- Iterate through the children of a game
+      for game_child in game_EL:
+        if game_child.tag == 'description':
+          description_output = ET.SubElement(game_output, 'description');
+          description_output.text = game_child.text;
+
+        if game_child.tag == 'year':
+          year_output = ET.SubElement(game_output, 'year');
+          year_output.text = game_child.text;
+
+        if game_child.tag == 'manufacturer':
+          manufacturer_output = ET.SubElement(game_output, 'manufacturer');
+          manufacturer_output.text = game_child.text;
+
+        if game_child.tag == 'input':
+          # --- This information is not used yet. Don't add to the output
+          #     file to save some space.
+          # input_output = ET.SubElement(game_output, 'input');
+          # input_output.attrib = game_child.attrib; # Copy game attributes in output XML
+
+          # Traverse children
+          for input_child in game_child:
+            if input_child.tag == 'control':
+              # --- This information is not used yet. Don't add to the output
+              #     file to save some space.
+              # control_output = ET.SubElement(input_output, 'control');
+              # control_output.attrib = input_child.attrib;
+              pass
+
+        if game_child.tag == 'driver':
+          driver_output = ET.SubElement(game_output, 'driver');
+          # --- From here only attribute 'status' is used
+          driver_attrib = {};
+          driver_attrib['status'] = game_child.attrib['status'];
+          driver_output.attrib = driver_attrib;
+
+      # --- Add category element
+      game_name = game_EL.attrib['name'];
+      category = 'Unknown';
+      if game_name in categories_dic:
+        category = categories_dic[game_name];
+      else:
+        print '[WARNING] Category not found for ' + game_name;
+      category_output = ET.SubElement(game_output, 'category');
+      category_output.text = category;
+
+  # --- To save memory destroy variables now
+  del tree;
+  
+  # --- Write output file
+  print '[Writing output file]';
+  print ' ' + merged_filename;
+  rough_string = ET.tostring(root_output, 'utf-8');
+  reparsed = minidom.parseString(rough_string);
+  del root_output; # Reduce memory consumption
+
+  f = open(merged_filename, "w")
+  f.write(reparsed.toprettyxml(indent="  "))
+  f.close()  
 
 def do_list_reduced():
   "Short list of MAME XML file"
@@ -785,9 +997,119 @@ def do_list_reducedlong():
   print '\n';
   print 'Number of games = ' + str(num_games);
 
-#
+
+def dumpclean(obj):
+  if type(obj) == dict:
+    for k, v in obj.items():
+      if hasattr(v, '__iter__'):
+        print k
+        dumpclean(v)
+      else:
+        print '%s : %s' % (k, v)
+  elif type(obj) == list:
+    for v in obj:
+      if hasattr(v, '__iter__'):
+        dumpclean(v)
+      else:
+        print v
+  else:
+      print obj
+
+def do_list_categories():
+  "Long list of MAME XML file"
+  __debug_do_list_categories = 1;
+  
+  # --- Parse Catver.ini
+  # --- Create a histogram with the categories
+  print '[List categories from Catver.ini]';
+  cat_filename = configuration.Catver;
+  print 'Opening ' + cat_filename;
+  categories_dic = {};
+  main_categories_dic = {};
+  final_categories_dic = {};
+  f = open(cat_filename, 'r');
+  # 0 -> Looking for '[Category]' tag
+  # 1 -> Reading categories
+  # 2 -> Categories finished. STOP
+  read_status = 0;
+  for cat_line in f:
+    stripped_line = cat_line.strip();
+    if __debug_do_list_categories:
+      print '"' + stripped_line + '"';
+    if read_status == 0:
+      if stripped_line == '[Category]':
+        if __debug_do_list_categories:
+          print 'Found [Category]';
+        read_status = 1;
+    elif read_status == 1:
+      line_list = stripped_line.split("=");
+      if len(line_list) == 1:
+        read_status = 2;
+        continue;
+      else:
+        if __debug_do_list_categories:
+          print line_list;
+        category = line_list[1];
+        if category in categories_dic:
+          categories_dic[category] += 1;
+        else:
+          categories_dic[category] = 1;
+        # --- Sub-categories  
+        sub_categories = category.split("/");
+        if __debug_do_list_categories:
+          print sub_categories;
+        main_category = sub_categories[0].strip();
+        second_category = sub_categories[0].strip();
+        if main_category in main_categories_dic: 
+          main_categories_dic[main_category] += 1;
+        else:                          
+          main_categories_dic[main_category] = 1;
+          
+        # NOTE: Only use the main category for filtering.
+        # -Rename some categories
+        final_category = main_category;
+        if category == 'System / BIOS':
+          final_category = 'BIOS';
+        elif main_category == 'Electromechanical - PinMAME':
+          final_category = 'PinMAME';
+        elif main_category == 'Ball & Paddle':
+          final_category = 'Ball and Paddle';
+        
+        # - If there is *Mature* in any category or subcategory, then
+        #   the game belongs to the Mature category
+        print category.find('*Mature*')
+        if category.find('*Mature*') >= 0:
+          final_category = 'Mature';
+        
+        # - Create final categories dictionary
+        if final_category in final_categories_dic: 
+          final_categories_dic[final_category] += 1;
+        else:                          
+          final_categories_dic[final_category] = 1;
+    elif read_status == 2:
+      break;
+    else:
+      print 'Unknown read_status FSM value';
+      sys.exit(10);
+  f.close();
+
+  # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
+  print '[Raw categories]';
+  sorted_propertiesDic = sorted(categories_dic.iteritems(), key=operator.itemgetter(1))
+  dumpclean(sorted_propertiesDic);
+  print '\n';
+
+  print '[Main categories]';
+  sorted_propertiesDic = sorted(main_categories_dic.iteritems(), key=operator.itemgetter(1))
+  dumpclean(sorted_propertiesDic);
+  print '\n';
+
+  print '[Final (used) categories]';
+  sorted_propertiesDic = sorted(final_categories_dic.iteritems(), key=operator.itemgetter(1))
+  dumpclean(sorted_propertiesDic);
+
+# -----------------------------------------------------------------------------
 # Copy ROMs in destDir
-#
 def do_copy_ROMs(filterName):
   "Applies filter and copies ROMs into destination directory"
 
@@ -922,7 +1244,7 @@ def main(argv):
   parser.add_argument("--version", help="print version", action="store_true")
   parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
   parser.add_argument("--printReport", help="print report", action="store_true")
-  parser.add_argument("command", help="usage, reduce-XML, make-filters, list-redux, list-redux-long, copy, update")
+  parser.add_argument("command", help="usage, reduce-XML, make-filters, list-redux, list-redux-long, list-categories, copy, update")
   parser.add_argument("filterName", help="MAME ROM filter name", nargs='?')
   args = parser.parse_args();
   
@@ -955,6 +1277,9 @@ def main(argv):
     
   elif args.command == 'list-redux-long':
     do_list_reducedlong();
+
+  elif args.command == 'list-categories':
+    do_list_categories();
 
   elif args.command == 'copy':
     if args.filterName == None:
