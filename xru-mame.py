@@ -1214,7 +1214,6 @@ def do_copy_ROMs(filterName):
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
-
   sourceDir = filter_config.sourceDir;
   destDir = filter_config.destDir;
   # Check if source/dir exists
@@ -1230,7 +1229,7 @@ def do_copy_ROMs(filterName):
 
   # --- User wants to log operations performed to a file
   if __prog_option_print_report:
-    reportFileName = 'xru-mame-report.txt';
+    reportFileName = 'xru-mame-report-' +  filter_config.name + '.txt';
     print 'Writing report into ' + reportFileName + '\n';
     report_f = open(reportFileName, 'w');
 
@@ -1352,9 +1351,10 @@ def do_copy_ROMs(filterName):
     # Delete ROMs present in destDir not present in the filtered list
     for file in os.listdir(destDir):
       if file.endswith(".zip"):
-        if file not in mame_filtered_dic:
+        basename, ext = os.path.splitext(file); # Remove extension
+        if basename not in rom_copy_dic:
           delete_ROM_file(file, destDir);
-          if __conf_print_report:
+          if __prog_option_print_report:
             report_f.write('[Deleted] ' + file + '\n');
 
   # Close log file
