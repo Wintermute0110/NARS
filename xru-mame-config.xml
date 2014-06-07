@@ -1,0 +1,60 @@
+<!-- Example configuration file for XBMC ROM utilities -->
+<MAMEConfig>
+<General>
+  <MAME_XML>../XBMC-mame/mame-0153b.xml</MAME_XML>
+  <MAME_XML_redux>../XBMC-mame/mame-0153b-reduced.xml</MAME_XML_redux>
+  <Catver>../XBMC-mame/Catver.ini</Catver>
+  <NPlayers>../XBMC-mame/nplayers.ini</NPlayers>
+  <MergedInfo>../XBMC-mame/mame-0153b-reduced.xml</MergedInfo>
+  <!-- <MergedInfo>../XBMC-mame/mame-test-reduced.xml</MergedInfo> -->
+</General>
+
+<MAMEFilter name="main">
+  <source>/home/xbmc/roms/roms-mame/</source>
+  <dest>/home/xbmc/NUC/ROMs/roms-mame-main/</dest>
+
+  <!-- Main filter -->
+  <MainFilter>NoClones, NoSamples, NoMechanical</MainFilter>
+
+  <!-- MAME driver, important drivers
+       neogeo    Neo-Geo
+       cps1      Capcom CPS1
+       cps2      Capcom CPS2
+       cps3      Capcom CPS3
+       model1    Sega Model 1
+       model2    Sega Model 2
+       naomi     Sega Naomi (based on Dreamcast)
+       namcos11  Namco System 11
+       namcos12  Namco System 12
+  -->
+  <!-- NOTE: this filter implies AND conditions between filtering options -->
+  <!-- Example: cps1 AND cps2: does not make sense -->
+  <!-- Example: not cps1 OR not cps2: makes sense -->
+  <Driver>not cps1</Driver>
+
+  <!-- Machine type -->
+  <!-- <MachineType>Upright, Cocktail</MachineType> -->
+
+  <!-- Monitor orientation -->
+  <!-- <Monitor>Horizontal, Vertical</Monitor> -->
+
+  <!-- Controls -->
+  <!-- <Controls>2-way, 4-way, 8-way, OnlyButtons</Controls> -->
+
+  <!-- Number of buttons (or less) -->
+  <!-- <Buttons>6</Buttons> -->
+
+  <!-- Categories -->
+  <!-- <Categories>Fighter, Puzzle</Categories> -->
+
+  <!-- Number of players (or less) -->
+  <!-- <NumPlayers>2</NumPlayers> -->
+</MAMEFilter>
+
+<MAMEFilter name="cps1">
+  <source>/home/xbmc/roms/roms-mame/</source>
+  <dest>/home/xbmc/NUC/ROMs/roms-mame-cps1/</dest>
+  <MainFilter>NoClones, NoSamples, NoMechanical</MainFilter>
+  <Driver>cps1</Driver>
+</MAMEFilter>
+</MAMEConfig>
