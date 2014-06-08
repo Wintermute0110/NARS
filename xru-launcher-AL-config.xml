@@ -1,0 +1,12 @@
+<!-- Example configuration file for XBMC ROM utilities -->
+<AdvancedLauncher>
+<configFile>/home/xbmc/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml</configFile>
+
+<!-- For every launcher you want to check configure ROMs and artwork directories -->
+<launcher name="Genesis (Mednafen)">
+<!-- If your ROMs or artwork are network mounted, you need to configure the paths -->
+<ROMsDest>/home/xbmc/ROMs/roms-sega-genesis-nointro/</ROMsDest>
+<FanartDest>/home/xbmc/ROMs/artwork-AL/artwork-sega-genesis/fanart/</FanartDest>
+<ThumbsDest>/home/xbmc/ROMs/artwork-AL/artwork-sega-genesis/thumbs/</ThumbsDest>
+</launcher>
+</AdvancedLauncher>
