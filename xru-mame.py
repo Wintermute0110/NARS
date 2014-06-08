@@ -7,7 +7,6 @@
 
 import sys, os, re, shutil
 import operator, argparse
-# XML parser (ElementTree)
 import xml.etree.ElementTree as ET
 # ElementTree generated XML files are nasty looking (no end of lines)
 # Minidom does a much better job
@@ -1446,10 +1445,6 @@ def main(argv):
   parser.add_argument("filterName", help="MAME ROM filter name", nargs='?')
   args = parser.parse_args();
   
-  # --- Read configuration file
-  global configuration; # Needed to modify global copy of globvar
-  configuration = parse_File_Config(); 
-  
   # --- Optional arguments
   global __prog_option_dry_run;
   global __prog_option_print_report;
@@ -1464,11 +1459,17 @@ def main(argv):
   if args.withArtWork: __prog_option_withArtWork = 1;
   if args.cleanROMs:   __prog_option_cleanROMs = 1;
 
-  # --- Positional arguments
+  # --- Positional arguments that don't require parsing of the config file
   if args.command == 'usage':
     do_printHelp();
+    sys.exit(0);
 
-  elif args.command == 'reduce-XML':
+  # --- Read configuration file
+  global configuration; # Needed to modify global copy of globvar
+  configuration = parse_File_Config(); 
+
+  # --- Positional arguments that required the configuration file
+  if args.command == 'reduce-XML':
     do_reduce_XML();
 
   elif args.command == 'make-filters':
