@@ -6,7 +6,6 @@
   <Catver>../XBMC-mame/Catver.ini</Catver>
   <NPlayers>../XBMC-mame/nplayers.ini</NPlayers>
   <MergedInfo>../XBMC-mame/mame-0153b-reduced.xml</MergedInfo>
-  <!-- <MergedInfo>../XBMC-mame/mame-test-reduced.xml</MergedInfo> -->
 </General>
 
 <MAMEFilter name="main">
@@ -32,23 +31,8 @@
   <!-- Example: not cps1 OR not cps2: makes sense -->
   <Driver>not cps1</Driver>
 
-  <!-- Machine type -->
-  <!-- <MachineType>Upright, Cocktail</MachineType> -->
-
-  <!-- Monitor orientation -->
-  <!-- <Monitor>Horizontal, Vertical</Monitor> -->
-
-  <!-- Controls -->
-  <!-- <Controls>2-way, 4-way, 8-way, OnlyButtons</Controls> -->
-
-  <!-- Number of buttons (or less) -->
-  <!-- <Buttons>6</Buttons> -->
-
   <!-- Categories -->
   <!-- <Categories>Fighter, Puzzle</Categories> -->
-
-  <!-- Number of players (or less) -->
-  <!-- <NumPlayers>2</NumPlayers> -->
 </MAMEFilter>
 
 <MAMEFilter name="cps1">
