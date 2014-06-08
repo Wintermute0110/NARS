@@ -4,20 +4,19 @@
 
 import sys, os, re, shutil
 import operator, argparse
-# XML parser (ElementTree)
 import xml.etree.ElementTree as ET
 
-# Global variables
-__software_version = '0.1';
+# --- Global variables
+__software_version = '0.1.0';
 __config_configFileName = 'xru-config.xml';
 
-# Program options (from command line)
+# --- Program options (from command line)
 __prog_option_dry_run = 0;
 __prog_option_delete_NFO = 0;
 __prog_option_print_report = 0;
 __prog_option_sync = 0;
 
-# Global DEBUG variables
+# --- Global DEBUG variables
 __debug_propertyParsers = 0;
 __debug_copy_ROM_file = 0;
 __debug_main_ROM_list = 0;
@@ -664,6 +663,8 @@ Options:
 
 # =============================================================================
 def main(argv):
+  print '\033[36mXBMC ROM utilities - Advanced Launcher\033[0m' + \
+        ' version ' + __software_version;
 
   # - Command line parser
   parser = argparse.ArgumentParser()
@@ -675,8 +676,6 @@ def main(argv):
   parser.add_argument("romSetName", help="ROM collection name", nargs='?')
   args = parser.parse_args();
   
-  print 'XBMC ROM Utilities ' + __software_version;
-
   # --- Optional arguments
   # Needed to modify global copy of globvar
   global __prog_option_dry_run, __prog_option_delete_NFO, __prog_option_print_report;
