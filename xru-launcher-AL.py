@@ -1,7 +1,25 @@
 #!/usr/bin/python
-# XBMC ROM utilities
-# Wintermute0110 <wintermute0110@gmail.com>
+# XBMC ROM utilities - Advanced Launcher
 
+# Copyright (c) 2014 Wintermute0110 <wintermute0110@gmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 import sys, os
 import argparse
 import xml.etree.ElementTree as ET
@@ -22,7 +40,9 @@ configuration = ConfigFile();
 __prog_option_verbose = 0;
 __prog_option_log = 0;
 
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Logging functions
+# -----------------------------------------------------------------------------
 class Log():
   error = 1
   warn = 2
@@ -74,7 +94,9 @@ def pprint_verb(print_str):
 def pprint_debug(print_str):
   pprint(Log.debug, print_str);
 
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Configuration file functions
+# -----------------------------------------------------------------------------
 def parse_File_Config():
   "Parses configuration file"
   pprint(Log.info, '[Parsing config file]');
@@ -152,7 +174,9 @@ def parse_File_Config():
   # --- Check for errors
   return configFile;
 
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Main body functions
+# -----------------------------------------------------------------------------
 def do_list():
   "Checks Advanced Launcher config file for updates"
 
@@ -244,7 +268,6 @@ def do_list_config():
     pprint(Log.info, ' fanartDestDir = ' + launcher.fanartDestDir);
     pprint(Log.info, ' thumbsDestDir = ' + launcher.thumbsDestDir);
     
-#
 # Checks AL configuration file. The following checks are performed
 #
 def do_check():
@@ -382,7 +405,9 @@ def do_printHelp():
   \033[35m-l\033[0m, \033[35m--log\033[0m
     Save program output in xru-launcher-AL-log.txt"""
 
-# =============================================================================
+# -----------------------------------------------------------------------------
+# main function
+# -----------------------------------------------------------------------------
 def main(argv):
   print '\033[36mXBMC ROM utilities - Advanced Launcher\033[0m' + \
         ' version ' + __software_version;
