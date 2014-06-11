@@ -33,31 +33,56 @@ class Log():
 # ---  Console print and logging
 f_log = 0;
 log_level = 3;
+
+def change_log_level(level):
+  log_level = Log.verb;
+
+# --- Print/log to a specific level  
 def pprint(level, print_str):
   global f_log;
   global log_level;
 
   # --- If file descriptor not open, open it
-  if f_log == 0:
-    f_log = open(__config_logFileName, 'w')
-    if __prog_option_verbose:
-      log_level = Log.verb;
-      
+  if __prog_option_log:
+    if f_log == 0:
+      f_log = open(__config_logFileName, 'w')
+
   # --- Write to console depending on verbosity
   if level <= log_level:
     print print_str;
 
   # --- Write to file
-  if level <= log_level:
-    if print_str[-1] != '\n':
-      print_str += '\n';
-    f_log.write(print_str) # python will convert \n to os.linesep
+  if __prog_option_log:
+    if level <= log_level:
+      if print_str[-1] != '\n':
+        print_str += '\n';
+      f_log.write(print_str) # python will convert \n to os.linesep
+
+# --- Some useful function overloads
+def pprint_error(print_str):
+  pprint(Log.error, print_str);
+
+def pprint_warn(print_str):
+  pprint(Log.warn, print_str);
+
+def pprint_info(print_str):
+  pprint(Log.info, print_str);
+
+def pprint_verb(print_str):
+  pprint(Log.verb, print_str);
+
+def pprint_debug(print_str):
+  pprint(Log.debug, print_str);
 
 # =============================================================================
 def parse_File_Config():
   "Parses configuration file"
   pprint(Log.info, '[Parsing config file]');
-  tree = ET.parse(__config_configFileName);
+  try:
+    tree = ET.parse(__config_configFileName);
+  except IOError:
+    pprint_error('[ERROR] cannot find file ' + __config_configFileName);
+    sys.exit(10);
   root = tree.getroot();
 
   # - This iterates through the collections
@@ -135,7 +160,12 @@ def do_list():
   AL_configFileName = configuration.AL_config_file;
   # Don't log "waiting bar like" massages
   print "Parsing Advanced Launcher configuration file...",;
-  tree = ET.parse(AL_configFileName);
+  try:
+    tree = ET.parse(AL_configFileName);
+  except IOError:
+    print '\n';
+    pprint_error('[ERROR] cannot find file ' + AL_configFileName);
+    sys.exit(10);
   print "done"
   root = tree.getroot();
 
@@ -209,15 +239,13 @@ def do_list_config():
   for key in configuration.launchers_dic:
     launcher = configuration.launchers_dic[key];
     pprint(Log.info, '<Launcher>');
-    pprint(Log.info, ' name = ' + launcher.name);
-    pprint(Log.info, ' destDir = ' + launcher.destDir);
+    pprint(Log.info, ' name          = ' + launcher.name);
+    pprint(Log.info, ' destDir       = ' + launcher.destDir);
     pprint(Log.info, ' fanartDestDir = ' + launcher.fanartDestDir);
     pprint(Log.info, ' thumbsDestDir = ' + launcher.thumbsDestDir);
     
 #
 # Checks AL configuration file. The following checks are performed
-#
-# a) ...
 #
 def do_check():
   "Checks Advanced Launcher config file for updates"
@@ -369,8 +397,11 @@ def main(argv):
   global __prog_option_verbose;
   global __prog_option_log;
 
-  if args.verbose: __prog_option_verbose = 1;
-  if args.log:     __prog_option_log = 1;
+  if args.verbose:
+    __prog_option_verbose = 1;
+    change_log_level(Log.verb);
+  if args.log:
+    __prog_option_log = 1;
   
   # --- Positional arguments that don't require parsing of the config file
   if args.command == 'usage':
