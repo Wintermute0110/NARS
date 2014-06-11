@@ -253,7 +253,12 @@ def do_check():
   pprint(Log.info, '[Checking Advanced Launcher launchers]');
   AL_configFileName = configuration.AL_config_file;
   print "Parsing Advanced Launcher configuration file...",;
-  tree = ET.parse(AL_configFileName);
+  try:
+    tree = ET.parse(AL_configFileName);
+  except IOError:
+    print '\n';
+    pprint_error('[ERROR] cannot find file ' + AL_configFileName);
+    sys.exit(10);
   print "done"
   root = tree.getroot();
   categories = root[0];
@@ -271,10 +276,6 @@ def do_check():
     pprint(Log.info, ' lauch_name = "' + lauch_name.text + '"');
     pprint(Log.verb, ' lauch_application = ' + lauch_application.text);
     pprint(Log.verb, ' lauch_rompath     = ' + lauch_rompath.text);
-
-    # --- Only do Genesis to DEBUG
-    # if lauch_name.text != 'Genesis (Mednafen)':
-    #   continue;
 
     # List of roms
     roms_list = child.find('roms');
