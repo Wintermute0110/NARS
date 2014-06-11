@@ -394,11 +394,11 @@ def do_printHelp():
  \033[31m check\033[0m
     Checks the Advanced Launcher configuration file and compares against the
     ROM folders. It reports if Advanced Launcher should rescan the ROM list.
-  
+
 \033[32mOptions:
   \033[35m-h\033[0m, \033[35m--help\033[0m
     Print short command reference
-    
+
   \033[35m-v\033[0m, \033[35m--verbose\033[0m
     Print more information about what's going on
 
@@ -412,7 +412,7 @@ def main(argv):
   print '\033[36mXBMC ROM utilities - Advanced Launcher\033[0m' + \
         ' version ' + __software_version;
 
-  # - Command line parser
+  # --- Command line parser
   parser = argparse.ArgumentParser()
   parser.add_argument("--verbose", help="print version", action="store_true")
   parser.add_argument("--log", help="print version", action="store_true")
@@ -420,8 +420,7 @@ def main(argv):
   args = parser.parse_args();
   
   # --- Optional arguments
-  global __prog_option_verbose;
-  global __prog_option_log;
+  global __prog_option_verbose, __prog_option_log;
 
   if args.verbose:
     __prog_option_verbose = 1;
@@ -436,7 +435,7 @@ def main(argv):
 
   # --- Read configuration file
   global configuration; # Needed to modify global copy of globvar
-  configuration = parse_File_Config(); 
+  configuration = parse_File_Config();
 
   # --- Positional arguments
   if args.command == 'list':
