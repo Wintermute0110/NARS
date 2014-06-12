@@ -41,6 +41,11 @@ __prog_option_verbose = 0;
 __prog_option_log = 0;
 
 # -----------------------------------------------------------------------------
+# DEBUG functions
+# -----------------------------------------------------------------------------
+# None in this program
+
+# -----------------------------------------------------------------------------
 # Logging functions
 # -----------------------------------------------------------------------------
 class Log():
@@ -95,11 +100,16 @@ def pprint_debug(print_str):
   pprint(Log.debug, print_str);
 
 # -----------------------------------------------------------------------------
+# Filesystem interaction functions
+# -----------------------------------------------------------------------------
+# None in this program
+
+# -----------------------------------------------------------------------------
 # Configuration file functions
 # -----------------------------------------------------------------------------
 def parse_File_Config():
   "Parses configuration file"
-  pprint(Log.info, '[Parsing config file]');
+  pprint_info('[Parsing config file]');
   try:
     tree = ET.parse(__config_configFileName);
   except IOError:
@@ -175,14 +185,18 @@ def parse_File_Config():
   return configFile;
 
 # -----------------------------------------------------------------------------
+# Misc functions
+# -----------------------------------------------------------------------------
+# None in this program
+
+# -----------------------------------------------------------------------------
 # Main body functions
 # -----------------------------------------------------------------------------
 def do_list():
   "Checks Advanced Launcher config file for updates"
-
   pprint(Log.info, '[Listing Advanced Launcher launchers]');
   AL_configFileName = configuration.AL_config_file;
-  # Don't log "waiting bar like" massages
+  # Don't log "waiting bar" like messages
   print "Parsing Advanced Launcher configuration file...",;
   try:
     tree = ET.parse(AL_configFileName);
@@ -273,7 +287,7 @@ def do_list_config():
 def do_check():
   "Checks Advanced Launcher config file for updates"
 
-  pprint(Log.info, '[Checking Advanced Launcher launchers]');
+  pprint_info('[Checking Advanced Launcher launchers]');
   AL_configFileName = configuration.AL_config_file;
   print "Parsing Advanced Launcher configuration file...",;
   try:
@@ -289,8 +303,8 @@ def do_check():
   update_launchers_list = [];
   not_checked_launchers_list = [];
   for child in launchers:
-    pprint(Log.info, '<Launcher>');
-    
+    pprint_info('<Launcher>');
+
     # --- Launcher data
     lauch_name = child.find('name');
     lauch_application = child.find('application');
@@ -395,7 +409,7 @@ def do_printHelp():
     Checks the Advanced Launcher configuration file and compares against the
     ROM folders. It reports if Advanced Launcher should rescan the ROM list.
 
-\033[32mOptions:
+\033[32mOptions:\033[0m
   \033[35m-h\033[0m, \033[35m--help\033[0m
     Print short command reference
 
@@ -418,7 +432,7 @@ def main(argv):
   parser.add_argument("--log", help="print version", action="store_true")
   parser.add_argument("command", help="usage, list, list-config, check")
   args = parser.parse_args();
-  
+
   # --- Optional arguments
   global __prog_option_verbose, __prog_option_log;
 
