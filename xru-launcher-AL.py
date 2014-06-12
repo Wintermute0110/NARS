@@ -37,7 +37,6 @@ class ConfigFileFilter:
 configuration = ConfigFile();
 
 # --- Program options (from command line)
-__prog_option_verbose = 0;
 __prog_option_log = 0;
 
 # -----------------------------------------------------------------------------
@@ -52,14 +51,17 @@ class Log():
   error = 1
   warn = 2
   info = 3
-  verb = 4
-  debug = 5
+  verb = 4  # Verbose: -v
+  vverb = 5 # Very verbose: -vv
+  debug = 6 # Debug: -vvv
 
 # ---  Console print and logging
 f_log = 0;
 log_level = 3;
 
 def change_log_level(level):
+  global log_level;
+
   log_level = Log.verb;
 
 # --- Print/log to a specific level  
@@ -84,19 +86,22 @@ def pprint(level, print_str):
       f_log.write(print_str) # python will convert \n to os.linesep
 
 # --- Some useful function overloads
-def pprint_error(print_str):
+def print_error(print_str):
   pprint(Log.error, print_str);
 
-def pprint_warn(print_str):
+def print_warn(print_str):
   pprint(Log.warn, print_str);
 
-def pprint_info(print_str):
+def print_info(print_str):
   pprint(Log.info, print_str);
 
-def pprint_verb(print_str):
+def print_verb(print_str):
   pprint(Log.verb, print_str);
 
-def pprint_debug(print_str):
+def print_vverb(print_str):
+  pprint(Log.vverb, print_str);
+
+def print_debug(print_str):
   pprint(Log.debug, print_str);
 
 # -----------------------------------------------------------------------------
@@ -109,11 +114,11 @@ def pprint_debug(print_str):
 # -----------------------------------------------------------------------------
 def parse_File_Config():
   "Parses configuration file"
-  pprint_info('[Parsing config file]');
+  print_info('[Parsing config file]');
   try:
     tree = ET.parse(__config_configFileName);
   except IOError:
-    pprint_error('[ERROR] cannot find file ' + __config_configFileName);
+    print_error('[ERROR] cannot find file ' + __config_configFileName);
     sys.exit(10);
   root = tree.getroot();
 
@@ -202,7 +207,7 @@ def do_list():
     tree = ET.parse(AL_configFileName);
   except IOError:
     print '\n';
-    pprint_error('[ERROR] cannot find file ' + AL_configFileName);
+    print_error('[ERROR] cannot find file ' + AL_configFileName);
     sys.exit(10);
   print "done"
   root = tree.getroot();
@@ -287,14 +292,14 @@ def do_list_config():
 def do_check():
   "Checks Advanced Launcher config file for updates"
 
-  pprint_info('[Checking Advanced Launcher launchers]');
+  print_info('[Checking Advanced Launcher launchers]');
   AL_configFileName = configuration.AL_config_file;
   print "Parsing Advanced Launcher configuration file...",;
   try:
     tree = ET.parse(AL_configFileName);
   except IOError:
     print '\n';
-    pprint_error('[ERROR] cannot find file ' + AL_configFileName);
+    print_error('[ERROR] cannot find file ' + AL_configFileName);
     sys.exit(10);
   print "done"
   root = tree.getroot();
@@ -303,7 +308,7 @@ def do_check():
   update_launchers_list = [];
   not_checked_launchers_list = [];
   for child in launchers:
-    pprint_info('<Launcher>');
+    print_info('<Launcher>');
 
     # --- Launcher data
     lauch_name = child.find('name');
@@ -434,14 +439,13 @@ def main(argv):
   args = parser.parse_args();
 
   # --- Optional arguments
-  global __prog_option_verbose, __prog_option_log;
+  global __prog_option_log;
 
   if args.verbose:
-    __prog_option_verbose = 1;
     change_log_level(Log.verb);
   if args.log:
     __prog_option_log = 1;
-  
+
   # --- Positional arguments that don't require parsing of the config file
   if args.command == 'usage':
     do_printHelp();
