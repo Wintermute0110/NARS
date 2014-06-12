@@ -1,7 +1,25 @@
 #!/usr/bin/python
-# XBMC ROM utilities
-# Wintermute0110 <wintermute0110@gmail.com>
+# XBMC ROM utilities - Console ROMs
 
+# Copyright (c) 2014 Wintermute0110 <wintermute0110@gmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 import sys, os, re, shutil
 import operator, argparse
 import xml.etree.ElementTree as ET
@@ -9,11 +27,17 @@ import xml.etree.ElementTree as ET
 # --- Global variables
 __software_version = '0.1.0';
 __config_configFileName = 'xru-console-config.xml';
+__config_logFileName = 'xru-console-log.txt';
+
+# --- Config file options global class (like a C struct)
+class ConfigFile:
+  pass
 
 # --- Program options (from command line)
+__prog_option_verbose = 0;
+__prog_option_log = 0;
 __prog_option_dry_run = 0;
 __prog_option_delete_NFO = 0;
-__prog_option_print_report = 0;
 __prog_option_sync = 0;
 
 # --- Global DEBUG variables
@@ -24,81 +48,66 @@ __debug_filtered_ROM_list = 0;
 __debug_total_filtered_ROM_list = 0;
 __debug_config_file_parser = 0;
 
-# =============================================================================
-#
-# Config file options
-#
-class ConfigFile:
-  pass
+# -----------------------------------------------------------------------------
+# Logging functions
+# -----------------------------------------------------------------------------
+class Log():
+  error = 1
+  warn = 2
+  info = 3
+  verb = 4
+  debug = 5
 
-#
-# A class to store the source directory ROM list
-#
-class ROM:
-  # - Constructor. Parses the ROM file name and gets Tags and Base Name (name 
-  # with no tags).
-  def __init__(self, romFileName):
-    self.romFileName = romFileName;
-    self.romTags = self.get_ROM_tags(romFileName);
-    self.romBaseName = self.get_ROM_baseName(romFileName);
-    self.score = 0;
+# ---  Console print and logging
+f_log = 0;
+log_level = 3;
 
-  # - See extract_ROM_Properties_All() for reference
-  def get_ROM_tags(self, romFileName):
-    romProperties_raw = [];
-    romProperties_raw = re.findall("(\([^\(]*\))", romFileName);
-    romProperties_all = [];
-    for property in romProperties_raw:
-      property = property[1:-1]; # Strip parenthesis
-      
-      match = re.search(",", property);
-      if match:
-        subProperties = re.findall("([^\,]*)", property);
-        for subPropertie in subProperties:
-          if subPropertie:
-            subPropertieOK = subPropertie.strip();
-            romProperties_all.append(subPropertieOK);
-      else:
-        romProperties_all.append(property);
+def change_log_level(level):
+  log_level = Log.verb;
 
-    return romProperties_all;
+# --- Print/log to a specific level  
+def pprint(level, print_str):
+  global f_log;
+  global log_level;
 
-  def get_ROM_baseName(self, romFileName):
-    rom_baseName = '';
-    regSearch = re.search("[^\(\)]*", romFileName);
-    if regSearch == None:
-      print 'Logical error';
-      sys.exit(10);
-    regExp_result = regSearch.group();
-    return regExp_result.strip();
+  # --- If file descriptor not open, open it
+  if __prog_option_log:
+    if f_log == 0:
+      f_log = open(__config_logFileName, 'w')
 
-  def scoreROM(self, upTag_list, downTag_list):
-    self.score = 0;
+  # --- Write to console depending on verbosity
+  if level <= log_level:
+    print print_str;
 
-    # Iterate through the tags, and add/subtract points depending on the list
-    # of given tags.
-    for tag in self.romTags:
-      # Up tags increase score
-      for upTag in upTag_list:
-        if tag == upTag:
-          self.score += 1;
-      # Down tags decrease the score
-      for downTag in downTag_list:
-        if tag == downTag:
-          self.score -= 1;
+  # --- Write to file
+  if __prog_option_log:
+    if level <= log_level:
+      if print_str[-1] != '\n':
+        print_str += '\n';
+      f_log.write(print_str) # python will convert \n to os.linesep
 
-  def isTag(self, tag_list):
-    result = 0;
+# --- Some useful function overloads
+def pprint_error(print_str):
+  pprint(Log.error, print_str);
 
-    for tag in self.romTags:
-      for testTag in tag_list:
-        if tag == testTag:
-          result = 1;
-          return result;
+def pprint_warn(print_str):
+  pprint(Log.warn, print_str);
 
-    return result;
+def pprint_info(print_str):
+  pprint(Log.info, print_str);
 
-# =============================================================================
+def pprint_verb(print_str):
+  pprint(Log.verb, print_str);
+
+def pprint_debug(print_str):
+  pprint(Log.debug, print_str);
+
+# -----------------------------------------------------------------------------
+# Filesystem functions
+# -----------------------------------------------------------------------------
+# This function checks if sourceDir and destDir exist
+# This function uses __prog_option_dry_run
+# No information is printed here except exceptions that abort the program
 def copy_ROM_file(fileName, sourceDir, destDir):
   if sourceDir[-1] != '/':
     sourceDir = sourceDir + '/';
@@ -119,6 +128,7 @@ def copy_ROM_file(fileName, sourceDir, destDir):
     except EnvironmentError:
       print "copy_ROM_file >> Error happened";
 
+# This function checks if sourceDir and destDir exist
 def update_ROM_file(fileName, sourceDir, destDir):
   if sourceDir[-1] != '/':
     sourceDir = sourceDir + '/';
@@ -178,12 +188,37 @@ def exists_ROM_file(fileName, dir):
 
   fullFilename = dir + fileName;
 
-  return os.path.isfile(fullFilename);
+  return os.path.isfile(fullFilename);  
 
+def copy_ROM_list(rom_list, sourceDir, destDir):
+  num_steps = len(rom_list);
+  # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
+  step = 0;
+  for rom_name in rom_list:
+    # This function never prints anything, except exceptions
+    copy_ROM_file(rom_name, sourceDir, destDir);
+
+    # Update progress
+    percentage = 100 * step / num_steps;
+    sys.stdout.write('[{:02d}%] '.format(percentage))
+    sys.stdout.write("[Copy] Super Mario World.zip\n")
+    sys.stdout.flush()
+    step += 1;
+
+def update_ROM_list(rom_list):
+  pass;
+
+# -----------------------------------------------------------------------------
+# Configuration file functions
+# -----------------------------------------------------------------------------
 def parse_File_Config(romSetName):
   "Parses config file"
-
-  tree = ET.parse(__config_configFileName);
+  pprint(Log.info, '[Parsing config file]');
+  try:
+    tree = ET.parse(__config_configFileName);
+  except IOError:
+    pprint_error('[ERROR] cannot find file ' + __config_configFileName);
+    sys.exit(10);
   root = tree.getroot();
 
   # - This iterates through the collections
@@ -202,7 +237,7 @@ def parse_File_Config(romSetName):
   systemNameFound = 0;
   sourceDirFound = 0;
   destDirFound = 0;
-  print '[' + romSetName + ']';
+  pprint_info('[' + romSetName + ']');
   for collection in root:
     if collection.attrib['shortname'] == romSetName:
       systemNameFound = 1;
@@ -278,7 +313,75 @@ def parse_File_Config(romSetName):
     sys.exit(10);
 
   return configFile;
-          
+
+# -----------------------------------------------------------------------------
+# Miscellaneous functions
+# -----------------------------------------------------------------------------
+# A class to store the source directory ROM list
+class ROM:
+  # - Constructor. Parses the ROM file name and gets Tags and Base Name (name 
+  # with no tags).
+  def __init__(self, romFileName):
+    self.romFileName = romFileName;
+    self.romTags = self.get_ROM_tags(romFileName);
+    self.romBaseName = self.get_ROM_baseName(romFileName);
+    self.score = 0;
+
+  # - See extract_ROM_Properties_All() for reference
+  def get_ROM_tags(self, romFileName):
+    romProperties_raw = [];
+    romProperties_raw = re.findall("(\([^\(]*\))", romFileName);
+    romProperties_all = [];
+    for property in romProperties_raw:
+      property = property[1:-1]; # Strip parenthesis
+      
+      match = re.search(",", property);
+      if match:
+        subProperties = re.findall("([^\,]*)", property);
+        for subPropertie in subProperties:
+          if subPropertie:
+            subPropertieOK = subPropertie.strip();
+            romProperties_all.append(subPropertieOK);
+      else:
+        romProperties_all.append(property);
+
+    return romProperties_all;
+
+  def get_ROM_baseName(self, romFileName):
+    rom_baseName = '';
+    regSearch = re.search("[^\(\)]*", romFileName);
+    if regSearch == None:
+      print 'Logical error';
+      sys.exit(10);
+    regExp_result = regSearch.group();
+    return regExp_result.strip();
+
+  def scoreROM(self, upTag_list, downTag_list):
+    self.score = 0;
+
+    # Iterate through the tags, and add/subtract points depending on the list
+    # of given tags.
+    for tag in self.romTags:
+      # Up tags increase score
+      for upTag in upTag_list:
+        if tag == upTag:
+          self.score += 1;
+      # Down tags decrease the score
+      for downTag in downTag_list:
+        if tag == downTag:
+          self.score -= 1;
+
+  def isTag(self, tag_list):
+    result = 0;
+
+    for tag in self.romTags:
+      for testTag in tag_list:
+        if tag == testTag:
+          result = 1;
+          return result;
+
+    return result;
+
 def dumpclean(obj):
   if type(obj) == dict:
     for k, v in obj.items():
@@ -353,7 +456,9 @@ def extract_ROM_Properties_All(romFileName):
   
   return romProperties_all;
 
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Main body functions
+# -----------------------------------------------------------------------------
 def do_list(filename):
   "Short list of config file"
 
@@ -555,6 +660,8 @@ def do_update(configFile):
     print "\n";
 
   # --- Copy filtered files into destDir
+  # NOTE: use this function copy_ROM_list(rom_list, sourceDir, destDir):
+  # Don't want complex code here!
   if __prog_option_sync: 
     print '[Updating ROMs]';
     num_checked_ROMs = 0;
@@ -618,69 +725,78 @@ def do_update(configFile):
 
 def do_printHelp():
   print """
-usage: xru.py [options] <command> [romSetName]
+\033[32mUsage: xru-console.py [options] <command> [romSetName]\033[0m
 
-Commands:
-  usage
+\033[32mCommands:\033[0m
+ \033[31m usage\033[0m
     Print usage information (this text)
 
-  list
+ \033[31m list\033[0m
     List every ROM set system defined in the configuration file and some basic
-    information.
-  
-  list-long
-    Like list, but also list all the information and filters.
+    information. Use \033[35m--verbose\033[0m to get more information.
 
-  taglist
+ \033[31m taglist\033[0m
     Scan the source directory and reports the total number of ROM files, all the
     tags found, and the number of ROMs that have each tag. It also display 
     tagless ROMs.
 
-  copy
+ \033[31m copy\033[0m
     Applies ROM filters defined in the configuration file and copies the 
     contents of sourceDir into destDir. This overwrites ROMs in destDir.
 
-  update
+ \033[31m update\033[0m
     Like update, but also delete ROMs in destDir not present in the filtered
     ROM list.
 
-Options:
-  -h, --help
+\033[32mOptions:
+  \033[35m-h\033[0m, \033[35m--help\033[0m
     Print short command reference
+    
+  \033[35m-v\033[0m, \033[35m--verbose\033[0m
+    Print more information about what's going on
 
-  --version
-    Show version and exit
-    
-  --dryRun
+  \033[35m-l\033[0m, \033[35m--log\033[0m
+    Save program output in xru-console-log.txt
+
+  \033[35m--dryRun\033[0m
     Don't modify destDir at all, just print the operations to be done.
-    
-  --deleteNFO
+
+  \033[35m--deleteNFO\033[0m
     Delete NFO files of ROMs not present in the destination directory.
 
-  --printReport
+  \033[35m--printReport\033[0m
     Writes a TXT file reporting the operation of the ROM filters and the
     operations performed."""
 
-# =============================================================================
+# -----------------------------------------------------------------------------
+# main function
+# -----------------------------------------------------------------------------
 def main(argv):
-  print '\033[36mXBMC ROM utilities - Advanced Launcher\033[0m' + \
+  print '\033[36mXBMC ROM utilities - Console ROMs\033[0m' + \
         ' version ' + __software_version;
 
-  # - Command line parser
+  # --- Command line parser
   parser = argparse.ArgumentParser()
-  parser.add_argument("--version", help="print version", action="store_true")
+  parser.add_argument("--verbose", help="print version", action="store_true")
+  parser.add_argument("--log", help="print version", action="store_true")
   parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
   parser.add_argument("--deleteNFO", help="delete NFO files of filtered ROMs", action="store_true")
   parser.add_argument("--printReport", help="print report", action="store_true")
-  parser.add_argument("command", help="usage, list, list-long, taglist, copy, update")
+  parser.add_argument("command", help="usage, list, taglist, copy, update")
   parser.add_argument("romSetName", help="ROM collection name", nargs='?')
   args = parser.parse_args();
-  
+
   # --- Optional arguments
   # Needed to modify global copy of globvar
-  global __prog_option_dry_run, __prog_option_delete_NFO, __prog_option_print_report;
+  global __prog_option_verbose, __prog_option_log;
+  global __prog_option_dry_run, __prog_option_delete_NFO;
   global __prog_option_sync;
 
+  if args.verbose:
+    __prog_option_verbose = 1;
+    change_log_level(Log.verb);
+  if args.log:
+    __prog_option_log = 1;
   if args.dryRun:
     __prog_option_dry_run = 1;
   if args.deleteNFO:
@@ -688,28 +804,34 @@ def main(argv):
   if args.printReport:
     __prog_option_print_report = 1;
 
-  # --- Positional arguments
+  # --- Positional arguments that don't require parsing of the config file
   if args.command == 'usage':
     do_printHelp();
+    sys.exit(0);
 
-  elif args.command == 'list':
-    do_list(__config_configFileName);
+  # --- Read configuration file
+  global configuration;
+  configuration = parse_File_Config();
+
+  # --- Positional arguments
+  # TODO: merge list and list-long into one function, list. list-long
+  # is list with --verbose switch.
+  if args.command == 'list':
+    do_list();
     
   elif args.command == 'list-long':
-    do_list_long(__config_configFileName);
+    do_list_long();
     
   elif args.command == 'taglist':
     if args.romSetName == None:
       print 'romSetName required';
       sys.exit(10);
-    configFile = parse_File_Config(args.romSetName);
     do_taglist(configFile);
 
   elif args.command == 'copy':
     if args.romSetName == None:
       print 'romSetName required';
       sys.exit(10);
-    configFile = parse_File_Config(args.romSetName);
     do_update(configFile);
 
   elif args.command == 'update':
@@ -717,11 +839,10 @@ def main(argv):
     if args.romSetName == None:
       print 'romSetName required';
       sys.exit(10);
-    configFile = parse_File_Config(args.romSetName);
     do_update(configFile);  
 
   else:
-    print 'Unrecognised command';
+    pprint(Log.error, 'Unrecognised command');
 
   sys.exit(0);
 
