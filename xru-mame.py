@@ -523,7 +523,7 @@ def get_Filter_Config(filterName):
     if key == filterName:
       return configuration.filter_dic[key];
   
-  print_error('get_Filter_Config >> filter ' + filterName + 'not found in configuration file');
+  print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
   sys.exit(20);
 
 # -----------------------------------------------------------------------------
