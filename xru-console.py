@@ -275,7 +275,7 @@ def parse_File_Config():
   # --- Parse filters
   for root_child in root:
     if root_child.tag == 'collection':
-      print_verb('<collection>');
+      print_debug('<collection>');
       if 'name' in root_child.attrib:
         # -- Mandatory config file options
         # filter_class.sourceDir = '';
@@ -288,50 +288,55 @@ def parse_File_Config():
         filter_class = ConfigFileFilter();
         filter_class.name = root_child.attrib['name'];
         filter_class.shortname = root_child.attrib['shortname'];
-        print_verb(' name = ' + filter_class.name);
-        print_verb(' shortname = ' + filter_class.shortname);
+        print_debug(' name           = ' + filter_class.name);
+        print_debug(' shortname      = ' + filter_class.shortname);
         sourceDirFound = 0;
         destDirFound = 0;
         # - Initialise variables for the ConfigFileFilter object
         #   to avoid None objects later.
         for filter_child in root_child:
           if filter_child.tag == 'source':
-            print_verb('Source         : ' + filter_child.text);
+            print_debug(' Source         = ' + filter_child.text);
             sourceDirFound = 1;
             filter_class.sourceDir = filter_child.text
 
           elif filter_child.tag == 'dest':
-            print_verb('Destination    : ' + filter_child.text);
+            print_debug(' Destination    = ' + filter_child.text);
             destDirFound = 1;
             filter_class.destDir = filter_child.text
 
           elif filter_child.tag == 'filterUpTags' and \
                filter_child.text is not None:
-            print_verb('filterUpTags   : ' + filter_child.text);
+            print_debug(' filterUpTags   = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.filterUpTags = list;
 
           elif filter_child.tag == 'filterDownTags' and \
                filter_child.text is not None:
-            print_verb('filterDownTags : ' + filter_child.text);
+            print_debug(' filterDownTags = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.filterDownTags = list;
 
           elif filter_child.tag == 'includeTags' and \
                filter_child.text is not None:
-            print_verb('includeTags    : ' + filter_child.text);
+            print_debug(' includeTags    = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.includeTags = list;
 
           elif filter_child.tag == 'excludeTags' and \
                filter_child.text is not None:
-            print_verb('excludeTags    : ' + filter_child.text);
+            print_debug(' excludeTags    = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.excludeTags = list;
+
+          elif filter_child.tag == 'NoIntroDat' and \
+               filter_child.text is not None:
+            print_debug(' NoIntroDat    = ' + filter_child.text);
+            filter_class.NoIntro_XML = filter_child.text;
 
         # - Trim blank spaces on lists
         if filter_class.filterUpTags is not None:
@@ -364,7 +369,7 @@ def parse_File_Config():
           sys.exit(10);
 
         # - Aggregate filter to configuration main variable
-        configFile.filter_dic[filter_class.name] = filter_class;
+        configFile.filter_dic[filter_class.shortname] = filter_class;
       else:
         print_error('<collection> tag does not have name attribute');
         sys.exit(10);
@@ -376,8 +381,8 @@ def get_Filter_Config(filterName):
   for key in configuration.filter_dic:
     if key == filterName:
       return configuration.filter_dic[key];
-  
-  print_error('get_Filter_Config >> filter ' + filterName + 'not found in configuration file');
+
+  print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
   sys.exit(20);
 
 # -----------------------------------------------------------------------------
@@ -510,7 +515,7 @@ def extract_ROM_Properties_All(romFileName):
 # Main body functions
 # -----------------------------------------------------------------------------
 def do_list():
-  "Short list of configuration file"
+  "List of configuration file"
 
   print_info('[Listing configuration file]');
   print "Parsing configuration XML file " + __config_configFileName + "...",;
@@ -546,45 +551,106 @@ def do_list():
         print_verb(' includeTags     ' + collectionEL.text);
       elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
         print_verb(' excludeTags     ' + collectionEL.text);
+      elif collectionEL.tag == 'NoIntroDat' and collectionEL.text is not None:
+        print_info(' NoIntroDat      ' + collectionEL.text);
 
-    # - Test if element exists by key
-    source_EL = collection.find('source');
-    if source_EL is not None:
-      print_info(' Source          ' + source_EL.text);
-    else:
-      print_info(' Mandatory <source> directory not found');
+    # - Test if all mandatory elements are there
+    # TODO: finish this
 
-def do_list_long(filename):
-  "Long list of config file"
-
-  print '===== Long listing of configuration file ====';
-  print 'Config file: ' + filename;
-
-  tree = ET.parse(filename);
+def do_list_nointro(filterName):
+  "List of NoIntro XML file"
+  print_info('[Listing No-Intro DAT file]');
+  print_info(' Filter name = ' + filterName);
+  filter_config = get_Filter_Config(filterName);
+  filename = filter_config.NoIntro_XML;
+  print filter_config.NoIntro_XML;
+  
+  print_info(' Parsing No-Intro XML DAT');
+  print " Parsing No-Intro merged XML file " + filename + "...",;
+  sys.stdout.flush();
+  try:
+    tree = ET.parse(filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + input_filename);
+    sys.exit(10);
+  print ' done';
+  
+  # Child elements (NoIntro pclone XML):
+  num_games = 0;
   root = tree.getroot();
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      num_games += 1;
+      # Game attributes
+      game_attrib = game_EL.attrib;
+      print 'Game name = ' + game_attrib['name'];
 
-  # - This iterates through the collections
-  for collection in root:
-    # print collection.tag, collection.attrib;
-    print '[ROM Collection] ';
-    print '  Short name      ' + collection.attrib['shortname'];
-    print '  Name            ' + collection.attrib['name'];
+      # Iterate through the children of a game
+      for game_child in game_EL:
+        if game_child.tag == 'description':
+          print ' description = ' + game_child.text;
+  
+  print '\n';
+  print 'Number of games = ' + str(num_games);
 
-    # - For every collection, iterate over the elements
-    # - This is not very efficient
-    for collectionEL in collection:
-      if collectionEL.tag == 'source':
-        print '  Source          ' + collectionEL.text;
-      elif collectionEL.tag == 'dest':
-        print '  Destination     ' + collectionEL.text;
-      elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
-        print '  filterUpTags    ' + collectionEL.text;
-      elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
-        print '  filterDownTags  ' + collectionEL.text;
-      elif collectionEL.tag == 'includeTags' and collectionEL.text is not None:
-        print '  includeTags     ' + collectionEL.text;
-      elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
-        print '  excludeTags     ' + collectionEL.text;
+def do_check_nointro(filterName):
+  "List of NoIntro XML file"
+  print_info('[Listing No-Intro DAT file]');
+  print_info(' Filter name = ' + filterName);
+  filter_config = get_Filter_Config(filterName);
+  filename = filter_config.NoIntro_XML;
+  
+  print_info(' Parsing No-Intro XML DAT');
+  print " Parsing " + filename + "...",;
+  sys.stdout.flush();
+  try:
+    tree = ET.parse(filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + input_filename);
+    sys.exit(10);
+  print ' done';
+  
+  # Child elements (NoIntro pclone XML):
+  nointro_roms = [];
+  num_games = 0;
+  root = tree.getroot();
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      num_games += 1;
+      # Game attributes
+      game_attrib = game_EL.attrib;
+      nointro_roms.append(game_attrib['name'] + '.zip');
+
+  # Check how many ROMs we have in sourceDir and the DAT
+  sourceDir = filter_config.sourceDir;
+  have_roms = 0;
+  unknown_roms = 0;
+  file_list = [];
+  for file in os.listdir(sourceDir):
+    file_list.append(file);
+  for file in sorted(file_list):
+    if file.endswith(".zip"):
+      if file in nointro_roms:
+        have_roms += 1;
+        print_vverb(' <Have ROM  > ' + file);
+      else:
+        unknown_roms += 1;
+        print_verb(' <Unknown ROM> ' + file);
+
+  # Check how many ROMs we have in the DAT not in sourceDir
+  missing_roms = 0;  
+  for game in sorted(nointro_roms):
+    filename = sourceDir + game;
+    if not os.path.isfile(filename):
+      print_verb(' <Missing ROM> ' + game);
+      missing_roms += 1;
+
+  print_info('Games in DAT = ' + str(num_games));
+  print_info('Have ROMs    = ' + str(have_roms));
+  print_info('Missing ROMs = ' + str(missing_roms));
+  print_info('Unknown ROMs = ' + str(unknown_roms));
 
 def do_taglist(configFile):
   "Documentation of do_taglist() function"
@@ -619,9 +685,8 @@ def do_taglist(configFile):
 
   dumpclean(sorted_propertiesDic);
 
-#
+# ----------------------------------------------------------------------------
 # Update ROMs in destDir
-#
 def do_update(configFile):
   "Applies filter and updates (copies) ROMs"
 
@@ -801,16 +866,23 @@ def do_printHelp():
     List every ROM set system defined in the configuration file and some basic
     information. Use \033[35m--verbose\033[0m to get more information.
 
- \033[31m taglist\033[0m
+ \033[31m list-nointro <filterName>\033[0m
+    List every ROM set system defined in the No-Intro DAT file.
+
+ \033[31m check-nointro <filterName>\033[0m
+    Scans the source directory and reads No-Intro XML data file. Checks if you
+    have all the ROMs and reports the number of missing ROMs.
+
+ \033[31m taglist <filterName>\033[0m
     Scan the source directory and reports the total number of ROM files, all the
     tags found, and the number of ROMs that have each tag. It also display 
     tagless ROMs.
 
- \033[31m copy\033[0m
+ \033[31m copy <filterName>\033[0m
     Applies ROM filters defined in the configuration file and copies the 
     contents of sourceDir into destDir. This overwrites ROMs in destDir.
 
- \033[31m update\033[0m
+ \033[31m update <filterName>\033[0m
     Like update, but also delete ROMs in destDir not present in the filtered
     ROM list.
 
@@ -822,17 +894,22 @@ def do_printHelp():
     Print more information about what's going on
 
   \033[35m-l\033[0m, \033[35m--log\033[0m
-    Save program output in xru-console-log.txt
+    Save program output in xru-mame-log.txt.
+
+  \033[35m--logto\033[0m \033[31m[logName]\033[0m
+    Save program output in the file you specify.
 
   \033[35m--dryRun\033[0m
     Don't modify destDir at all, just print the operations to be done.
 
-  \033[35m--deleteNFO\033[0m
-    Delete NFO files of ROMs not present in the destination directory.
+   \033[35m--generateNFO\033[0m
+    Generates NFO files with game information for the launchers.
 
-  \033[35m--printReport\033[0m
-    Writes a TXT file reporting the operation of the ROM filters and the
-    operations performed."""
+   \033[35m--withArtWork\033[0m
+    Copies/Updates art work: fanart and thumbs for the launchers.
+    
+   \033[35m--cleanROMs\033[0m
+    Deletes ROMs in destDir not present in the filtered ROM list."""
 
 # -----------------------------------------------------------------------------
 # main function
@@ -843,35 +920,52 @@ def main(argv):
 
   # --- Command line parser
   parser = argparse.ArgumentParser()
-  parser.add_argument('-v', '--verbose', help="print version", action="store_true")
-  parser.add_argument("--log", help="print version", action="store_true")
-  parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
-  parser.add_argument("--deleteNFO", help="delete NFO files of filtered ROMs", action="store_true")
-  parser.add_argument("--printReport", help="print report", action="store_true")
-  parser.add_argument("command", help="usage, list, taglist, copy, update")
+  parser.add_argument('-v', '--verbose', help="be verbose", action="count")
+  parser.add_argument('-l', '--log', help="log output to default file", \
+     action='store_true')
+  parser.add_argument('--logto', help="log output to specified file", \
+     nargs = 1)
+  parser.add_argument("--dryRun", help="don't modify any files", \
+     action="store_true")
+  parser.add_argument("--generateNFO", help="generate NFO files", \
+     action="store_true")
+  parser.add_argument("--withArtWork", help="copy/update artwork", \
+     action="store_true")
+  parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", \
+     action="store_true")
+  parser.add_argument("command", \
+     help="usage, list, list-nointro, check-nointro, taglist, copy, \
+           update", nargs = 1)
   parser.add_argument("romSetName", help="ROM collection name", nargs='?')
   args = parser.parse_args();
 
   # --- Optional arguments
   # Needed to modify global copy of globvar
-  global __prog_option_verbose, __prog_option_log;
-  global __prog_option_dry_run, __prog_option_delete_NFO;
-  global __prog_option_sync;
+  global __prog_option_log, __prog_option_log_filename;
+  global __prog_option_dry_run;
+  global __prog_option_generate_NFO, __prog_option_withArtWork;
+  global __prog_option_cleanROMs, __prog_option_sync;
 
   if args.verbose:
-    __prog_option_verbose = 1;
-    change_log_level(Log.verb);
+    if args.verbose == 1:
+      change_log_level(Log.verb);
+    elif args.verbose == 2:
+      change_log_level(Log.vverb);
+    elif args.verbose >= 3:
+      change_log_level(Log.debug);
   if args.log:
     __prog_option_log = 1;
-  if args.dryRun:
-    __prog_option_dry_run = 1;
-  if args.deleteNFO:
-    __prog_option_delete_NFO = 1;
-  if args.printReport:
-    __prog_option_print_report = 1;
+  if args.logto:
+    __prog_option_log = 1;
+    __prog_option_log_filename = args.logto[0];
+  if args.dryRun:      __prog_option_dry_run = 1;
+  if args.generateNFO: __prog_option_generate_NFO = 1;
+  if args.withArtWork: __prog_option_withArtWork = 1;
+  if args.cleanROMs:   __prog_option_cleanROMs = 1;
 
   # --- Positional arguments that don't require parsing of the config file
-  if args.command == 'usage':
+  command = args.command[0];
+  if command == 'usage':
     do_printHelp();
     sys.exit(0);
 
@@ -880,35 +974,43 @@ def main(argv):
   configuration = parse_File_Config();
 
   # --- Positional arguments
-  # TODO: merge list and list-long into one function, list. list-long
-  # is list with --verbose switch.
-  if args.command == 'list':
+  if command == 'list':
     do_list();
     
-  elif args.command == 'list-long':
-    do_list_long();
+  elif command == 'list-nointro':
+    if args.romSetName == None:
+      print_error('romSetName required');
+      sys.exit(10);
+    do_list_nointro(args.romSetName);
+
+  elif command == 'check-nointro':
+    if args.romSetName == None:
+      print_error('romSetName required');
+      sys.exit(10);
+    do_check_nointro(args.romSetName);
     
-  elif args.command == 'taglist':
+  elif command == 'taglist':
     if args.romSetName == None:
-      print 'romSetName required';
+      print_error('romSetName required');
       sys.exit(10);
-    do_taglist(configFile);
+    do_taglist(args.romSetName);
 
-  elif args.command == 'copy':
+  elif command == 'copy':
     if args.romSetName == None:
-      print 'romSetName required';
+      print_error('romSetName required');
       sys.exit(10);
-    do_update(configFile);
+    do_update(args.romSetName);
 
-  elif args.command == 'update':
+  elif command == 'update':
     __prog_option_sync = 1;
     if args.romSetName == None:
-      print 'romSetName required';
+      print_error('romSetName required');
       sys.exit(10);
-    do_update(configFile);  
+    do_update(args.romSetName);  
 
   else:
-    pprint(Log.error, 'Unrecognised command');
+    print_error('Unrecognised command');
+    sys.exit(1);
 
   sys.exit(0);
 
