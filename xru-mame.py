@@ -1669,7 +1669,7 @@ def main(argv):
 
   # --- Read configuration file
   global configuration; # Needed to modify global copy of globvar
-  configuration = parse_File_Config(); 
+  configuration = parse_File_Config();
 
   # --- Positional arguments that required the configuration file
   if command == 'reduce-XML':
@@ -1689,19 +1689,19 @@ def main(argv):
 
   elif command == 'copy':
     if args.filterName == None:
-      print 'filterName required';
+      print_error('filterName required');
       sys.exit(10);
     do_copy_ROMs(args.filterName);
 
   elif command == 'update':
     if args.filterName == None:
-      print 'filterName required';
+      print_error('filterName required');
       sys.exit(10);
     __prog_option_sync = 1;
     do_copy_ROMs(args.filterName);  
 
   else:
-    print 'Unrecognised command';
+    print_error('Unrecognised command');
     sys.exit(1);
 
   sys.exit(0);
