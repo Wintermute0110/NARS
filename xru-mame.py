@@ -1,10 +1,25 @@
 #!/usr/bin/python
 # XBMC ROM utilities - MAME version
-# Wintermute0110 <wintermute0110@gmail.com>
 
-# MAME XML is written by this file:
-#   http://www.mamedev.org/source/src/emu/info.c.html
-
+# Copyright (c) 2014 Wintermute0110 <wintermute0110@gmail.com>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 import sys, os, re, shutil
 import operator, argparse
 import xml.etree.ElementTree as ET
@@ -12,37 +27,42 @@ import xml.etree.ElementTree as ET
 # Minidom does a much better job
 from xml.dom import minidom
 
-# --- Global variables
-__config_configFileName = 'xru-mame-config.xml';
+# MAME XML is written by this file:
+#   http://www.mamedev.org/source/src/emu/info.c.html
 
-# Config file options global class (like a C struct)
+# --- Global variables
+__software_version = '0.1.0';
+__config_configFileName = 'xru-mame-config.xml';
+__config_logFileName = 'xru-mame-log.txt';
+
+# --- Config file options global class (like a C struct)
 class ConfigFile:
   pass
 class ConfigFileFilter:
   pass
 configuration = ConfigFile();
 
-# Program options (from command line)
+# --- Program options (from command line)
+__prog_option_log = 0;
 __prog_option_dry_run = 0;
-__prog_option_print_report = 0;
 __prog_option_generate_NFO = 0;
 __prog_option_withArtWork = 0;
 __prog_option_cleanROMs = 0;
 __prog_option_sync = 0;
 
 # --- Global DEBUG variables
-__debug_propertyParsers = 0;
-__debug_copy_ROM_file = 0;
-__debug_main_ROM_list = 0;
-__debug_filtered_ROM_list = 1;
+# TODO: debug variables should be where the debug functions are, not here
+# Comment them and check when the program fails
+# __debug_propertyParsers = 0;
+# __debug_copy_ROM_file = 0;
+# __debug_main_ROM_list = 0;
+# __debug_filtered_ROM_list = 1;
+# __debug_config_file_parser = 0;
+# __debug_apply_MAME_filters = 1;
 
-__debug_config_file_parser = 0;
-__debug_parse_MAME_XML_reading = 0;
-__debug_apply_MAME_filters = 1;
-
-# =============================================================================
+# -----------------------------------------------------------------------------
 # DEBUG functions
-# =============================================================================
+# -----------------------------------------------------------------------------
 def dumpclean(obj):
   if type(obj) == dict:
     for k, v in obj.items():
@@ -60,48 +80,102 @@ def dumpclean(obj):
   else:
       print obj
 
-# =============================================================================
-# Filesystem interaction functions
-# =============================================================================
-def copy_ArtWork_file(fileName, sourceDir, destDir):
-  if sourceDir[-1] != '/':
-    sourceDir = sourceDir + '/';
-  if destDir[-1] != '/':
-    destDir = destDir + '/';
+# -----------------------------------------------------------------------------
+# Logging functions
+# -----------------------------------------------------------------------------
+class Log():
+  error = 1
+  warn = 2
+  info = 3
+  verb = 4  # Verbose: -v
+  vverb = 5 # Very verbose: -vv
+  debug = 6 # Debug: -vvv
 
+# ---  Console print and logging
+f_log = 0;
+log_level = 3;
+
+def change_log_level(level):
+  global log_level;
+
+  log_level = Log.verb;
+
+# --- Print/log to a specific level  
+def pprint(level, print_str):
+  global f_log;
+  global log_level;
+
+  # --- If file descriptor not open, open it
+  if __prog_option_log:
+    if f_log == 0:
+      f_log = open(__config_logFileName, 'w')
+
+  # --- Write to console depending on verbosity
+  if level <= log_level:
+    print print_str;
+
+  # --- Write to file
+  if __prog_option_log:
+    if level <= log_level:
+      if print_str[-1] != '\n':
+        print_str += '\n';
+      f_log.write(print_str) # python will convert \n to os.linesep
+
+# --- Some useful function overloads
+def print_error(print_str):
+  pprint(Log.error, print_str);
+
+def print_warn(print_str):
+  pprint(Log.warn, print_str);
+
+def print_info(print_str):
+  pprint(Log.info, print_str);
+
+def print_verb(print_str):
+  pprint(Log.verb, print_str);
+
+def print_vverb(print_str):
+  pprint(Log.vverb, print_str);
+
+def print_debug(print_str):
+  pprint(Log.debug, print_str);
+
+# -----------------------------------------------------------------------------
+# Filesystem interaction functions
+# -----------------------------------------------------------------------------
+# Returns:
+#  0 - ArtWork file found in sourceDir and copied
+#  1 - ArtWork file not found in sourceDir
+def copy_ArtWork_file(fileName, sourceDir, destDir):
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
-  
-  # Maybe artwork does not exist...
-  if not os.path.isfile(sourceFullFilename):
-    # Then do nothing
-    return;
 
-  print '[Copy] ' + fileName;
-  if __debug_copy_ROM_file:
-    print '  Copying ' + sourceFullFilename;
-    print '  Into    ' + destFullFilename;
-  
+  # Maybe artwork does not exist... Then do nothing
+  if not os.path.isfile(sourceFullFilename):
+    return 1;
+
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print "copy_ROM_file >> Error happened";
+      print_debug("copy_ArtWork_file >> Error happened");
 
+  return 0;
+
+# Returns:
+#  0 - ArtWork file found in sourceDir and copied
+#  1 - ArtWork file not found in sourceDir
+#  2 - ArtWork file found in sourceDir and destDir, same size so not copied
 def update_ArtWork_file(fileName, sourceDir, destDir):
-  if sourceDir[-1] != '/':
-    sourceDir = sourceDir + '/';
-  if destDir[-1] != '/':
-    destDir = destDir + '/';
-
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
   
   existsSource = os.path.isfile(sourceFullFilename);
   existsDest = os.path.isfile(destFullFilename);
-  # Maybe artwork does not exist...
-  if not existsSource:
-    # Then do nothing
+  # Maybe artwork does not exist... Then do nothing
+  if not os.path.isfile(sourceFullFilename):
     return 1;
 
   sizeSource = os.path.getsize(sourceFullFilename);
@@ -110,58 +184,44 @@ def update_ArtWork_file(fileName, sourceDir, destDir):
   else:
     sizeDest = -1;
 
-  # If sizes are equal
+  # If sizes are equal Skip copy and return 1
   if sizeSource == sizeDest:
-    # Skip copy and return 1
-    return 1;
+    return 2;
 
   # destFile does not exist or sizes are different, copy.
-  print '[Copy] ' + fileName;
-  if __debug_copy_ROM_file:
-    print '  Copying ' + sourceFullFilename;
-    print '  Into    ' + destFullFilename;
-  
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print "copy_ROM_file >> Error happened";
+      print_debug("update_ArtWork_file >> Error happened");
 
   return 0
 
 def copy_ROM_file(fileName, sourceDir, destDir):
-  if sourceDir[-1] != '/':
-    sourceDir = sourceDir + '/';
-  if destDir[-1] != '/':
-    destDir = destDir + '/';
-
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
-  
-  print '[Copy] ' + fileName;
-  if __debug_copy_ROM_file:
-    print '  Copying ' + sourceFullFilename;
-    print '  Into    ' + destFullFilename;
-  
+
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print "copy_ROM_file >> Error happened";
+      print_debug("copy_ROM_file >> Error happened");
 
+# Returns:
+#  0 - File copied (sizes different)
+#  1 - File not copied (updated)
 def update_ROM_file(fileName, sourceDir, destDir):
-  if sourceDir[-1] != '/':
-    sourceDir = sourceDir + '/';
-  if destDir[-1] != '/':
-    destDir = destDir + '/';
-
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
-  
+
   existsSource = os.path.isfile(sourceFullFilename);
   existsDest = os.path.isfile(destFullFilename);
   if not existsSource:
-    print "Source file not found";
+    print_error("Source file not found");
     sys.exit(10);
 
   sizeSource = os.path.getsize(sourceFullFilename);
@@ -170,50 +230,298 @@ def update_ROM_file(fileName, sourceDir, destDir):
   else:
     sizeDest = -1;
 
-  # If sizes are equal
+  # If sizes are equal. Skip copy and return 1
   if sizeSource == sizeDest:
-    # Skip copy and return 1
     return 1;
 
   # destFile does not exist or sizes are different, copy.
-  print '[Copy] ' + fileName;
-  if __debug_copy_ROM_file:
-    print '  Copying ' + sourceFullFilename;
-    print '  Into    ' + destFullFilename;
-  
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print "copy_ROM_file >> Error happened";
+      print_debug("update_ROM_file >> Error happened");
 
-  return 0
+  return 0;
 
+# This function either succeeds or aborts the program. Check if file exists
+# before calling this.
 def delete_ROM_file(fileName, dir):
-  if dir[-1] != '/':
-    dir = dir + '/';
-
   fullFilename = dir + fileName;
-  print '[Delete] ' + fileName;
 
   if not __prog_option_dry_run:
     try:
       os.remove(fullFilename);
     except EnvironmentError:
-      print "delete_ROM_file >> Error happened";
+      print_debug("delete_ROM_file >> Error happened");
 
 def exists_ROM_file(fileName, dir):
-  if dir[-1] != '/':
-    dir = dir + '/';
-
   fullFilename = dir + fileName;
 
   return os.path.isfile(fullFilename);
 
-# =============================================================================
+# -----------------------------------------------------------------------------
+def copy_ROM_list(rom_list, sourceDir, destDir):
+  print_info('[Copying ROMs into destDir]');
+  num_steps = len(rom_list);
+  # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
+  step = 0;
+
+  for rom_copy_item in rom_list:
+    # Update progress
+    romFileName = rom_copy_item + '.zip';
+    percentage = 100 * step / num_steps;
+    sys.stdout.write(' {:3d}%'.format(percentage));
+
+    # Copy file (this function succeeds or aborts program)
+    copy_ROM_file(romFileName, sourceDir, destDir);
+    print_info(' <Copied> ' + romFileName);
+    sys.stdout.flush()
+
+    # Update progress
+    step += 1;
+
+def update_ROM_list(rom_list, sourceDir, destDir):
+  print_info('[Updating ROMs into destDir]');
+  num_steps = len(rom_list);
+  # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
+  step = 0;
+
+  for rom_copy_item in rom_list:
+    # Update progress
+    romFileName = rom_copy_item + '.zip';
+    percentage = 100 * step / num_steps;
+    sys.stdout.write(' {:3d}%'.format(percentage));
+
+    # Copy file (this function succeeds or aborts program)
+    ret = update_ROM_file(romFileName, sourceDir, destDir);
+    if ret == 0:
+      print_info(' <Copied > ' + romFileName);
+    elif ret == 1:
+      print_info(' <Updated> ' + romFileName);
+    else:
+      print_error('Wrong value returned by update_ROM_file()');
+      sys.exit(10);
+    sys.stdout.flush()
+
+    # Update progress
+    step += 1;
+
+def copy_ArtWork_list(filter_config, rom_copy_dic):
+  print_info('[Copying ArtWork]');
+  fanartSourceDir = filter_config.fanartSourceDir;
+  fanartDestDir = filter_config.fanartDestDir;
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  thumbsDestDir = filter_config.thumbsDestDir;
+  for rom_copy_item in rom_copy_dic:
+    romFileName = rom_copy_item + '.png';
+    # --- Thumbs
+    ret = copy_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
+    if ret == 0:
+      print_info(' <Copied Thumb  > ' + romFileName);
+    elif ret == 1:
+      print_info(' <Missing Thumb > ' + romFileName);    
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+    # --- Fanart
+    ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
+    if ret == 0:
+      print_info(' <Copied Fanart > ' + romFileName);
+    elif ret == 1:
+      print_info(' <Missing Fanart> ' + romFileName);    
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+
+def update_ArtWork_list(filter_config, rom_copy_dic):
+  print_info('[Updating ArtWork]');
+  fanartSourceDir = filter_config.fanartSourceDir;
+  fanartDestDir = filter_config.fanartDestDir;
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  thumbsDestDir = filter_config.thumbsDestDir;
+  for rom_copy_item in rom_copy_dic:
+    romFileName = rom_copy_item + '.png';
+    # --- Thumbs
+    ret = update_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
+    if ret == 0:
+      print_info(' <Copied  Thumb > ' + romFileName);
+    elif ret == 1:
+      print_info(' <Missing Thumb > ' + romFileName);
+    elif ret == 2:
+      print_info(' <Updated Thumb > ' + romFileName);    
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+    # --- Fanart
+    ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
+    if ret == 0:
+      print_info(' <Copied  Fanart> ' + romFileName);
+    elif ret == 1:
+      print_info(' <Missing Fanart> ' + romFileName);
+    elif ret == 2:
+      print_info(' <Updated Fanart> ' + romFileName);    
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+
+def clean_ROMs_destDir(destDir, rom_copy_dic):
+  print_info('[Cleaning ROMs in ROMsDest]');
+
+  # --- Delete ROMs present in destDir not present in the filtered list
+  for file in os.listdir(destDir):
+    if file.endswith(".zip"):
+      basename, ext = os.path.splitext(file); # Remove extension
+      if basename not in rom_copy_dic:
+        delete_ROM_file(file, destDir);
+        print_info(' <Deleted> ' + file);
+
+# -----------------------------------------------------------------------------
+# Configuration file functions
+# -----------------------------------------------------------------------------
+def parse_File_Config():
+  "Parses configuration file"
+  print_info('[Parsing config file]');
+  try:
+    tree = ET.parse(__config_configFileName);
+  except IOError:
+    print_error('[ERROR] cannot find file ' + __config_configFileName);
+    sys.exit(10);
+  root = tree.getroot();
+
+  # - This iterates through the collections
+  configFile = ConfigFile();
+
+  # --- Main configuration options (default to empty string)
+  configFile.MAME_XML = '';
+  configFile.MAME_XML_redux = '';
+  configFile.Catver = '';
+  configFile.MergedInfo_XML = '';
+  configFile.filter_dic = {};
+
+  # --- Parse general options
+  general_tag_found = 0;
+  for root_child in root:
+    if root_child.tag == 'General':
+      general_tag_found = 1;
+      for general_child in root_child:
+        if general_child.tag == 'MAME_XML':
+          configFile.MAME_XML = general_child.text;
+        elif general_child.tag == 'MAME_XML_redux':
+          configFile.MAME_XML_redux = general_child.text;
+        elif general_child.tag == 'Catver':
+          configFile.Catver = general_child.text;
+        elif general_child.tag == 'MergedInfo':
+          configFile.MergedInfo_XML = general_child.text;
+        else:
+          print_error('Unrecognised tag inside <General>');
+          sys.exit(10);
+  if not general_tag_found:
+    print_error('Configuration error. <General> tag not found');
+    sys.exit(10);
+
+  # --- Parse filters
+  for root_child in root:
+    if root_child.tag == 'MAMEFilter':
+      print_debug('<MAMEFilter>');
+      if 'name' in root_child.attrib:
+        filter_class = ConfigFileFilter();
+        filter_class.name = root_child.attrib['name'];
+        print_debug(' name = ' + filter_class.name);
+        sourceDirFound = 0;
+        destDirFound = 0;
+        # - Initialise variables for the ConfigFileFilter object
+        #   to avoid None objects later.
+        for filter_child in root_child:
+          if filter_child.tag == 'ROMsSource':
+            print_debug(' ROMsSource = ' + filter_child.text);
+            sourceDirFound = 1;
+            # - Make sure all directory names end in slash
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.sourceDir = tempDir;
+
+          elif filter_child.tag == 'ROMsDest':
+            print_debug(' ROMsDest = ' + filter_child.text);
+            destDirFound = 1;
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.destDir = tempDir;
+
+          elif filter_child.tag == 'FanartSource':
+            print_debug(' FanartSource = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.fanartSourceDir = tempDir;
+
+          elif filter_child.tag == 'FanartDest':
+            print_debug(' FanartDest = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.fanartDestDir = tempDir;
+
+          elif filter_child.tag == 'ThumbsSource':
+            print_debug(' ThumbsSource = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.thumbsSourceDir = tempDir;
+
+          elif filter_child.tag == 'ThumbsDest':
+            print_debug(' ThumbsDest = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.thumbsDestDir = tempDir;
+            
+          elif filter_child.tag == 'MainFilter':
+            print_debug(' MainFilter = ' + filter_child.text);
+            text_string = filter_child.text;
+            list = text_string.split(",");
+            filter_class.mainFilter = trim_list(list);
+
+          elif filter_child.tag == 'Driver':
+            print_debug(' Driver = ' + filter_child.text);
+            text_string = filter_child.text;
+            list = text_string.split(",");
+            filter_class.driver = trim_list(list);
+
+          elif filter_child.tag == 'MachineType':
+            print_debug(' MachineType = ' + filter_child.text);
+            text_string = filter_child.text;
+            list = text_string.split(",");
+            filter_class.machineType = trim_list(list);
+
+          elif filter_child.tag == 'Categories':
+            print_debug(' Categories = ' + filter_child.text);
+            text_string = filter_child.text;
+            if text_string != None:
+              list = text_string.split(",");
+              filter_class.categories = trim_list(list);
+            else:
+              filter_class.categories = '';
+          else:
+            print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
+            sys.exit(10);
+
+        # - Check for errors in this filter
+        if not sourceDirFound:
+          print_error('ROMsSource directory not found in config file');
+          sys.exit(10);
+        if not destDirFound:
+          print_error('ROMsDest directory not found in config file');
+          sys.exit(10);
+
+        # - Aggregate filter to configuration main variable
+        configFile.filter_dic[filter_class.name] = filter_class;
+      else:
+        print_error('<MAMEFilter> tag does not have name attribute');
+        sys.exit(10);
+  
+  return configFile;
+
+# -----------------------------------------------------------------------------
 # Misc functions
-# =============================================================================
-#
+# -----------------------------------------------------------------------------
 # A class to store the MAME parent/clone main list
 #
 class ROM:
@@ -228,143 +536,14 @@ def trim_list(input_list):
 
   return input_list;
 
-def parse_File_Config():
-  "Parses configuration file"
-
-  print '[Parsing config file]';
-  tree = ET.parse(__config_configFileName);
-  root = tree.getroot();
-
-  # - This iterates through the collections
-  configFile = ConfigFile();
-
-  # --- Main configuration options (default to empty string)
-  configFile.MAME_XML = '';
-  configFile.MAME_XML_redux = '';
-  configFile.Catver = '';
-  configFile.NPlayers = '';
-  configFile.MergedInfo_XML = '';
-  configFile.filter_dic = {};
-
-  # --- Parse general options
-  general_tag_found = 0;
-  for root_child in root:
-    if root_child.tag == 'General':
-      general_tag_found = 1;
-      for general_child in root_child:
-        if general_child.tag == 'MAME_XML':         configFile.MAME_XML = general_child.text;
-        elif general_child.tag == 'MAME_XML_redux': configFile.MAME_XML_redux = general_child.text;
-        elif general_child.tag == 'Catver':         configFile.Catver = general_child.text;
-        elif general_child.tag == 'NPlayers':       configFile.NPlayers = general_child.text;
-        elif general_child.tag == 'MergedInfo':     configFile.MergedInfo_XML = general_child.text;
-        else:
-          print 'Unrecognised tag inside <General>';
-          sys.exit(10);
-  if not general_tag_found:
-    print 'Configuration error. <General> tag not found';
-    sys.exit(10);
-
-  # --- Parse filters
-  for root_child in root:
-    if root_child.tag == 'MAMEFilter':
-      if __debug_config_file_parser: print '<MAMEFilter>';
-      if 'name' in root_child.attrib:
-        filter_class = ConfigFileFilter();
-        filter_class.name = root_child.attrib['name'];
-        if __debug_config_file_parser: print ' name = ' + filter_class.name;
-        sourceDirFound = 0;
-        destDirFound = 0;
-        for filter_child in root_child:
-          if filter_child.tag == 'ROMsSource':
-            if __debug_config_file_parser: print ' ROMsSource = ' + filter_child.text;
-            sourceDirFound = 1;
-            filter_class.sourceDir = filter_child.text
-
-          elif filter_child.tag == 'ROMsDest':
-            if __debug_config_file_parser: print ' ROMsDest = ' + filter_child.text;
-            destDirFound = 1;
-            filter_class.destDir = filter_child.text
-
-          elif filter_child.tag == 'FanartSource':
-            if __debug_config_file_parser: print ' FanartSource = ' + filter_child.text;
-            sourceDirFound = 1;
-            filter_class.fanartSourceDir = filter_child.text
-
-          elif filter_child.tag == 'FanartDest':
-            if __debug_config_file_parser: print ' FanartDest = ' + filter_child.text;
-            destDirFound = 1;
-            filter_class.fanartDestDir = filter_child.text
-
-          elif filter_child.tag == 'ThumbsSource':
-            if __debug_config_file_parser: print ' ThumbsSource = ' + filter_child.text;
-            sourceDirFound = 1;
-            filter_class.thumbsSourceDir = filter_child.text
-
-          elif filter_child.tag == 'ThumbsDest':
-            if __debug_config_file_parser: print ' ThumbsDest = ' + filter_child.text;
-            destDirFound = 1;
-            filter_class.thumbsDestDir = filter_child.text
-            
-          elif filter_child.tag == 'MainFilter':
-            if __debug_config_file_parser: print ' MainFilter = ' + filter_child.text;
-            text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.mainFilter = trim_list(list);
-
-          elif filter_child.tag == 'Driver':
-            if __debug_config_file_parser: print ' Driver = ' + filter_child.text;
-            text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.driver = trim_list(list);
-
-          elif filter_child.tag == 'MachineType':
-            if __debug_config_file_parser: print ' MachineType = ' + filter_child.text;
-            text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.machineType = trim_list(list);
-
-          elif filter_child.tag == 'Categories':
-            if __debug_config_file_parser: print ' Categories = ' + filter_child.text;
-            text_string = filter_child.text;
-            if text_string != None:
-              list = text_string.split(",");
-              filter_class.categories = trim_list(list);
-            else:
-              filter_class.categories = '';
-          else:
-            print 'Unrecognised tag inside <MAMEFilter>';
-            sys.exit(10);
-
-        # Check for errors in this
-        if not sourceDirFound:
-          print 'source directory not found in config file';
-          sys.exit(10);
-        if not destDirFound:
-          print 'destination directory not found in config file';
-          sys.exit(10);
-
-        # Aggregate filter to configuration main variable
-        configFile.filter_dic[filter_class.name] = filter_class;
-      else:
-        print 'MAMEFilter tag does not have name attribute';
-        sys.exit(10);
-
-  if __debug_config_file_parser:
-    print 'filterUpTags   :', configFile.filterUpTags;
-    print '\n';
-
-  # --- Check for errors
-
-  return configFile;
-
 def parse_catver_ini():
-  "Parses Catver.ini and returns a"
+  "Parses Catver.ini and returns a ..."
   
   # --- Parse Catver.ini
   # --- Create a histogram with the categories
-  print '[Parsing Catver.ini]';
+  print_info('[Parsing Catver.ini]');
   cat_filename = configuration.Catver;
-  print ' Opening ' + cat_filename;
+  print_verb(' Opening ' + cat_filename);
   final_categories_dic = {};
   f = open(cat_filename, 'r');
   # 0 -> Looking for '[Category]' tag
@@ -409,7 +588,7 @@ def parse_catver_ini():
     elif read_status == 2:
       break;
     else:
-      print 'Unknown read_status FSM value';
+      print_error('Unknown read_status FSM value');
       sys.exit(10);
   f.close();
 
@@ -418,11 +597,17 @@ def parse_catver_ini():
 def parse_MAME_merged_XML():
   "Parses a MAME merged XML and creates a parent/clone list"
   filename = configuration.MergedInfo_XML;
-  print '[Parsing MAME merged XML]';
-  print " Parsing MAME merged XML file '" + filename + "'...";
-  tree = ET.parse(filename);
-  print ' Done!';
-  
+  print_info('[Parsing MAME merged XML]');
+  print " Parsing MAME merged XML file " + filename + "...",;
+  sys.stdout.flush();
+  try:
+    tree = ET.parse(filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + input_filename);
+    sys.exit(10);
+  print ' done';
+
   # --- Raw list: literal information from the XML
   rom_raw_dict = {};
   root = tree.getroot();
@@ -437,8 +622,7 @@ def parse_MAME_merged_XML():
       game_attrib = game_EL.attrib;
       romName = game_attrib['name'];
       romObject = ROM(romName);
-      if __debug_parse_MAME_XML_reading:
-        print 'game = ' + romName;
+      print_debug('game = ' + romName);
 
       # --- Check game attributes and create variables for filtering
       # Parent or clone
@@ -446,8 +630,7 @@ def parse_MAME_merged_XML():
         num_clones += 1;
         romObject.cloneof = game_attrib['cloneof'];
         romObject.isclone = 1;
-        if __debug_parse_MAME_XML_reading:
-          print ' Clone of = ' + game_attrib['cloneof'];
+        print_debug(' Clone of = ' + game_attrib['cloneof']);
       else:
         num_parents += 1;
         romObject.isclone = 0;
@@ -470,16 +653,16 @@ def parse_MAME_merged_XML():
         romObject.runnable = 1; # Runnable defaults to 1
         
       # Are all devices non runnable?
-      # In MAME 0.153b, when there is the attribute 'isdevice' there is also 'runnable'
-      # Also, if isdevice = yes => runnable = no
+      # In MAME 0.153b, when there is the attribute 'isdevice' there is also
+      # 'runnable'. Also, if isdevice = yes => runnable = no
       if romObject.isdevice == 1 and romObject.runnable == 1:
-        print 'Found a ROM which is device and runnable';
+        print_error('Found a ROM which is device and runnable');
         sys.exit(10);
       if 'isdevice' in game_attrib and 'runnable' not in game_attrib:
-        print 'isdevice but NOT runnable';
+        print_error('isdevice but NOT runnable');
         sys.exit(10);
       if 'isdevice' not in game_attrib and 'runnable' in game_attrib:
-        print 'NOT isdevice but runnable';
+        print_error('NOT isdevice but runnable');
         sys.exit(10);
 
       # Samples
@@ -506,7 +689,8 @@ def parse_MAME_merged_XML():
         driverName = driverName[:-2];
         romObject.sourcefile = driverName;
       else:
-        romObject.sourcefile = 'unknown'; # sourcefile (driver) defaults to unknown
+        # sourcefile (driver) defaults to unknown
+        romObject.sourcefile = 'unknown';
 
       # --- Parse child tags
       for child_game in game_EL:
@@ -519,8 +703,7 @@ def parse_MAME_merged_XML():
           # good games are perfectly emulated
           if 'status' in driver_attrib:
             romObject.driver_status = driver_attrib['status'];
-            if __debug_parse_MAME_XML_reading:
-              print ' Driver status = ' + driver_attrib['status'];
+            print_debug(' Driver status = ' + driver_attrib['status']);
           else:
             romObject.driver_status = 'unknown';
 
@@ -538,9 +721,9 @@ def parse_MAME_merged_XML():
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
   del tree;
-  print ' Total number of games = ' + str(num_games);
-  print ' Number of parents = ' + str(num_parents);
-  print ' Number of clones = ' + str(num_clones);
+  print_info(' Total number of games = ' + str(num_games));
+  print_info(' Number of parents = ' + str(num_parents));
+  print_info(' Number of clones = ' + str(num_clones));
 
   # --- Create a parent-clone list
   # NOTE: a parent/clone hierarchy is not needed for MAME. In the ROM list
@@ -556,21 +739,21 @@ def get_Filter_Config(filterName):
     if key == filterName:
       return configuration.filter_dic[key];
   
-  print 'get_Filter_Config >> filter name not found in configuration file';
+  print_error('get_Filter_Config >> filter ' + filterName + 'not found in configuration file');
   sys.exit(20);
 
 # __debug_apply_MAME_filters
 def apply_MAME_filters(mame_xml_dic, filter_config):
   "Apply filters to main parent/clone dictionary"
-
-  print '[Applying MAME filters]';
+  print_info('[Applying MAME filters]');
+  print_info(' NOTE: -vv if you want to see filters in action');
   
   # --- Default filters: remove crap
   # What is "crap"?
   # a) devices <game isdevice="yes" runnable="no"> 
   #    Question: isdevice = yes implies runnable = no? In MAME 0.153b XML yes!
   mame_filtered_dic = {};
-  print '[Default filter, removing devices]';
+  print_info(' >> Default filter, removing devices');
   filtered_out_games = 0;
   for key in mame_xml_dic:
     romObject = mame_xml_dic[key];
@@ -578,14 +761,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       filtered_out_games += 1;
       continue;
     mame_filtered_dic[key] = mame_xml_dic[key];
-  print ' Removed   = ' + str(filtered_out_games) + \
-        ' / Remaining = ' + str(len(mame_filtered_dic));
+  print_info(' Removed   = ' + str(filtered_out_games) + \
+             ' / Remaining = ' + str(len(mame_filtered_dic)));
 
   # --- Apply MainFilter: NoClones
   # This is a special filter, and MUST be done first.
   # Also, remove crap like chips, etc.
   if 'NoClones' in filter_config.mainFilter:
-    print '[Filtering out clones]';
+    print_info(' >> Filtering out clones');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -596,15 +779,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         filtered_out_games += 1;
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games) + \
-          ' / Remaining = ' + str(len(mame_filtered_dic));
+    print_info(' Removed   = ' + str(filtered_out_games) + \
+               ' / Remaining = ' + str(len(mame_filtered_dic)));
   else:
-    print '[User wants clones]';
-
+    print_info(' >> NOT filtering clones');
 
   # --- Apply MainFilter: NoSamples
   if 'NoSamples' in filter_config.mainFilter:
-    print '[Filtering out games with samples]';
+    print_info(' >> Filtering out games with samples');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -615,14 +797,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games) + \
-          ' / Remaining = ' + str(len(mame_filtered_dic));
+    print_info(' Removed   = ' + str(filtered_out_games) + \
+               ' / Remaining = ' + str(len(mame_filtered_dic)));
   else:
-    print '[User wants games with samples]';
+    print_info(' >> NOT filtering samples');
 
   # --- Apply MainFilter: NoMechanical
   if 'NoMechanical' in filter_config.mainFilter:
-    print '[Filtering out mechanical games]';
+    print_info(' >> Filtering out mechanical games');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -633,14 +815,16 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games) + \
-          ' / Remaining = ' + str(len(mame_filtered_dic));
+    print_info(' Removed   = ' + str(filtered_out_games) + \
+               ' / Remaining = ' + str(len(mame_filtered_dic)));
   else:
-    print '[User wants mechanical games]';
+    print_info(' >> User wants mechanical games');
 
   # --- Apply MainFilter: NoNonworking
   # http://www.mamedev.org/source/src/emu/info.c.html
-  # <driver color="good" emulation="good" graphic="good" savestate="supported" sound="good" status="good"/> 
+  # <driver color="good" emulation="good" graphic="good" 
+  #         savestate="supported" sound="good" status="good"/> 
+  #
   # /* The status entry is an hint for frontend authors */
   # /* to select working and not working games without */
   # /* the need to know all the other status entries. */
@@ -649,7 +833,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # /* some minor issues, games marked as status=preliminary */
   # /* don't work or have major emulation problems. */
   if 'NoNonworking' in filter_config.mainFilter:
-    print '[Filtering out Non Working games]';
+    print_info(' >> Filtering out Non-Working games');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -660,15 +844,15 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games) + \
-          ' / Remaining = ' + str(len(mame_filtered_dic));
+    print_info(' Removed   = ' + str(filtered_out_games) + \
+               ' / Remaining = ' + str(len(mame_filtered_dic)));
   else:
-    print '[User wants Non Working games]';
+    print_info(' >> User wants Non-Working games');
 
   # --- Apply Driver filter
   __debug_apply_MAME_filters_Driver_tag = 0;
   if filter_config.driver is not None and filter_config.driver is not '':
-    print '[Filtering Drivers]';
+    print_info(' >> Filtering Drivers');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -689,13 +873,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
             not_operator = 1;
             f_string = fsub_list[1];
           else:
-            print 'Logical operator is not "not"';
+            print_error('Logical operator is not "not"');
             sys.exit(10);
         elif len(fsub_list) == 1:
           not_operator = 0;
           f_string = fsub_list[0];
         else:
-          print 'Wrong number of tokens in Driver filter string';
+          print_error('Wrong number of tokens in Driver filter string');
           sys.exit(10);
 
         # Do filter
@@ -708,23 +892,27 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print 'Boolean array =', boolean_list
       # Check built in all and any functions
       # Check https://docs.python.org/2/library/functions.html#all
-      # If all the items in the boolean_list are true the game is copied (not filtered)
+      # If all items in boolean_list are true the game is copied (not filtered)
       # If not all items are true, the game is NOT copied (filtered)
       if not all(boolean_list):
         filtered_out_games += 1;
+        print_vverb(' FILTERED ' + key + ' driver ' + driverName);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_vverb(' Included ' + key + ' driver ' + driverName);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games) + \
-          ' / Remaining = ' + str(len(mame_filtered_dic));
-    
+    print_info(' Removed   = ' + str(filtered_out_games) + \
+               ' / Remaining = ' + str(len(mame_filtered_dic)));
+  else:
+    print_info(' >> User wants all drivers');
+
   # --- Apply Categories filter
   __debug_apply_MAME_filters_Category_tag = 0;
   if hasattr(filter_config, 'categories') and \
              filter_config.categories is not None and \
              filter_config.categories is not '':
-    print '[Filtering Categories]';
+    print_info('[Filtering Categories]');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -751,13 +939,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
             not_operator = 1;
             f_string = fsub_list[1];
           else:
-            print 'Logical operator is not "not"';
+            print_error('Logical operator is not "not"');
             sys.exit(10);
         elif len(fsub_list) == 1:
           not_operator = 0;
           f_string = fsub_list[0];
         else:
-          print 'Logical error';
+          print_error('Logical error');
           sys.exit(10);
 
         # Do filter
@@ -775,19 +963,18 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print ' Removed   = ' + str(filtered_out_games) + \
-          ' / Remaining = ' + str(len(mame_filtered_dic));
+    print_info(' Removed   = ' + str(filtered_out_games) + \
+               ' / Remaining = ' + str(len(mame_filtered_dic)));
   else:
-    print '[User wants all drivers]';
-  
+    print_info(' >> User wants all categories');
+
   return mame_filtered_dic;
 
 # rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
 def create_copy_list(mame_filtered_dic, rom_main_list):
   "With list of filtered ROMs and list of source ROMs, create list of files to be copied"
-  __debug_create_copy_list = 0;
 
-  print '[Creating list of ROMs to be copied/updated]';
+  print_info('[Creating list of ROMs to be copied/updated]');
   copy_list = [];
   num_added_roms = 0;
   for key_rom_main in rom_main_list:
@@ -796,10 +983,9 @@ def create_copy_list(mame_filtered_dic, rom_main_list):
     if rom_name in mame_filtered_dic:
       copy_list.append(rom_name);
       num_added_roms += 1;
-      if __debug_create_copy_list:
-        print '[Added ROM] ' + rom_name;
-  print ' Added ' + str(num_added_roms) + ' ROMs';
-  
+      print_verb(' Added ROM ' + rom_name);
+  print_info(' Added ' + str(num_added_roms) + ' ROMs');
+
   return copy_list;
 
 def get_ROM_main_list(sourceDir):
@@ -807,7 +993,7 @@ def get_ROM_main_list(sourceDir):
   __debug_get_ROM_main_list = 0;
   
   # --- Parse sourceDir ROM list and create main ROM list
-  print '[Reading ROMs in source directory]';
+  print_info('[Reading ROMs in source directory]');
   romMainList_dict = {};
   for file in os.listdir(sourceDir):
     if file.endswith(".zip"):
@@ -822,25 +1008,80 @@ def get_ROM_main_list(sourceDir):
 
   return romMainList_dict;
 
+def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
+  "Generates game information files (NFO) in destDir"
 
-# =============================================================================
+  print_info('[Generating NFO files]');
+  for rom_name in rom_copy_dic:
+    romObj = mame_filtered_dic[rom_name];
+    NFO_filename = rom_name + '.nfo';
+    NFO_full_filename =  destDir + NFO_filename;
+
+    # --- XML structure
+    tree_output = ET.ElementTree();
+    root_output = a = ET.Element('game');
+    tree_output._setroot(root_output);
+    
+    # <title>1944 - The Loop Master</title>
+    sub_element = ET.SubElement(root_output, 'title');
+    sub_element.text = romObj.description;
+
+    # <platform>MAME</platform>
+    sub_element = ET.SubElement(root_output, 'platform');
+    sub_element.text = 'MAME';
+    
+    # <year>2000</year>
+    sub_element = ET.SubElement(root_output, 'year');
+    sub_element.text = romObj.year;
+
+    # <publisher></publisher>
+    sub_element = ET.SubElement(root_output, 'publisher');
+    sub_element.text = romObj.manufacturer;
+    
+    # <genre>Shooter / Flying Vertical</genre>
+    sub_element = ET.SubElement(root_output, 'genre');
+    sub_element.text = romObj.category;
+
+    # <plot></plot>
+    # Probably need to merge information from history.dat or mameinfo.dat
+    sub_element = ET.SubElement(root_output, 'plot');
+    sub_element.text = '';
+
+    # --- Write output file
+    rough_string = ET.tostring(root_output, 'utf-8');
+    reparsed = minidom.parseString(rough_string);
+    print_verb(' Writing ' + NFO_full_filename);
+    f = open(NFO_full_filename, "w")
+    f.write(reparsed.toprettyxml(indent="  "))
+    f.close()
+
+# -----------------------------------------------------------------------------
+# Main body functions
+# -----------------------------------------------------------------------------
 def do_reduce_XML():
   "Short list of MAME XML file"
 
+  print_info('[Reducing MAME XML game database]');
   input_filename = configuration.MAME_XML;
   output_filename = configuration.MAME_XML_redux;
 
   # --- Build XML output file ---
   tree_output = ET.ElementTree();
-  root_output = a = ET.Element('mame');
+  root_output = ET.Element('mame');
   tree_output._setroot(root_output);
 
   # --- Read MAME XML input file ---
-  print '===== Reducing MAME XML file ====';
-  print 'NOTE: this will take a looong time...';
-  print "Parsing MAME XML file '" + input_filename + "'...";
-  tree = ET.parse(input_filename);
-  print 'Done!';
+  print_info('Reading MAME XML game database...');
+  print_info('NOTE: this will take a looong time...');
+  print "Parsing MAME XML file " + input_filename + "... ",;
+  sys.stdout.flush();
+  try:
+    tree = ET.parse(input_filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + input_filename);
+    sys.exit(10);
+  print ' done';
 
   # --- Traverse MAME XML input file ---
   # Root element:
@@ -867,30 +1108,31 @@ def do_reduce_XML():
   #   <driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
   # </game>
   # </mame>
+  print_info('Reducing MAME XML database...');
   for game_EL in root:
     if game_EL.tag == 'game':
       game_output = ET.SubElement(root_output, 'game');
       game_output.attrib = game_EL.attrib; # Copy game attributes in output XML
 
       # Iterate through game tag attributes (DEBUG)
-      print '[Game]'
+      print_verb('[Game]');
       # for key in game_EL.attrib:
       #   print ' game --', key, '->', game_EL.attrib[key];
 
       # Iterate through the children of a game
       for game_child in game_EL:
         if game_child.tag == 'description':
-          print ' description = ' + game_child.text;
+          print_verb(' description = ' + game_child.text);
           description_output = ET.SubElement(game_output, 'description');
           description_output.text = game_child.text;
 
         if game_child.tag == 'year':
-          print ' year = ' + game_child.text;
+          print_verb(' year = ' + game_child.text);
           year_output = ET.SubElement(game_output, 'year');
           year_output.text = game_child.text;
 
         if game_child.tag == 'manufacturer':
-          print ' manufacturer = ' + game_child.text;
+          print_verb(' manufacturer = ' + game_child.text);
           manufacturer_output = ET.SubElement(game_output, 'manufacturer');
           manufacturer_output.text = game_child.text;
 
@@ -916,39 +1158,46 @@ def do_reduce_XML():
   
   # --- Pretty print XML output using miniDOM
   # See http://broadcast.oreilly.com/2010/03/pymotw-creating-xml-documents.html
+  print_info('Building reduced output XML file...');
   rough_string = ET.tostring(root_output, 'utf-8');
   reparsed = minidom.parseString(rough_string);
-  # print reparsed.toprettyxml(indent="  ")
   del root_output; # Reduce memory consumption
 
+  print_info('Writing reduced XML file ' + output_filename);
   f = open(output_filename, "w")
-  f.write(reparsed.toprettyxml(indent="  "))
+  f.write(reparsed.toprettyxml(indent=" "))
   f.close()
 
-def do_make_filters():
-  "Make main MAME database ready for filtering"
+def do_merge():
+  "Merges main MAME database ready for filtering"
 
+  print_info('[Building merged MAME filter database]');
   mame_redux_filename = configuration.MAME_XML_redux;
   merged_filename = configuration.MergedInfo_XML;
   
   # --- Get categories from Catver.ini
   categories_dic = parse_catver_ini();
-  
+
   # --- Read MAME XML or reduced MAME XML and incorporate categories
   # NOTE: this piece of code is very similar to do_reduce_XML()
   # --- Build XML output file ---
   tree_output = ET.ElementTree();
-  root_output = a = ET.Element('mame');
+  root_output = ET.Element('mame');
   tree_output._setroot(root_output);
-
-  # --- Read MAME XML input file ---
-  print '[Parsing (reduced) MAME XML file]';
-  print ' NOTE: this may take a looong time...';
-  print " Parsing MAME XML file '" + mame_redux_filename + "'...";
-  tree = ET.parse(mame_redux_filename);
-  print ' Done!';
+  print_info('[Parsing (reduced) MAME XML file]');
+  print_info(' NOTE: this may take a looong time...');
+  print " Parsing MAME XML file " + mame_redux_filename + "... ",;
+  sys.stdout.flush();
+  try:
+    tree = ET.parse(mame_redux_filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + mame_redux_filename);
+    sys.exit(10);
+  print ' done';
 
   # --- Traverse MAME XML input file ---
+  print_info('[Merging MAME XML and categories]');
   root = tree.getroot();
   root_output.attrib = root.attrib; # Copy mame attributes in output XML
   for game_EL in root:
@@ -998,130 +1247,96 @@ def do_make_filters():
       if game_name in categories_dic:
         category = categories_dic[game_name];
       else:
-        print '[WARNING] Category not found for ' + game_name;
+        print_warn('[WARNING] Category not found for game ' + game_name);
       category_output = ET.SubElement(game_output, 'category');
       category_output.text = category;
 
   # --- To save memory destroy variables now
   del tree;
-  
+
   # --- Write output file
-  print '[Writing output file]';
-  print ' ' + merged_filename;
+  print_info('[Writing output file]');
+  print_info(' Output file ' + merged_filename);
   rough_string = ET.tostring(root_output, 'utf-8');
   reparsed = minidom.parseString(rough_string);
   del root_output; # Reduce memory consumption
 
   f = open(merged_filename, "w")
-  f.write(reparsed.toprettyxml(indent="  "))
-  f.close()  
+  f.write(reparsed.toprettyxml(indent=" "))
+  f.close()
 
-def do_list_reduced():
+def do_list_merged():
   "Short list of MAME XML file"
-  filename = configuration.MAME_XML_redux;
-  print '[Short listing of reduced MAME XML]';
-  print "Parsing reduced MAME XML file '" + filename + "'...";
-  tree = ET.parse(filename);
-  print 'Done!';
+  print_info('[Short listing of reduced MAME XML]');
 
-  # Root element (Reduced MAME XML):
-  # <mame build="0.153 (Apr  7 2014)" debug="no" mameconfig="10">
-  root = tree.getroot();
-
-  # Child elements (Reduced MAME XML):
-  # <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
-  #   <description>005</description>
-  #   <year>1981</year>
-  #   <manufacturer>Sega</manufacturer>
-  #   <input players="2" buttons="1" coins="2" service="yes">
-  #     <control type="joy" ways="4"/>
-  #   </input>
-  #   <driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
-  # </game>
-  # </mame>
-  num_games = 0;
-  for game_EL in root:
-    if game_EL.tag == 'game':
-      num_games += 1;
-      # Game attributes
-      game_attrib = game_EL.attrib;
-      print 'game = ' + game_attrib['name'];
-
-      # Iterate through the children of a game
-      for game_child in game_EL:
-        if game_child.tag == 'description':
-          print ' description = ' + game_child.text;
-
-        if game_child.tag == 'year':
-          print ' year = ' + game_child.text;
-
-        if game_child.tag == 'manufacturer':
-          print ' manufacturer = ' + game_child.text;
-  
-  print '\n';
-  print 'Number of games = ' + str(num_games);
-
-def do_list_reducedlong():
-  "Long list of MAME XML file"
-  filename = configuration.MAME_XML_redux;
-  print '[Long listing of reduced MAME XML]';
-  print "Parsing reduced MAME XML file '" + filename + "'...";
-  tree = ET.parse(filename);
-  print 'Done!';
+  filename = configuration.MergedInfo_XML;
+  print "Parsing merged MAME XML file '" + filename + "'...",;
+  try:
+    tree = ET.parse(filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + filename);
+    sys.exit(10);
+  print ' done';
 
   # Root element (Reduced MAME XML):
   root = tree.getroot();
 
   # Child elements (Reduced MAME XML):
   num_games = 0;
+  num_clones = 0;
+  num_samples = 0;
+  num_devices = 0;
   for game_EL in root:
     if game_EL.tag == 'game':
       num_games += 1;
       # Game attributes
       game_attrib = game_EL.attrib;
-      print 'game = ' + game_attrib['name'];
+      print_info(game_attrib['name']);
+
+      # Game attributes
+      if 'sourcefile' in game_attrib:
+        print_info('|- driver = ' + game_attrib['sourcefile']);
+
+      if 'sampleof' in game_attrib:
+        num_samples += 1;
+        print_info('|- sampleof = ' + game_attrib['sampleof']);
+
+      if 'cloneof' in game_attrib:
+        num_clones += 1;
+        print_info('|- cloneof = ' + game_attrib['cloneof']);
+
+      if 'isdevice' in game_attrib:
+        num_devices += 1;
+        print_info('|- isdevice = ' + game_attrib['isdevice']);
 
       # Iterate through the children of a game
       for game_child in game_EL:
         if game_child.tag == 'description':
-          print ' description = ' + game_child.text;
+          print_info('|-- description = ' + game_child.text);
+        elif game_child.tag == 'year':
+          print_info('|-- year = ' + game_child.text);
+        elif game_child.tag == 'manufacturer':
+          print_info('|-- manufacturer = ' + game_child.text);
+        elif game_child.tag == 'driver':
+          print_info('|-- driver status = ' + game_child.attrib['status']);
+        elif game_child.tag == 'category':
+          print_info('+-- category = ' + game_child.text);
 
-        if game_child.tag == 'year':
-          print ' year = ' + game_child.text;
-
-        if game_child.tag == 'manufacturer':
-          print ' manufacturer = ' + game_child.text;
-  
-  print '\n';
-  print 'Number of games = ' + str(num_games);
-
-
-def dumpclean(obj):
-  if type(obj) == dict:
-    for k, v in obj.items():
-      if hasattr(v, '__iter__'):
-        print k
-        dumpclean(v)
-      else:
-        print '%s : %s' % (k, v)
-  elif type(obj) == list:
-    for v in obj:
-      if hasattr(v, '__iter__'):
-        dumpclean(v)
-      else:
-        print v
-  else:
-      print obj
+  print_info('\n');
+  print_info('Number of games = ' + str(num_games));
+  print_info('Number of clones = ' + str(num_clones));
+  print_info('Number of games with samples = ' + str(num_samples));
+  print_info('Number of devices = ' + str(num_devices));
 
 def do_list_categories():
-  "Long list of MAME XML file"
-  __debug_do_list_categories = 1;
-  
-  # --- Parse Catver.ini
-  # --- Create a histogram with the categories
-  print '[List categories from Catver.ini]';
+  "Parses Catver.ini and prints the categories and how many games for each"
+  __debug_do_list_categories = 0;
+  print_info('[Listing categories from Catver.ini]');
+
+  # --- Create a histogram with the categories. Parse Catver.ini
   cat_filename = configuration.Catver;
-  print 'Opening ' + cat_filename;
+  print_info(' Opening ' + cat_filename);
   categories_dic = {};
   main_categories_dic = {};
   final_categories_dic = {};
@@ -1130,6 +1345,7 @@ def do_list_categories():
   # 1 -> Reading categories
   # 2 -> Categories finished. STOP
   read_status = 0;
+  print_info('[Making categories histogram]');
   for cat_line in f:
     stripped_line = cat_line.strip();
     if __debug_do_list_categories:
@@ -1162,7 +1378,7 @@ def do_list_categories():
           main_categories_dic[main_category] += 1;
         else:                          
           main_categories_dic[main_category] = 1;
-          
+
         # NOTE: Only use the main category for filtering.
         # -Rename some categories
         final_category = main_category;
@@ -1175,7 +1391,6 @@ def do_list_categories():
         
         # - If there is *Mature* in any category or subcategory, then
         #   the game belongs to the Mature category
-        print category.find('*Mature*')
         if category.find('*Mature*') >= 0:
           final_category = 'Mature';
         
@@ -1187,50 +1402,98 @@ def do_list_categories():
     elif read_status == 2:
       break;
     else:
-      print 'Unknown read_status FSM value';
+      print_error('Unknown read_status FSM value');
       sys.exit(10);
   f.close();
 
-  # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
-  print '[Raw categories]';
-  sorted_propertiesDic = sorted(categories_dic.iteritems(), key=operator.itemgetter(1))
-  dumpclean(sorted_propertiesDic);
-  print '\n';
+  # - Only print if very verbose
+  if log_level >= Log.vverb:
+    # Sorting dictionaries, see
+    # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
+    sorted_propertiesDic = sorted(categories_dic.iteritems(), key=operator.itemgetter(1))
+    # - DEBUG object dump
+    # dumpclean(sorted_propertiesDic);
+    # - Better print (only print if verbose)
+    print_vverb('\n[Raw categories]');
+    for key in sorted_propertiesDic:
+      print_vverb('{:6d}'.format(key[1]) + '  ' + key[0]);
 
-  print '[Main categories]';
-  sorted_propertiesDic = sorted(main_categories_dic.iteritems(), key=operator.itemgetter(1))
-  dumpclean(sorted_propertiesDic);
-  print '\n';
+  # - Only print if verbose
+  if log_level >= Log.verb:
+    sorted_propertiesDic = sorted(main_categories_dic.iteritems(), key=operator.itemgetter(1))
+    print_verb('\n[Main categories]');
+    for key in sorted_propertiesDic:
+      print_verb('{:6d}'.format(key[1]) + '  ' + key[0]);
 
-  print '[Final (used) categories]';
+  # - By default only list final categories
   sorted_propertiesDic = sorted(final_categories_dic.iteritems(), key=operator.itemgetter(1))
-  dumpclean(sorted_propertiesDic);
+  print_info('\n[Final (used) categories]');
+  for key in sorted_propertiesDic:
+    print_info('{:6d}'.format(key[1]) + '  ' + key[0]);
 
-# -----------------------------------------------------------------------------
+def do_list_drivers():    
+  "Parses merged XML database and makes driver histogram and statistics"
+  print_info('[Listing MAME drivers]');
+  print_info(' NOTE: clones are not included');
+
+  filename = configuration.MergedInfo_XML;
+  print "Parsing merged MAME XML file '" + filename + "'... ",;
+  try:
+    tree = ET.parse(filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + filename);
+    sys.exit(10);
+  print ' done';
+
+  # Do histogram
+  drivers_histo_dic = {};
+  root = tree.getroot();
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      game_attrib = game_EL.attrib;
+      game_name = game_attrib['name'];
+      game_attrib = game_EL.attrib;
+      # If game is a clone don't include it in the histogram
+      if 'cloneof' in game_attrib:
+        continue;
+      # --- Histogram
+      if 'sourcefile' in game_attrib:
+        driver_name = game_attrib['sourcefile'];
+      else:
+        driver_name = '__unknown__';
+      if driver_name in drivers_histo_dic: 
+        drivers_histo_dic[driver_name] += 1;
+      else:                          
+        drivers_histo_dic[driver_name] = 1;
+
+  # - Print histogram
+  sorted_histo = sorted(drivers_histo_dic.iteritems(), key=operator.itemgetter(1))
+  print_info('[Final (used) categories]');
+  for key in sorted_histo:
+    print_info('{:4d}'.format(key[1]) + '  ' + key[0]);
+
 # Copy ROMs in destDir
 def do_copy_ROMs(filterName):
   "Applies filter and copies ROMs into destination directory"
+  print_info('[Copy/Update ROMs]');
+  print_info(' Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
   sourceDir = filter_config.sourceDir;
   destDir = filter_config.destDir;
-  # Check if source/dir exists
+
+  # --- Check for errors, missing paths, etc...
   if not os.path.isdir(sourceDir):
-    print 'Source directory does not exist'
-    print sourceDir;
+    print_error('Source directory does not exist');
+    print_error(sourceDir);
     sys.exit(10);
 
   if not os.path.isdir(destDir):
-    print 'Source directory does not exist'
-    print destDir;
+    print_error('Source directory does not exist');
+    print_error(destDir);
     sys.exit(10);
-
-  # --- User wants to log operations performed to a file
-  if __prog_option_print_report:
-    reportFileName = 'xru-mame-report-' +  filter_config.name + '.txt';
-    print 'Writing report into ' + reportFileName + '\n';
-    report_f = open(reportFileName, 'w');
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML();
@@ -1243,126 +1506,28 @@ def do_copy_ROMs(filterName):
   rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
 
   # --- Copy ROMs into destDir ------------------------------------------------
-  for rom_copy_item in rom_copy_dic:
-    romFileName = rom_copy_item + '.zip';
-    # If we are synchronising, only copy ROMs if size in sourceDir/destDir
-    # is different
-    if __prog_option_sync:
-      retVal = update_ROM_file(romFileName, sourceDir, destDir);
-      if __prog_option_print_report:
-        if retVal:
-          report_f.write('[Updated] ' + romFileName + '\n');
-        else:
-          report_f.write('[Copied] ' + romFileName + '\n');
-    else:
-      copy_ROM_file(romFileName, sourceDir, destDir);
-      if __prog_option_print_report:
-        report_f.write('[Copied] ' + romFileName + '\n');
+  if __prog_option_sync:
+    update_ROM_list(rom_copy_dic, sourceDir, destDir);
+  else:
+    copy_ROM_list(rom_copy_dic, sourceDir, destDir);
 
-  # Generate NFO XML files with information for launchers
+  # --- Generate NFO XML files with information for launchers
   if __prog_option_generate_NFO:
-    __debug_generate_NFO_files = 0;
-    print '[Generating NFO files]';
-    for rom_name in rom_copy_dic:
-      romObj = mame_filtered_dic[rom_name];
-      NFO_filename = rom_name + '.nfo';
-      if destDir[-1] != '/': destDir = destDir + '/';
-      NFO_full_filename =  destDir + NFO_filename;
+    generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir);
 
-      # --- XML structure
-      tree_output = ET.ElementTree();
-      root_output = a = ET.Element('game');
-      tree_output._setroot(root_output);
-      
-      # <title>1944 - The Loop Master</title>
-      sub_element = ET.SubElement(root_output, 'title');
-      sub_element.text = romObj.description;
-
-      # <platform>MAME</platform>
-      sub_element = ET.SubElement(root_output, 'platform');
-      sub_element.text = 'MAME';
-      
-      # <year>2000</year>
-      sub_element = ET.SubElement(root_output, 'year');
-      sub_element.text = romObj.year;
-
-      # <publisher></publisher>
-      sub_element = ET.SubElement(root_output, 'publisher');
-      sub_element.text = romObj.manufacturer;
-      
-      # <genre>Shooter / Flying Vertical</genre>
-      sub_element = ET.SubElement(root_output, 'genre');
-      sub_element.text = romObj.category;
-
-      # <plot></plot>
-      # Probably need to merge information from history.dat or
-      # mameinfo.dat
-      sub_element = ET.SubElement(root_output, 'plot');
-      sub_element.text = '';
-
-      # --- Write output file
-      rough_string = ET.tostring(root_output, 'utf-8');
-      reparsed = minidom.parseString(rough_string);
-      if __debug_generate_NFO_files:
-        print '[DEBUG] Writing ' + NFO_full_filename;
-      f = open(NFO_full_filename, "w")
-      f.write(reparsed.toprettyxml(indent="  "))
-      f.close()  
- 
-  # Artwork should be copied
+  # --- Copy artwork
   if __prog_option_withArtWork:
-    print '[Copy/Update ArtWork]';
-    fanartSourceDir = filter_config.fanartSourceDir;
-    fanartDestDir = filter_config.fanartDestDir;
-    thumbsSourceDir = filter_config.thumbsSourceDir;
-    thumbsDestDir = filter_config.thumbsDestDir;
-    for rom_copy_item in rom_copy_dic:
-      romFileName = rom_copy_item + '.png';
-      # If we are synchronising, only copy ROMs if size in sourceDir/destDir
-      # is different
-      if __prog_option_sync:
-        retVal = update_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
-        if __prog_option_print_report:
-          if retVal:
-            report_f.write('[Updated] ' + romFileName + '\n');
-          else:
-            report_f.write('[Copied] ' + romFileName + '\n');
-            
-        retVal = update_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
-        if __prog_option_print_report:
-          if retVal:
-            report_f.write('[Updated] ' + romFileName + '\n');
-          else:
-            report_f.write('[Copied] ' + romFileName + '\n');            
-      else:
-        copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
-        if __prog_option_print_report:
-          report_f.write('[Copied] ' + romFileName + '\n');
+    if __prog_option_sync:
+      update_ArtWork_list(filter_config, rom_copy_dic);
+    else:
+      copy_ArtWork_list(filter_config, rom_copy_dic);
 
-        copy_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
-        if __prog_option_print_report:
-          report_f.write('[Copied] ' + romFileName + '\n');
-
-  # If sync is on then delete unknown files.
-  # Maybe this should be an option rather than a command...
+  # If --cleanROMs is on then delete unknown files.
   if __prog_option_cleanROMs:
-    print '[Cleaning ROMs in ROMsDest]';
-    # Delete ROMs present in destDir not present in the filtered list
-    for file in os.listdir(destDir):
-      if file.endswith(".zip"):
-        basename, ext = os.path.splitext(file); # Remove extension
-        if basename not in rom_copy_dic:
-          delete_ROM_file(file, destDir);
-          if __prog_option_print_report:
-            report_f.write('[Deleted] ' + file + '\n');
-
-  # Close log file
-  if __prog_option_print_report:
-    report_f.close();
+    clean_ROMs_destDir(destDir, rom_copy_dic);
 
 def do_printHelp():
-  print """\033[36mXBMC ROM utility - MAME version\033[0m
-
+  print """
 This program is design to take a full collection of MAME ROMs and some 
 information files, filters this list to remove unwanted games, and updates the
 ROMs in a destination dir with this filtered-list. 
@@ -1385,19 +1550,21 @@ if updated are needed.
     is because MAME XML file is huge and takes a long time to process it. After
     reducing it, all subsequent processing should be much quicker.
 
- \033[31m make-filters\033[0m
-    Takes MAME XML info file and Catver.ini and makes an output XML file with
-    all the necessary information for proper game filtering.
+ \033[31m merge\033[0m
+    Takes MAME XML (reduced) info file and Catver.ini and makes an output XML
+    file with all the necessary information for proper game filtering.
 
- \033[31m list-redux\033[0m
-    List every ROM set system defined in the reduced MAME XML information file.
-  
- \033[31m list-redux-long\033[0m
-    Like list, but also list all the information.
+ \033[31m list-merged\033[0m
+    List every ROM set system defined in the merged MAME XML information file.
+    Use \033[35m--verbose\033[0m to get more information.
 
  \033[31m list-categories\033[0m
-    Reads Catver.ini and makes a histogram of the categories (prints all available
-    categories and tells how many ROMs every category has).
+    Reads Catver.ini and makes a histogram of the categories (prints all
+    available categories and tells how many ROMs every category has).
+
+ \033[31m list-drivers\033[0m
+    Reads merged XML database and prints a histogram of the drivers (how many
+    games use each driver).
 
  \033[31m copy <filterName>\033[0m
     Applies ROM filters defined in the configuration file and copies the 
@@ -1412,16 +1579,15 @@ if updated are needed.
   \033[35m-h\033[0m, \033[35m--help\033[0m
     Print short command reference
 
-  \033[35m--version\033[0m
-    Show version and exit
-    
+  \033[35m-v\033[0m, \033[35m--verbose\033[0m
+    Print more information about what's going on
+
+  \033[35m-l\033[0m, \033[35m--log\033[0m \033[31m[logName]\033[0m
+    Save program output in xru-mame-log.txt or the file you specify.
+
   \033[35m--dryRun\033[0m
     Don't modify destDir at all, just print the operations to be done.
 
-  \033[35m--printReport\033[0m
-    Writes a TXT file reporting the operation of the ROM filters and the
-    operations performed.
-    
    \033[35m--generateNFO\033[0m
     Generates NFO files with game information for the launchers.
 
@@ -1431,30 +1597,36 @@ if updated are needed.
    \033[35m--cleanROMs\033[0m
     Deletes ROMs in destDir not present in the filtered ROM list."""
 
-# =============================================================================
+# -----------------------------------------------------------------------------
+# main function
+# -----------------------------------------------------------------------------
 def main(argv):
-  # - Command line parser
-  parser = argparse.ArgumentParser() 
-  parser.add_argument("--version", help="print version", action="store_true")
+  print '\033[36mXBMC ROM utilities - MAME edition\033[0m' + \
+        ' version ' + __software_version;
+
+  # --- Command line parser
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--verbose", help="print version", action="store_true")
+  parser.add_argument("--log", help="print version", action="store_true")
   parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
-  parser.add_argument("--printReport", help="print report", action="store_true")
   parser.add_argument("--generateNFO", help="generate NFO files", action="store_true")
   parser.add_argument("--withArtWork", help="copy/update artwork", action="store_true")
   parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", action="store_true")
-  parser.add_argument("command", help="usage, reduce-XML, make-filters, list-redux, list-redux-long, list-categories, copy, update")
+  parser.add_argument("command", help="usage, reduce-XML, merge, list-merged, list-categories, list-drivers, copy, update")
   parser.add_argument("filterName", help="MAME ROM filter name", nargs='?')
   args = parser.parse_args();
   
   # --- Optional arguments
+  global __prog_option_log;
   global __prog_option_dry_run;
-  global __prog_option_print_report;
-  global __prog_option_generate_NFO;
-  global __prog_option_withArtWork;
-  global __prog_option_cleanROMs;
-  global __prog_option_sync;
+  global __prog_option_generate_NFO, __prog_option_withArtWork;
+  global __prog_option_cleanROMs, __prog_option_sync;
 
+  if args.verbose:
+    change_log_level(Log.verb);
+  if args.log:
+    __prog_option_log = 1;
   if args.dryRun:      __prog_option_dry_run = 1;
-  if args.printReport: __prog_option_print_report = 1;
   if args.generateNFO: __prog_option_generate_NFO = 1;
   if args.withArtWork: __prog_option_withArtWork = 1;
   if args.cleanROMs:   __prog_option_cleanROMs = 1;
@@ -1472,17 +1644,17 @@ def main(argv):
   if args.command == 'reduce-XML':
     do_reduce_XML();
 
-  elif args.command == 'make-filters':
-    do_make_filters();
+  elif args.command == 'merge':
+    do_merge();
 
-  elif args.command == 'list-redux':
-    do_list_reduced();
-    
-  elif args.command == 'list-redux-long':
-    do_list_reducedlong();
+  elif args.command == 'list-merged':
+    do_list_merged();
 
   elif args.command == 'list-categories':
     do_list_categories();
+
+  elif args.command == 'list-drivers':
+    do_list_drivers();
 
   elif args.command == 'copy':
     if args.filterName == None:
@@ -1491,10 +1663,10 @@ def main(argv):
     do_copy_ROMs(args.filterName);
 
   elif args.command == 'update':
-    __prog_option_sync = 1;
     if args.filterName == None:
       print 'filterName required';
       sys.exit(10);
+    __prog_option_sync = 1;
     do_copy_ROMs(args.filterName);  
 
   else:
