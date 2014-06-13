@@ -32,15 +32,20 @@ __config_logFileName = 'xru-console-log.txt';
 # --- Config file options global class (like a C struct)
 class ConfigFile:
   pass
+class ConfigFileFilter:
+  pass
+configuration = ConfigFile();
 
 # --- Program options (from command line)
-__prog_option_verbose = 0;
 __prog_option_log = 0;
+__prog_option_log_filename = __config_logFileName;
 __prog_option_dry_run = 0;
 __prog_option_delete_NFO = 0;
 __prog_option_sync = 0;
 
 # --- Global DEBUG variables
+# TODO: debug variables should be where the debug functions are, not here
+# Comment them and check when the program fails
 __debug_propertyParsers = 0;
 __debug_copy_ROM_file = 0;
 __debug_main_ROM_list = 0;
@@ -49,31 +54,53 @@ __debug_total_filtered_ROM_list = 0;
 __debug_config_file_parser = 0;
 
 # -----------------------------------------------------------------------------
+# DEBUG functions
+# -----------------------------------------------------------------------------
+def dumpclean(obj):
+  if type(obj) == dict:
+    for k, v in obj.items():
+      if hasattr(v, '__iter__'):
+        print k
+        dumpclean(v)
+      else:
+        print '%s : %s' % (k, v)
+  elif type(obj) == list:
+    for v in obj:
+      if hasattr(v, '__iter__'):
+        dumpclean(v)
+      else:
+        print v
+  else:
+      print obj
+
+# -----------------------------------------------------------------------------
 # Logging functions
 # -----------------------------------------------------------------------------
 class Log():
   error = 1
   warn = 2
   info = 3
-  verb = 4
-  debug = 5
+  verb = 4  # Verbose: -v
+  vverb = 5 # Very verbose: -vv
+  debug = 6 # Debug: -vvv
 
 # ---  Console print and logging
 f_log = 0;
 log_level = 3;
 
 def change_log_level(level):
-  log_level = Log.verb;
+  global log_level;
+
+  log_level = level;
 
 # --- Print/log to a specific level  
 def pprint(level, print_str):
   global f_log;
-  global log_level;
 
   # --- If file descriptor not open, open it
   if __prog_option_log:
     if f_log == 0:
-      f_log = open(__config_logFileName, 'w')
+      f_log = open(__prog_option_log_filename, 'w')
 
   # --- Write to console depending on verbosity
   if level <= log_level:
@@ -87,61 +114,50 @@ def pprint(level, print_str):
       f_log.write(print_str) # python will convert \n to os.linesep
 
 # --- Some useful function overloads
-def pprint_error(print_str):
+def print_error(print_str):
   pprint(Log.error, print_str);
 
-def pprint_warn(print_str):
+def print_warn(print_str):
   pprint(Log.warn, print_str);
 
-def pprint_info(print_str):
+def print_info(print_str):
   pprint(Log.info, print_str);
 
-def pprint_verb(print_str):
+def print_verb(print_str):
   pprint(Log.verb, print_str);
 
-def pprint_debug(print_str):
+def print_vverb(print_str):
+  pprint(Log.vverb, print_str);
+
+def print_debug(print_str):
   pprint(Log.debug, print_str);
 
 # -----------------------------------------------------------------------------
 # Filesystem functions
 # -----------------------------------------------------------------------------
-# This function checks if sourceDir and destDir exist
-# This function uses __prog_option_dry_run
-# No information is printed here except exceptions that abort the program
 def copy_ROM_file(fileName, sourceDir, destDir):
-  if sourceDir[-1] != '/':
-    sourceDir = sourceDir + '/';
-  if destDir[-1] != '/':
-    destDir = destDir + '/';
-
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
-  
-  print '[Copy] ' + fileName;
-  if __debug_copy_ROM_file:
-    print '  Copying ' + sourceFullFilename;
-    print '  Into    ' + destFullFilename;
-  
+
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print "copy_ROM_file >> Error happened";
+      print_debug("copy_ROM_file >> Error happened");
 
-# This function checks if sourceDir and destDir exist
+# Returns:
+#  0 - File copied (sizes different)
+#  1 - File not copied (updated)
 def update_ROM_file(fileName, sourceDir, destDir):
-  if sourceDir[-1] != '/':
-    sourceDir = sourceDir + '/';
-  if destDir[-1] != '/':
-    destDir = destDir + '/';
-
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
-  
+
   existsSource = os.path.isfile(sourceFullFilename);
   existsDest = os.path.isfile(destFullFilename);
   if not existsSource:
-    print "Source file not found";
+    print_error("Source file not found");
     sys.exit(10);
 
   sizeSource = os.path.getsize(sourceFullFilename);
@@ -150,70 +166,101 @@ def update_ROM_file(fileName, sourceDir, destDir):
   else:
     sizeDest = -1;
 
-  # If sizes are equal
+  # If sizes are equal. Skip copy and return 1
   if sizeSource == sizeDest:
-    # Skip copy and return 1
     return 1;
 
   # destFile does not exist or sizes are different, copy.
-  print '[Copy] ' + fileName;
-  if __debug_copy_ROM_file:
-    print '  Copying ' + sourceFullFilename;
-    print '  Into    ' + destFullFilename;
-  
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print "copy_ROM_file >> Error happened";
+      print_debug("update_ROM_file >> Error happened");
 
-  return 0
+  return 0;
 
+# This function either succeeds or aborts the program. Check if file exists
+# before calling this.
 def delete_ROM_file(fileName, dir):
-  if dir[-1] != '/':
-    dir = dir + '/';
-
   fullFilename = dir + fileName;
-  print '[Delete] ' + fileName;
 
   if not __prog_option_dry_run:
     try:
       os.remove(fullFilename);
     except EnvironmentError:
-      print "delete_ROM_file >> Error happened";
+      print_debug("delete_ROM_file >> Error happened");
 
 def exists_ROM_file(fileName, dir):
-  if dir[-1] != '/':
-    dir = dir + '/';
-
   fullFilename = dir + fileName;
 
-  return os.path.isfile(fullFilename);  
+  return os.path.isfile(fullFilename);
 
+# -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir):
+  print_info('[Copying ROMs into destDir]');
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
-  for rom_name in rom_list:
-    # This function never prints anything, except exceptions
-    copy_ROM_file(rom_name, sourceDir, destDir);
+
+  for rom_copy_item in rom_list:
+    # Update progress
+    romFileName = rom_copy_item + '.zip';
+    percentage = 100 * step / num_steps;
+    sys.stdout.write(' {:3d}%'.format(percentage));
+
+    # Copy file (this function succeeds or aborts program)
+    copy_ROM_file(romFileName, sourceDir, destDir);
+    print_info(' <Copied> ' + romFileName);
+    sys.stdout.flush()
 
     # Update progress
-    percentage = 100 * step / num_steps;
-    sys.stdout.write('[{:02d}%] '.format(percentage))
-    sys.stdout.write("[Copy] Super Mario World.zip\n")
-    sys.stdout.flush()
     step += 1;
 
-def update_ROM_list(rom_list):
-  pass;
+def update_ROM_list(rom_list, sourceDir, destDir):
+  print_info('[Updating ROMs into destDir]');
+  num_steps = len(rom_list);
+  # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
+  step = 0;
+
+  for rom_copy_item in rom_list:
+    # Update progress
+    romFileName = rom_copy_item + '.zip';
+    percentage = 100 * step / num_steps;
+    sys.stdout.write(' {:3d}%'.format(percentage));
+
+    # Copy file (this function succeeds or aborts program)
+    ret = update_ROM_file(romFileName, sourceDir, destDir);
+    if ret == 0:
+      print_info(' <Copied > ' + romFileName);
+    elif ret == 1:
+      print_info(' <Updated> ' + romFileName);
+    else:
+      print_error('Wrong value returned by update_ROM_file()');
+      sys.exit(10);
+    sys.stdout.flush()
+
+    # Update progress
+    step += 1;
+
+def clean_ROMs_destDir(destDir, rom_copy_dic):
+  print_info('[Cleaning ROMs in ROMsDest]');
+
+  # --- Delete ROMs present in destDir not present in the filtered list
+  for file in os.listdir(destDir):
+    if file.endswith(".zip"):
+      basename, ext = os.path.splitext(file); # Remove extension
+      if basename not in rom_copy_dic:
+        delete_ROM_file(file, destDir);
+        print_info(' <Deleted> ' + file);
 
 # -----------------------------------------------------------------------------
 # Configuration file functions
 # -----------------------------------------------------------------------------
-def parse_File_Config(romSetName):
+def parse_File_Config():
   "Parses config file"
-  pprint(Log.info, '[Parsing config file]');
+  print_info('[Parsing config file]');
   try:
     tree = ET.parse(__config_configFileName);
   except IOError:
@@ -221,103 +268,123 @@ def parse_File_Config(romSetName):
     sys.exit(10);
   root = tree.getroot();
 
-  # - This iterates through the collections
+  # --- Configuration object
   configFile = ConfigFile();
-  configFile.romSetName = romSetName;
+  configFile.filter_dic = {};
 
-  # Mandatory config file options
-  configFile.sourceDir = '';
-  configFile.destDir = '';
-  # Optional config file options (deafault to empty string)
-  configFile.filterUpTags = '';
-  configFile.filterDownTags = '';
-  configFile.includeTags = '';
-  configFile.excludeTags = '';
+  # --- Parse filters
+  for root_child in root:
+    if root_child.tag == 'collection':
+      print_verb('<collection>');
+      if 'name' in root_child.attrib:
+        # -- Mandatory config file options
+        # filter_class.sourceDir = '';
+        # filter_class.destDir = '';
+        # -- Optional config file options (deafault to empty string)
+        # filter_class.filterUpTags = '';
+        # filter_class.filterDownTags = '';
+        # filter_class.includeTags = '';
+        # filter_class.excludeTags = '';
+        filter_class = ConfigFileFilter();
+        filter_class.name = root_child.attrib['name'];
+        filter_class.shortname = root_child.attrib['shortname'];
+        print_verb(' name = ' + filter_class.name);
+        print_verb(' shortname = ' + filter_class.shortname);
+        sourceDirFound = 0;
+        destDirFound = 0;
+        # - Initialise variables for the ConfigFileFilter object
+        #   to avoid None objects later.
+        for filter_child in root_child:
+          if filter_child.tag == 'source':
+            print_verb('Source         : ' + filter_child.text);
+            sourceDirFound = 1;
+            filter_class.sourceDir = filter_child.text
 
-  systemNameFound = 0;
-  sourceDirFound = 0;
-  destDirFound = 0;
-  pprint_info('[' + romSetName + ']');
-  for collection in root:
-    if collection.attrib['shortname'] == romSetName:
-      systemNameFound = 1;
-      for collectionEL in collection:
-        if collectionEL.tag == 'source':
-          print 'Source         : ' + collectionEL.text;
-          sourceDirFound = 1;
-          configFile.sourceDir = collectionEL.text
+          elif filter_child.tag == 'dest':
+            print_verb('Destination    : ' + filter_child.text);
+            destDirFound = 1;
+            filter_class.destDir = filter_child.text
 
-        elif collectionEL.tag == 'dest':
-          print 'Destination    : ' + collectionEL.text;
-          destDirFound = 1;
-          configFile.destDir = collectionEL.text
+          elif filter_child.tag == 'filterUpTags' and \
+               filter_child.text is not None:
+            print_verb('filterUpTags   : ' + filter_child.text);
+            text_string = filter_child.text;
+            list = text_string.split(",");
+            filter_class.filterUpTags = list;
 
-        elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
-          print 'filterUpTags   : ' + collectionEL.text;
-          text_string = collectionEL.text;
-          list = text_string.split(",");
-          configFile.filterUpTags = list;
+          elif filter_child.tag == 'filterDownTags' and \
+               filter_child.text is not None:
+            print_verb('filterDownTags : ' + filter_child.text);
+            text_string = filter_child.text;
+            list = text_string.split(",");
+            filter_class.filterDownTags = list;
 
-        elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
-          print 'filterDownTags : ' + collectionEL.text;
-          text_string = collectionEL.text;
-          list = text_string.split(",");
-          configFile.filterDownTags = list;
+          elif filter_child.tag == 'includeTags' and \
+               filter_child.text is not None:
+            print_verb('includeTags    : ' + filter_child.text);
+            text_string = filter_child.text;
+            list = text_string.split(",");
+            filter_class.includeTags = list;
 
-        elif collectionEL.tag == 'includeTags' and collectionEL.text is not None:
-          print 'includeTags    : ' + collectionEL.text;
-          text_string = collectionEL.text;
-          list = text_string.split(",");
-          configFile.includeTags = list;
+          elif filter_child.tag == 'excludeTags' and \
+               filter_child.text is not None:
+            print_verb('excludeTags    : ' + filter_child.text);
+            text_string = filter_child.text;
+            list = text_string.split(",");
+            filter_class.excludeTags = list;
 
-        elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
-          print 'excludeTags    : ' + collectionEL.text;
-          text_string = collectionEL.text;
-          list = text_string.split(",");
-          configFile.excludeTags = list;
+        # - Trim blank spaces on lists
+        if filter_class.filterUpTags is not None:
+          for index, item in enumerate(filter_class.filterUpTags):
+            filter_class.filterUpTags[index] = item.strip();
 
-  # --- Trim blank spaces on lists
-  if configFile.filterUpTags is not None:
-    for index, item in enumerate(configFile.filterUpTags):
-      configFile.filterUpTags[index] = item.strip();
+        if filter_class.filterDownTags is not None:
+          for index, item in enumerate(filter_class.filterDownTags):
+            filter_class.filterDownTags[index] = item.strip();
 
-  if configFile.filterDownTags is not None:
-    for index, item in enumerate(configFile.filterDownTags):
-      configFile.filterDownTags[index] = item.strip();
+        if filter_class.includeTags is not None:
+          for index, item in enumerate(filter_class.includeTags):
+            filter_class.includeTags[index] = item.strip();
 
-  if configFile.includeTags is not None:
-    for index, item in enumerate(configFile.includeTags):
-      configFile.includeTags[index] = item.strip();
+        if filter_class.excludeTags is not None:
+          for index, item in enumerate(filter_class.excludeTags):
+            filter_class.excludeTags[index] = item.strip();
 
-  if configFile.excludeTags is not None:
-    for index, item in enumerate(configFile.excludeTags):
-      configFile.excludeTags[index] = item.strip();
+        # print_verb('filterUpTags   :' + filter_class.filterUpTags);
+        # print_verb('filterDownTags :' + filter_class.filterDownTags);
+        # print_verb('includeTags    :' + filter_class.includeTags);
+        # print_verb('excludeTags    :' + filter_class.excludeTags);
 
-  if __debug_config_file_parser:
-    print 'filterUpTags   :', configFile.filterUpTags;
-    print 'filterDownTags :', configFile.filterDownTags;
-    print 'includeTags    :', configFile.includeTags;
-    print 'excludeTags    :', configFile.excludeTags;
+        # - Check for errors in this filter
+        if not sourceDirFound:
+          print_error('source directory not found in config file');
+          sys.exit(10);
+        if not destDirFound:
+          print_error('destination directory not found in config file');
+          sys.exit(10);
 
-  # --- Check for errors
-  if not systemNameFound:
-    print 'romSetName not found in config file';
-    sys.exit(10);
-
-  if not sourceDirFound:
-    print 'source directory not found in config file';
-    sys.exit(10);
-
-  if not destDirFound:
-    print 'destination directory not found in config file';
-    sys.exit(10);
+        # - Aggregate filter to configuration main variable
+        configFile.filter_dic[filter_class.name] = filter_class;
+      else:
+        print_error('<collection> tag does not have name attribute');
+        sys.exit(10);
 
   return configFile;
+
+def get_Filter_Config(filterName):
+  "Returns the configuration filter object given the filter name"
+  for key in configuration.filter_dic:
+    if key == filterName:
+      return configuration.filter_dic[key];
+  
+  print_error('get_Filter_Config >> filter ' + filterName + 'not found in configuration file');
+  sys.exit(20);
 
 # -----------------------------------------------------------------------------
 # Miscellaneous functions
 # -----------------------------------------------------------------------------
 # A class to store the source directory ROM list
+#
 class ROM:
   # - Constructor. Parses the ROM file name and gets Tags and Base Name (name 
   # with no tags).
@@ -382,23 +449,6 @@ class ROM:
 
     return result;
 
-def dumpclean(obj):
-  if type(obj) == dict:
-    for k, v in obj.items():
-      if hasattr(v, '__iter__'):
-        print k
-        dumpclean(v)
-      else:
-        print '%s : %s' % (k, v)
-  elif type(obj) == list:
-    for v in obj:
-      if hasattr(v, '__iter__'):
-        dumpclean(v)
-      else:
-        print v
-  else:
-      print obj
-
 def extract_ROM_Properties_Raw(romFileName):
   "Given a ROM file name extracts all the tags and returns a list"
 
@@ -459,34 +509,50 @@ def extract_ROM_Properties_All(romFileName):
 # -----------------------------------------------------------------------------
 # Main body functions
 # -----------------------------------------------------------------------------
-def do_list(filename):
-  "Short list of config file"
+def do_list():
+  "Short list of configuration file"
 
-  print '===== Short listing of configuration file ====';
-  print 'Config file: ' + filename;
-
-  tree = ET.parse(filename);
-  root = tree.getroot();
+  print_info('[Listing configuration file]');
+  print "Parsing configuration XML file " + __config_configFileName + "...",;
+  sys.stdout.flush();
+  try:
+    tree = ET.parse(__config_configFileName);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + __config_configFileName);
+    sys.exit(10);
+  print 'done';
 
   # - This iterates through the collections
+  root = tree.getroot();
   for collection in root:
     # print collection.tag, collection.attrib;
-    print '[ROM Collection] ';
-    print '  Short name   ' + collection.attrib['shortname'];
-    print '  Name         ' + collection.attrib['name'];
+    print_info('<ROM Collection>');
+    print_info(' Short name      ' + collection.attrib['shortname']);
+    print_info(' Name            ' + collection.attrib['name']);
+
+    # - For every collection, iterate over the elements
+    # - This is not very efficient
+    for collectionEL in collection:
+      if collectionEL.tag == 'source':
+        print_verb(' Source          ' + collectionEL.text);
+      elif collectionEL.tag == 'dest':
+        print_verb(' Destination     ' + collectionEL.text);
+      elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
+        print_verb(' filterUpTags    ' + collectionEL.text);
+      elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
+        print_verb(' filterDownTags  ' + collectionEL.text);
+      elif collectionEL.tag == 'includeTags' and collectionEL.text is not None:
+        print_verb(' includeTags     ' + collectionEL.text);
+      elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
+        print_verb(' excludeTags     ' + collectionEL.text);
 
     # - Test if element exists by key
     source_EL = collection.find('source');
     if source_EL is not None:
-      print '  Source       ' + source_EL.text;
+      print_info(' Source          ' + source_EL.text);
     else:
-      print 'Mandatory <source> directory not found';
-
-    dest_EL = collection.find('dest');
-    if dest_EL is not None:
-      print '  Destination  ' + dest_EL.text;
-    else:
-      print 'Mandatory <dest> directory not found';
+      print_info(' Mandatory <source> directory not found');
 
 def do_list_long(filename):
   "Long list of config file"
@@ -777,7 +843,7 @@ def main(argv):
 
   # --- Command line parser
   parser = argparse.ArgumentParser()
-  parser.add_argument("--verbose", help="print version", action="store_true")
+  parser.add_argument('-v', '--verbose', help="print version", action="store_true")
   parser.add_argument("--log", help="print version", action="store_true")
   parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
   parser.add_argument("--deleteNFO", help="delete NFO files of filtered ROMs", action="store_true")
