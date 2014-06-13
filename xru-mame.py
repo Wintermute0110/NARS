@@ -44,6 +44,7 @@ configuration = ConfigFile();
 
 # --- Program options (from command line)
 __prog_option_log = 0;
+__prog_option_log_filename = __config_logFileName;
 __prog_option_dry_run = 0;
 __prog_option_generate_NFO = 0;
 __prog_option_withArtWork = 0;
@@ -98,17 +99,16 @@ log_level = 3;
 def change_log_level(level):
   global log_level;
 
-  log_level = Log.verb;
+  log_level = level;
 
 # --- Print/log to a specific level  
 def pprint(level, print_str):
   global f_log;
-  global log_level;
 
   # --- If file descriptor not open, open it
   if __prog_option_log:
     if f_log == 0:
-      f_log = open(__config_logFileName, 'w')
+      f_log = open(__prog_option_log_filename, 'w')
 
   # --- Write to console depending on verbosity
   if level <= log_level:
@@ -759,8 +759,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     romObject = mame_xml_dic[key];
     if romObject.isdevice:
       filtered_out_games += 1;
+      print_vverb(' FILTERED ' + key);
       continue;
     mame_filtered_dic[key] = mame_xml_dic[key];
+    print_debug(' Included ' + key);
   print_info(' Removed   = ' + str(filtered_out_games) + \
              ' / Remaining = ' + str(len(mame_filtered_dic)));
 
@@ -775,8 +777,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if not romObject.isclone:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug(' Included ' + key);
       else:
         filtered_out_games += 1;
+        print_vverb(' FILTERED ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info(' Removed   = ' + str(filtered_out_games) + \
@@ -793,8 +797,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if romObject.hasSamples:
         filtered_out_games += 1;
+        print_vverb(' FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug(' Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info(' Removed   = ' + str(filtered_out_games) + \
@@ -811,8 +817,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if romObject.mechanical:
         filtered_out_games += 1;
+        print_vverb(' FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug(' Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info(' Removed   = ' + str(filtered_out_games) + \
@@ -840,8 +848,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if romObject.driver_status == 'preliminary':
         filtered_out_games += 1;
+        print_vverb(' FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug(' Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info(' Removed   = ' + str(filtered_out_games) + \
@@ -899,7 +909,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_vverb(' FILTERED ' + key + ' driver ' + driverName);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_vverb(' Included ' + key + ' driver ' + driverName);
+        print_debug(' Included ' + key + ' driver ' + driverName);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info(' Removed   = ' + str(filtered_out_games) + \
@@ -957,10 +967,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # If not all items are true, the game is NOT copied (filtered)
       if not all(boolean_list):
         filtered_out_games += 1;
-        if __debug_apply_MAME_filters_Category_tag:
-          print '[DEBUG] Filtered';
+        print_vverb(' FILTERED ' + key + ' category ' + category_name);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug(' Included ' + key + ' category ' + category_name);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info(' Removed   = ' + str(filtered_out_games) + \
@@ -1582,8 +1592,11 @@ if updated are needed.
   \033[35m-v\033[0m, \033[35m--verbose\033[0m
     Print more information about what's going on
 
-  \033[35m-l\033[0m, \033[35m--log\033[0m \033[31m[logName]\033[0m
-    Save program output in xru-mame-log.txt or the file you specify.
+  \033[35m-l\033[0m, \033[35m--log\033[0m
+    Save program output in xru-mame-log.txt.
+
+  \033[35m--logto\033[0m \033[31m[logName]\033[0m
+    Save program output in the file you specify.
 
   \033[35m--dryRun\033[0m
     Don't modify destDir at all, just print the operations to be done.
@@ -1606,33 +1619,51 @@ def main(argv):
 
   # --- Command line parser
   parser = argparse.ArgumentParser()
-  parser.add_argument("--verbose", help="print version", action="store_true")
-  parser.add_argument("--log", help="print version", action="store_true")
-  parser.add_argument("--dryRun", help="don't modify any files", action="store_true")
-  parser.add_argument("--generateNFO", help="generate NFO files", action="store_true")
-  parser.add_argument("--withArtWork", help="copy/update artwork", action="store_true")
-  parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", action="store_true")
-  parser.add_argument("command", help="usage, reduce-XML, merge, list-merged, list-categories, list-drivers, copy, update")
-  parser.add_argument("filterName", help="MAME ROM filter name", nargs='?')
+  parser.add_argument('-v', '--verbose', help="be verbose", action="count")
+  parser.add_argument('-l', '--log', help="log output to default file", \
+     action='store_true')
+  parser.add_argument('--logto', help="log output to specified file", \
+     nargs = 1)
+  parser.add_argument("--dryRun", help="don't modify any files", \
+     action="store_true")
+  parser.add_argument("--generateNFO", help="generate NFO files", \
+     action="store_true")
+  parser.add_argument("--withArtWork", help="copy/update artwork", \
+     action="store_true")
+  parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", \
+     action="store_true")
+  parser.add_argument("command", \
+     help="usage, reduce-XML, merge, list-merged, list-categories, \
+           list-drivers, copy, update", nargs = 1)
+  parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
   args = parser.parse_args();
-  
+
   # --- Optional arguments
-  global __prog_option_log;
+  global __prog_option_log, __prog_option_log_filename;
   global __prog_option_dry_run;
   global __prog_option_generate_NFO, __prog_option_withArtWork;
   global __prog_option_cleanROMs, __prog_option_sync;
 
   if args.verbose:
-    change_log_level(Log.verb);
+    if args.verbose == 1:
+      change_log_level(Log.verb);
+    elif args.verbose == 2:
+      change_log_level(Log.vverb);
+    elif args.verbose >= 3:
+      change_log_level(Log.debug);
   if args.log:
     __prog_option_log = 1;
+  if args.logto:
+    __prog_option_log = 1;
+    __prog_option_log_filename = args.logto[0];
   if args.dryRun:      __prog_option_dry_run = 1;
   if args.generateNFO: __prog_option_generate_NFO = 1;
   if args.withArtWork: __prog_option_withArtWork = 1;
   if args.cleanROMs:   __prog_option_cleanROMs = 1;
 
   # --- Positional arguments that don't require parsing of the config file
-  if args.command == 'usage':
+  command = args.command[0];
+  if command == 'usage':
     do_printHelp();
     sys.exit(0);
 
@@ -1641,28 +1672,28 @@ def main(argv):
   configuration = parse_File_Config(); 
 
   # --- Positional arguments that required the configuration file
-  if args.command == 'reduce-XML':
+  if command == 'reduce-XML':
     do_reduce_XML();
 
-  elif args.command == 'merge':
+  elif command == 'merge':
     do_merge();
 
-  elif args.command == 'list-merged':
+  elif command == 'list-merged':
     do_list_merged();
 
-  elif args.command == 'list-categories':
+  elif command == 'list-categories':
     do_list_categories();
 
-  elif args.command == 'list-drivers':
+  elif command == 'list-drivers':
     do_list_drivers();
 
-  elif args.command == 'copy':
+  elif command == 'copy':
     if args.filterName == None:
       print 'filterName required';
       sys.exit(10);
     do_copy_ROMs(args.filterName);
 
-  elif args.command == 'update':
+  elif command == 'update':
     if args.filterName == None:
       print 'filterName required';
       sys.exit(10);
