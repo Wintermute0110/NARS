@@ -390,10 +390,8 @@ def parse_File_Config():
     sys.exit(10);
   root = tree.getroot();
 
-  # - This iterates through the collections
+  # --- Configuration object
   configFile = ConfigFile();
-
-  # --- Main configuration options (default to empty string)
   configFile.MAME_XML = '';
   configFile.MAME_XML_redux = '';
   configFile.Catver = '';
@@ -518,6 +516,15 @@ def parse_File_Config():
         sys.exit(10);
   
   return configFile;
+
+def get_Filter_Config(filterName):
+  "Returns the configuration filter object given the filter name"
+  for key in configuration.filter_dic:
+    if key == filterName:
+      return configuration.filter_dic[key];
+  
+  print_error('get_Filter_Config >> filter ' + filterName + 'not found in configuration file');
+  sys.exit(20);
 
 # -----------------------------------------------------------------------------
 # Misc functions
@@ -732,15 +739,6 @@ def parse_MAME_merged_XML():
   # the sourceDir rom list.
 
   return rom_raw_dict;
-
-def get_Filter_Config(filterName):
-  "Returns the configuration filter object given the filter name"
-  for key in configuration.filter_dic:
-    if key == filterName:
-      return configuration.filter_dic[key];
-  
-  print_error('get_Filter_Config >> filter ' + filterName + 'not found in configuration file');
-  sys.exit(20);
 
 # __debug_apply_MAME_filters
 def apply_MAME_filters(mame_xml_dic, filter_config):
