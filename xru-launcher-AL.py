@@ -38,6 +38,7 @@ configuration = ConfigFile();
 
 # --- Program options (from command line)
 __prog_option_log = 0;
+__prog_option_log_filename = __config_logFileName;
 
 # -----------------------------------------------------------------------------
 # DEBUG functions
@@ -433,21 +434,33 @@ def main(argv):
 
   # --- Command line parser
   parser = argparse.ArgumentParser()
-  parser.add_argument("--verbose", help="print version", action="store_true")
-  parser.add_argument("--log", help="print version", action="store_true")
+  parser.add_argument('-v', '--verbose', help="be verbose", action="count")
+  parser.add_argument('-l', '--log', help="log output to default file", \
+     action='store_true')
+  parser.add_argument('--logto', help="log output to specified file", \
+     nargs = 1)
   parser.add_argument("command", help="usage, list, list-config, check")
   args = parser.parse_args();
 
   # --- Optional arguments
-  global __prog_option_log;
+  global __prog_option_log, __prog_option_log_filename;
 
   if args.verbose:
-    change_log_level(Log.verb);
+    if args.verbose == 1:
+      change_log_level(Log.verb);
+    elif args.verbose == 2:
+      change_log_level(Log.vverb);
+    elif args.verbose >= 3:
+      change_log_level(Log.debug);
   if args.log:
     __prog_option_log = 1;
+  if args.logto:
+    __prog_option_log = 1;
+    __prog_option_log_filename = args.logto[0];
 
   # --- Positional arguments that don't require parsing of the config file
-  if args.command == 'usage':
+  command = args.command[0];
+  if command == 'usage':
     do_printHelp();
     sys.exit(0);
 
@@ -456,17 +469,18 @@ def main(argv):
   configuration = parse_File_Config();
 
   # --- Positional arguments
-  if args.command == 'list':
+  if command == 'list':
     do_list();
 
-  elif args.command == 'list-config':
+  elif command == 'list-config':
     do_list_config();
 
-  elif args.command == 'check':
+  elif command == 'check':
     do_check();
     
   else:
-    pprint(Log.error, 'Unrecognised command');
+    print_error('Unrecognised command');
+    sys.exit(1);
 
   sys.exit(0);
 
