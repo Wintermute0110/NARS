@@ -1227,7 +1227,7 @@ def do_taglist(filterName):
   propertiesDic = {};
   for file in os.listdir(folderName):
     if file.endswith(".zip"):
-      romProperties = extract_ROM_Properties_All(file);
+      romProperties = extract_ROM_Tags_All(file);
       if len(romProperties) == 0:
         print_error(file + 'Has no tags!');
         sys.exit(10);
@@ -1332,7 +1332,7 @@ def do_printHelp():
     Scans the source directory and reads No-Intro XML data file. Checks if you
     have all the ROMs and reports the number of missing ROMs.
 
- \033[31m taglist <filterName>\033[0m
+ \033[31m list-tags <filterName>\033[0m
     Scan the source directory and reports the total number of ROM files, all the
     tags found, and the number of ROMs that have each tag. It also display 
     tagless ROMs.
@@ -1398,7 +1398,7 @@ def main(argv):
   parser.add_argument("--cleanArtWork", help="clean unknown ArtWork", \
      action="store_true")
   parser.add_argument("command", \
-     help="usage, list, list-nointro, check-nointro, taglist, copy, \
+     help="usage, list, list-nointro, check-nointro, list-tags, copy, \
            update", nargs = 1)
   parser.add_argument("romSetName", help="ROM collection name", nargs='?')
   args = parser.parse_args();
@@ -1456,7 +1456,7 @@ def main(argv):
       sys.exit(10);
     do_check_nointro(args.romSetName);
     
-  elif command == 'taglist':
+  elif command == 'list-tags':
     if args.romSetName == None:
       print_error('romSetName required');
       sys.exit(10);
