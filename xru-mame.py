@@ -267,7 +267,7 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
-
+  num_files = 0;
   for rom_copy_item in rom_list:
     # Update progress
     romFileName = rom_copy_item + '.zip';
@@ -281,13 +281,15 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
 
     # Update progress
     step += 1;
+    num_files += 1;
+  print_info(' Copied ' + str(num_files) + ' ROMs');
 
 def update_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Updating ROMs into destDir]');
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
-
+  num_files = 0;
   for rom_copy_item in rom_list:
     # Update progress
     romFileName = rom_copy_item + '.zip';
@@ -307,6 +309,26 @@ def update_ROM_list(rom_list, sourceDir, destDir):
 
     # Update progress
     step += 1;
+    num_files += 1;
+  print_info(' Updated ' + str(num_files) + ' ROMs');
+
+def clean_ROMs_destDir(destDir, rom_copy_dic):
+  print_info('[Cleaning ROMs in ROMsDest]');
+
+  # --- Delete ROMs present in destDir not present in the filtered list
+  rom_main_list = [];
+  for file in os.listdir(destDir):
+    if file.endswith(".zip"):
+      rom_main_list.append(file);
+
+  num_cleaned_roms = 0;
+  for file in sorted(rom_main_list):
+    basename, ext = os.path.splitext(file); # Remove extension
+    if basename not in rom_copy_dic:
+      num_cleaned_roms += 1;
+      delete_ROM_file(file, destDir);
+      print_info(' <Deleted> ' + file);
+  print_info(' Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
   print_info('[Copying ArtWork]');
@@ -365,17 +387,6 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
-
-def clean_ROMs_destDir(destDir, rom_copy_dic):
-  print_info('[Cleaning ROMs in ROMsDest]');
-
-  # --- Delete ROMs present in destDir not present in the filtered list
-  for file in os.listdir(destDir):
-    if file.endswith(".zip"):
-      basename, ext = os.path.splitext(file); # Remove extension
-      if basename not in rom_copy_dic:
-        delete_ROM_file(file, destDir);
-        print_info(' <Deleted> ' + file);
 
 # -----------------------------------------------------------------------------
 # Configuration file functions
@@ -1511,28 +1522,28 @@ def do_copy_ROMs(filterName):
 
   # --- Apply filter and create list of files to be copied --------------------
   mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
-  rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
+  rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list);
 
   # --- Copy ROMs into destDir ------------------------------------------------
   if __prog_option_sync:
-    update_ROM_list(rom_copy_dic, sourceDir, destDir);
+    update_ROM_list(rom_copy_list, sourceDir, destDir);
   else:
-    copy_ROM_list(rom_copy_dic, sourceDir, destDir);
+    copy_ROM_list(rom_copy_list, sourceDir, destDir);
 
   # --- Generate NFO XML files with information for launchers
   if __prog_option_generate_NFO:
-    generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir);
+    generate_NFO_files(rom_copy_list, mame_filtered_dic, destDir);
 
   # --- Copy artwork
   if __prog_option_withArtWork:
     if __prog_option_sync:
-      update_ArtWork_list(filter_config, rom_copy_dic);
+      update_ArtWork_list(filter_config, rom_copy_list);
     else:
-      copy_ArtWork_list(filter_config, rom_copy_dic);
+      copy_ArtWork_list(filter_config, rom_copy_list);
 
   # If --cleanROMs is on then delete unknown files.
   if __prog_option_cleanROMs:
-    clean_ROMs_destDir(destDir, rom_copy_dic);
+    clean_ROMs_destDir(destDir, rom_copy_list);
 
 def do_printHelp():
   print """
@@ -1639,7 +1650,8 @@ def main(argv):
   # --- Optional arguments
   global __prog_option_log, __prog_option_log_filename;
   global __prog_option_dry_run;
-  global __prog_option_generate_NFO, __prog_option_withArtWork;
+  global __prog_option_generate_NFO;
+  global __prog_option_withArtWork;
   global __prog_option_cleanROMs, __prog_option_sync;
 
   if args.verbose:
