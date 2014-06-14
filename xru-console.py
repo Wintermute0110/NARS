@@ -596,6 +596,7 @@ def do_list_nointro(filterName):
 
 def do_check_nointro(filterName):
   "List of NoIntro XML file"
+
   print_info('[Listing No-Intro DAT file]');
   print_info(' Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
@@ -652,15 +653,18 @@ def do_check_nointro(filterName):
   print_info('Missing ROMs = ' + str(missing_roms));
   print_info('Unknown ROMs = ' + str(unknown_roms));
 
-def do_taglist(configFile):
-  "Documentation of do_taglist() function"
+def do_taglist(filterName):
+  "Makes a histograms of the tags"
 
-  folderName = configFile.sourceDir;
+  print_info('[Listing tags]');
+  print_info(' Filter name = ' + filterName);
+  filter_config = get_Filter_Config(filterName);
+  folderName = filter_config.sourceDir;
 
   # Check if dest directory exists
   if not os.path.isdir(folderName):
-    print 'Source directory does not exist'
-    print folderName;
+    print_error('Source directory not found');
+    print_error(folderName);
     sys.exit(10);
 
   # Traverse directory, for every file extract properties, and add them to the
@@ -668,10 +672,9 @@ def do_taglist(configFile):
   propertiesDic = {};
   for file in os.listdir(folderName):
     if file.endswith(".zip"):
-      # print file;
       romProperties = extract_ROM_Properties_All(file);
       if len(romProperties) == 0:
-        print file + 'Has no tags!';
+        print_error(file + 'Has no tags!');
         sys.exit(10);
       else:
         for property in romProperties:
@@ -682,8 +685,9 @@ def do_taglist(configFile):
 
   # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
   sorted_propertiesDic = sorted(propertiesDic.iteritems(), key=operator.itemgetter(1))
-
-  dumpclean(sorted_propertiesDic);
+  print_info('[Tag histogram]');
+  for key in sorted_propertiesDic:
+    print_info('{:6d}'.format(key[1]) + '  ' + key[0]);
 
 # ----------------------------------------------------------------------------
 # Update ROMs in destDir
