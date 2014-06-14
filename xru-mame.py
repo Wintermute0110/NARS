@@ -336,6 +336,22 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
   fanartDestDir = filter_config.fanartDestDir;
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
+  
+  # --- Check that directories exist
+  if not os.path.isdir(thumbsSourceDir):
+    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(thumbsDestDir):
+    print_error('thumbsDestDir not found ' + thumbsDestDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartSourceDir):
+    print_error('fanartSourceDir not found ' + fanartSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartDestDir):
+    print_error('fanartDestDir not found ' + fanartDestDir);
+    sys.exit(10);
+  
+  # --- Copy artwork
   for rom_copy_item in rom_copy_dic:
     romFileName = rom_copy_item + '.png';
     # --- Thumbs
@@ -363,6 +379,22 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
   fanartDestDir = filter_config.fanartDestDir;
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
+  
+  # --- Check that directories exist
+  if not os.path.isdir(thumbsSourceDir):
+    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(thumbsDestDir):
+    print_error('thumbsDestDir not found ' + thumbsDestDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartSourceDir):
+    print_error('fanartSourceDir not found ' + fanartSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartDestDir):
+    print_error('fanartDestDir not found ' + fanartDestDir);
+    sys.exit(10);
+  
+  # --- Copy artwork  
   for rom_copy_item in rom_copy_dic:
     romFileName = rom_copy_item + '.png';
     # --- Thumbs
