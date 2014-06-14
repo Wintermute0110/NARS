@@ -43,17 +43,8 @@ __prog_option_dry_run = 0;
 __prog_option_clean_NFO = 0;
 __prog_option_withArtWork = 0;
 __prog_option_cleanROMs = 0;
+__prog_option_cleanArtWork = 0;
 __prog_option_sync = 0;
-
-# --- Global DEBUG variables
-# TODO: debug variables should be where the debug functions are, not here
-# Comment them and check when the program fails
-
-# __debug_copy_ROM_file = 0;
-# __debug_main_ROM_list = 0;
-# __debug_filtered_ROM_list = 0;
-# __debug_total_filtered_ROM_list = 0;
-# __debug_config_file_parser = 0;
 
 # -----------------------------------------------------------------------------
 # DEBUG functions
@@ -477,6 +468,50 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
           break;
   
   return artwork_copy_list;
+
+def clean_ArtWork_destDir(filter_config, artwork_copy_list):
+  print_info('[Cleaning ArtWork]');
+
+  thumbsDestDir = filter_config.thumbsDestDir;
+  fanartDestDir = filter_config.fanartDestDir;
+  
+  # --- Check that directories exist
+  if not os.path.isdir(thumbsDestDir):
+    print_error('thumbsDestDir not found ' + thumbsDestDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartDestDir):
+    print_error('fanartDestDir not found ' + fanartDestDir);
+    sys.exit(10);
+
+  # --- Delete unknown thumbs
+  thumbs_list = [];
+  for file in os.listdir(thumbsDestDir):
+    if file.endswith(".png"):
+      thumbs_list.append(file);
+  num_cleaned_thumbs = 0;
+  for file in sorted(thumbs_list):
+    basename, ext = os.path.splitext(file); # Remove extension
+    if basename not in artwork_copy_list:
+      num_cleaned_thumbs += 1;
+      delete_ROM_file(file, thumbsDestDir);
+      print_info(' <Deleted thumb > ' + file);
+
+  # --- Delete unknown fanart
+  fanart_list = [];
+  for file in os.listdir(fanartDestDir):
+    if file.endswith(".png"):
+      fanart_list.append(file);
+  num_cleaned_fanart = 0;
+  for file in sorted(fanart_list):
+    basename, ext = os.path.splitext(file); # Remove extension
+    if basename not in artwork_copy_list:
+      num_cleaned_fanart += 1;
+      delete_ROM_file(file, fanartDestDir);
+      print_info(' <Deleted fanart> ' + file);
+
+  # --- Report
+  print_info(' Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
+  print_info(' Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
 
 # -----------------------------------------------------------------------------
 # Configuration file functions
@@ -1275,8 +1310,8 @@ def do_update(filterName):
       copy_ArtWork_list(filter_config, artwork_copy_list);
 
     # --- If --cleanArtWork is on then delete unknown files.
-    # if __prog_option_cleanArtWork:
-    #   clean_ArtWork_destDir(filter_config, artwork_copy_list);
+    if __prog_option_cleanArtWork:
+      clean_ArtWork_destDir(filter_config, artwork_copy_list);
 
 def do_printHelp():
   print """
@@ -1333,6 +1368,9 @@ def do_printHelp():
     Copies/Updates art work: fanart and thumbs for the launchers, if available.
     
    \033[35m--cleanROMs\033[0m
+    Deletes ROMs in destDir not present in the filtered ROM list.
+    
+    \033[35m--cleanArtWork\033[0m
     Deletes ROMs in destDir not present in the filtered ROM list."""
 
 # -----------------------------------------------------------------------------
@@ -1357,6 +1395,8 @@ def main(argv):
      action="store_true")
   parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", \
      action="store_true")
+  parser.add_argument("--cleanArtWork", help="clean unknown ArtWork", \
+     action="store_true")
   parser.add_argument("command", \
      help="usage, list, list-nointro, check-nointro, taglist, copy, \
            update", nargs = 1)
@@ -1369,7 +1409,8 @@ def main(argv):
   global __prog_option_dry_run;
   global __prog_option_clean_NFO;
   global __prog_option_withArtWork;
-  global __prog_option_cleanROMs, __prog_option_sync;
+  global __prog_option_cleanROMs, __prog_option_cleanArtWork;
+  global __prog_option_sync;
 
   if args.verbose:
     if args.verbose == 1:
@@ -1383,10 +1424,11 @@ def main(argv):
   if args.logto:
     __prog_option_log = 1;
     __prog_option_log_filename = args.logto[0];
-  if args.dryRun:      __prog_option_dry_run = 1;
-  if args.cleanNFO:    __prog_option_clean_NFO = 1;
-  if args.withArtWork: __prog_option_withArtWork = 1;
-  if args.cleanROMs:   __prog_option_cleanROMs = 1;
+  if args.dryRun:       __prog_option_dry_run = 1;
+  if args.cleanNFO:     __prog_option_clean_NFO = 1;
+  if args.withArtWork:  __prog_option_withArtWork = 1;
+  if args.cleanROMs:    __prog_option_cleanROMs = 1;
+  if args.cleanArtWork: __prog_option_cleanArtWork = 1;
 
   # --- Positional arguments that don't require parsing of the config file
   command = args.command[0];
