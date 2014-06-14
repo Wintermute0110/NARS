@@ -40,18 +40,20 @@ configuration = ConfigFile();
 __prog_option_log = 0;
 __prog_option_log_filename = __config_logFileName;
 __prog_option_dry_run = 0;
-__prog_option_delete_NFO = 0;
+__prog_option_clean_NFO = 0;
+__prog_option_withArtWork = 0;
+__prog_option_cleanROMs = 0;
 __prog_option_sync = 0;
 
 # --- Global DEBUG variables
 # TODO: debug variables should be where the debug functions are, not here
 # Comment them and check when the program fails
-__debug_propertyParsers = 0;
-__debug_copy_ROM_file = 0;
-__debug_main_ROM_list = 0;
-__debug_filtered_ROM_list = 0;
-__debug_total_filtered_ROM_list = 0;
-__debug_config_file_parser = 0;
+
+# __debug_copy_ROM_file = 0;
+# __debug_main_ROM_list = 0;
+# __debug_filtered_ROM_list = 0;
+# __debug_total_filtered_ROM_list = 0;
+# __debug_config_file_parser = 0;
 
 # -----------------------------------------------------------------------------
 # DEBUG functions
@@ -203,7 +205,7 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
-
+  num_files = 0;
   for rom_copy_item in rom_list:
     # Update progress
     romFileName = rom_copy_item + '.zip';
@@ -217,13 +219,15 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
 
     # Update progress
     step += 1;
+    num_files += 1;
+  print_info(' Copied ' + str(num_files) + ' ROMs');
 
 def update_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Updating ROMs into destDir]');
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
-
+  num_files = 0;
   for rom_copy_item in rom_list:
     # Update progress
     romFileName = rom_copy_item + '.zip';
@@ -243,17 +247,26 @@ def update_ROM_list(rom_list, sourceDir, destDir):
 
     # Update progress
     step += 1;
+    num_files += 1;
+  print_info(' Updated ' + str(num_files) + ' ROMs');
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
   print_info('[Cleaning ROMs in ROMsDest]');
 
   # --- Delete ROMs present in destDir not present in the filtered list
+  rom_main_list = [];
   for file in os.listdir(destDir):
     if file.endswith(".zip"):
-      basename, ext = os.path.splitext(file); # Remove extension
-      if basename not in rom_copy_dic:
-        delete_ROM_file(file, destDir);
-        print_info(' <Deleted> ' + file);
+      rom_main_list.append(file);
+      
+  num_cleaned_roms = 0;
+  for file in sorted(rom_main_list):
+    basename, ext = os.path.splitext(file); # Remove extension
+    if basename not in rom_copy_dic:
+      num_cleaned_roms += 1;
+      delete_ROM_file(file, destDir);
+      print_info(' <Deleted> ' + file);
+  print_info(' Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
 
 # -----------------------------------------------------------------------------
 # Configuration file functions
@@ -277,21 +290,23 @@ def parse_File_Config():
     if root_child.tag == 'collection':
       print_debug('<collection>');
       if 'name' in root_child.attrib:
-        # -- Mandatory config file options
-        # filter_class.sourceDir = '';
-        # filter_class.destDir = '';
-        # -- Optional config file options (deafault to empty string)
-        # filter_class.filterUpTags = '';
-        # filter_class.filterDownTags = '';
-        # filter_class.includeTags = '';
-        # filter_class.excludeTags = '';
         filter_class = ConfigFileFilter();
+        
+        # -- Mandatory config file options
         filter_class.name = root_child.attrib['name'];
         filter_class.shortname = root_child.attrib['shortname'];
         print_debug(' name           = ' + filter_class.name);
         print_debug(' shortname      = ' + filter_class.shortname);
         sourceDirFound = 0;
         destDirFound = 0;
+
+        # -- Optional config file options (deafault to empty string)
+        filter_class.filterUpTags = '';
+        filter_class.filterDownTags = '';
+        filter_class.includeTags = '';
+        filter_class.excludeTags = '';
+        filter_class.NoIntro_XML = '';
+        
         # - Initialise variables for the ConfigFileFilter object
         #   to avoid None objects later.
         for filter_child in root_child:
@@ -338,7 +353,7 @@ def parse_File_Config():
             print_debug(' NoIntroDat    = ' + filter_child.text);
             filter_class.NoIntro_XML = filter_child.text;
 
-        # - Trim blank spaces on lists
+        # - Trim blank spaces on filter lists
         if filter_class.filterUpTags is not None:
           for index, item in enumerate(filter_class.filterUpTags):
             filter_class.filterUpTags[index] = item.strip();
@@ -354,11 +369,6 @@ def parse_File_Config():
         if filter_class.excludeTags is not None:
           for index, item in enumerate(filter_class.excludeTags):
             filter_class.excludeTags[index] = item.strip();
-
-        # print_verb('filterUpTags   :' + filter_class.filterUpTags);
-        # print_verb('filterDownTags :' + filter_class.filterDownTags);
-        # print_verb('includeTags    :' + filter_class.includeTags);
-        # print_verb('excludeTags    :' + filter_class.excludeTags);
 
         # - Check for errors in this filter
         if not sourceDirFound:
@@ -388,74 +398,9 @@ def get_Filter_Config(filterName):
 # -----------------------------------------------------------------------------
 # Miscellaneous functions
 # -----------------------------------------------------------------------------
-# A class to store the source directory ROM list
-#
-class ROM:
-  # - Constructor. Parses the ROM file name and gets Tags and Base Name (name 
-  # with no tags).
-  def __init__(self, romFileName):
-    self.romFileName = romFileName;
-    self.romTags = self.get_ROM_tags(romFileName);
-    self.romBaseName = self.get_ROM_baseName(romFileName);
-    self.score = 0;
-
-  # - See extract_ROM_Properties_All() for reference
-  def get_ROM_tags(self, romFileName):
-    romProperties_raw = [];
-    romProperties_raw = re.findall("(\([^\(]*\))", romFileName);
-    romProperties_all = [];
-    for property in romProperties_raw:
-      property = property[1:-1]; # Strip parenthesis
-      
-      match = re.search(",", property);
-      if match:
-        subProperties = re.findall("([^\,]*)", property);
-        for subPropertie in subProperties:
-          if subPropertie:
-            subPropertieOK = subPropertie.strip();
-            romProperties_all.append(subPropertieOK);
-      else:
-        romProperties_all.append(property);
-
-    return romProperties_all;
-
-  def get_ROM_baseName(self, romFileName):
-    rom_baseName = '';
-    regSearch = re.search("[^\(\)]*", romFileName);
-    if regSearch == None:
-      print 'Logical error';
-      sys.exit(10);
-    regExp_result = regSearch.group();
-    return regExp_result.strip();
-
-  def scoreROM(self, upTag_list, downTag_list):
-    self.score = 0;
-
-    # Iterate through the tags, and add/subtract points depending on the list
-    # of given tags.
-    for tag in self.romTags:
-      # Up tags increase score
-      for upTag in upTag_list:
-        if tag == upTag:
-          self.score += 1;
-      # Down tags decrease the score
-      for downTag in downTag_list:
-        if tag == downTag:
-          self.score -= 1;
-
-  def isTag(self, tag_list):
-    result = 0;
-
-    for tag in self.romTags:
-      for testTag in tag_list:
-        if tag == testTag:
-          result = 1;
-          return result;
-
-    return result;
-
 def extract_ROM_Properties_Raw(romFileName):
   "Given a ROM file name extracts all the tags and returns a list"
+  __debug_propertyParsers = 0;
 
   romProperties_raw = [];
   romProperties_raw = re.findall("(\([^\(]*\))", romFileName);
@@ -468,8 +413,9 @@ def extract_ROM_Properties_Raw(romFileName):
   
   return romProperties_raw;
 
-def extract_ROM_Properties_All(romFileName):
+def extract_ROM_Tags_All(romFileName):
   "Given a ROM file name extracts all the tags and returns a list. Also parses tags"
+  __debug_propertyParsers = 0;
 
   # Extract Raw properties with parenthesis
   romProperties_raw = [];
@@ -510,6 +456,340 @@ def extract_ROM_Properties_All(romFileName):
     print '\n'
   
   return romProperties_all;
+
+def get_ROM_baseName(romFileName):
+  "Get baseName from filename (no extension, no tags)"
+  
+  rom_baseName = '';
+  regSearch = re.search("[^\(\)]*", romFileName);
+  if regSearch == None:
+    print 'Logical error';
+    sys.exit(10);
+  regExp_result = regSearch.group();
+  
+  return regExp_result.strip();
+  
+def scoreROM(romTags, upTag_list, downTag_list):
+  score = 0;
+
+  # Iterate through the tags, and add/subtract points depending on the list
+  # of given tags.
+  for tag in romTags:
+    # Up tags increase score
+    for upTag in upTag_list:
+      if tag == upTag:
+        score += 1;
+    # Down tags decrease the score
+    for downTag in downTag_list:
+      if tag == downTag:
+        score -= 1;  
+  return score;
+
+def isTag(tags, tag_list):
+  result = 0;
+
+  for tag in tags:
+    for testTag in tag_list:
+      if tag == testTag:
+        result = 1;
+        return result;
+
+  return result;
+
+class MainROM:
+  pass
+
+class NoIntro_ROM:
+  def __init__(self, baseName):
+    self.baseName = baseName;
+
+class dir_ROM:
+  def __init__(self, fileName):
+    self.fileName = fileName;
+
+# Parses a No-Intro DAT and creates an object with the XML information
+# Then, it creates a ROM main dictionary
+# romMainList [list of ROMMain]
+#  ROMMain.filenames [list] full game filename (with extension)
+#
+# The first game in the list is the parent game according to the DAT,
+# and the rest are the clones in no particular order.
+def get_NoIntro_Main_list(filter_config):
+  "Parses NoInto XML and makes a parent-clone list"
+  __debug_parse_NoIntro_XML_Config = 0;
+  
+  filename = filter_config.NoIntro_XML;
+  print_info(' Parsing No-Intro XML DAT');
+  print " Parsing No-Intro XML file " + filename + "...",;
+  sys.stdout.flush();
+  try:
+    tree = ET.parse(filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + input_filename);
+    sys.exit(10);
+  print ' done';
+
+  # --- Raw list: literal information from the XML
+  rom_raw_dict = {}; # Key is ROM baseName
+  root = tree.getroot();
+  num_games = 0;
+  num_parents = 0;
+  num_clones = 0;
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      num_games += 1;
+
+      # --- Game attributes
+      game_attrib = game_EL.attrib;
+      romName = game_attrib['name'];
+      romObject = NoIntro_ROM(romName);
+      if __debug_parse_NoIntro_XML_Config:
+        print 'Game = ' + romName;
+
+      if 'cloneof' in game_attrib:
+        num_clones += 1;
+        romObject.cloneof = game_attrib['cloneof'];
+        romObject.isclone = 1;
+        if __debug_parse_NoIntro_XML_Config:
+          print ' Clone of = ' + game_attrib['cloneof'];
+      else:
+        num_parents += 1;
+        romObject.isclone = 0;
+
+      # Add new game to the list
+      rom_raw_dict[romName] = romObject;
+  del tree;
+  print_info(' Total number of games = ' + str(num_games));
+  print_info(' Number of parents = ' + str(num_parents));
+  print_info(' Number of clones = ' + str(num_clones));
+
+  # --- Create a parent-clone list
+  rom_pclone_dict = {};
+  # Naive algorithm, two passes.
+  # First traverse the raw list and make a list of parent games
+  for key in rom_raw_dict:
+    gameObj = rom_raw_dict[key];
+    if not gameObj.isclone:
+      romObject = NoIntro_ROM(key);
+      romObject.hasClones = 0;
+      rom_pclone_dict[key] = romObject;
+
+  # Second pass: traverse the raw list for clones and assign clone ROMS to 
+  # their parents
+  num_parents = 0;
+  num_clones = 0;
+  for key in rom_raw_dict:
+    gameObj = rom_raw_dict[key];
+    if gameObj.isclone:
+      num_clones += 1;
+      # Find parent ROM. Raise error if not found
+      if gameObj.cloneof in rom_pclone_dict:
+        # Add clone ROM to the list of clones
+        parentObj = rom_pclone_dict[gameObj.cloneof];
+        if not hasattr(parentObj, 'clone_list'):
+          parentObj.clone_list = [];
+          parentObj.hasClones = 1;
+        parentObj.clone_list.append(key);
+      else:
+        print 'Game "' + key + '"';
+        print 'Parent "' + gameObj.cloneof + '"';
+        print 'Parent ROM not found "' + gameObj.cloneof + '"';
+        sys.exit(10);
+    else:
+      num_parents += 1;
+
+  # DEBUG: print parent-clone list
+  for key in rom_pclone_dict:
+    romObj = rom_pclone_dict[key];
+    print_debug(" <Parent> '" + romObj.baseName + "'");
+    if romObj.hasClones:
+      for clone in romObj.clone_list:
+        print_debug("  <Clone> '" + clone + "'");
+
+  # --- Create ROM main list
+  romMainList_list = [];
+  for key in rom_pclone_dict:
+    romNoIntroObj = rom_pclone_dict[key];
+    # - Create object and add first ROM (parent ROM)
+    mainROM = MainROM();
+    mainROM.filenames = [];
+    mainROM.filenames.append(romNoIntroObj.baseName + '.zip');    
+    # - If game has clones add them to the list of filenames
+    if romNoIntroObj.hasClones:
+      for clone in romNoIntroObj.clone_list:
+        mainROM.filenames.append(clone + '.zip');    
+    # - Add MainROM to the list
+    romMainList_list.append(mainROM);
+
+  return romMainList_list;
+
+def get_directory_Main_list(filter_config):
+  "Reads a directory and creates a unique ROM parent/clone list"
+  __debug_sourceDir_ROM_scanner = 0;
+  
+  # --- Read all files in sourceDir
+  print_info('[Reading ROMs in source dir]');
+  sourceDir = filter_config.sourceDir;
+  romMainList_dict = {};
+  num_ROMs_sourceDir = 0;
+  for file in os.listdir(sourceDir):
+    if file.endswith(".zip"):
+      num_ROMs_sourceDir += 1;
+      romObject = dir_ROM(file);
+      romObject.baseName = get_ROM_baseName(file);
+      romMainList_dict[file] = romObject;
+      if __debug_sourceDir_ROM_scanner:
+        print "  ROM       '" + romObject.fileName + "'";
+        print "   baseName '" + romObject.baseName + "'";
+  print_info(' Found ' + str(num_ROMs_sourceDir) + ' ROMs');
+  
+  # --- Create a parent/clone list based on the baseName of the ROM
+  pclone_ROM_dict = {}; # Key is ROM basename
+  for key in romMainList_dict:
+    baseName = romMainList_dict[key].baseName;
+    fileName = romMainList_dict[key].fileName;
+    # If baseName exists, add this ROM to that
+    if baseName in pclone_ROM_dict:
+      pclone_ROM_dict[baseName].append(fileName);
+    # If not, create a new entry
+    else:
+      filenames = [];
+      filenames.append(fileName);
+      pclone_ROM_dict[baseName] = filenames;
+  
+  # --- Create ROM main list
+  romMainList_list = [];
+  for key in pclone_ROM_dict:
+    # - Create object and add first ROM (parent ROM)
+    mainROM = MainROM();
+    mainROM.filenames = pclone_ROM_dict[key];
+    # - Add MainROM to the list
+    romMainList_list.append(mainROM);   
+
+  return romMainList_list;
+
+# returns rom_Tag_dic
+#  key = ROM filename 'Super Mario (World) (Rev 1).zip'
+#  elements = list of tags ['World', 'Rev 1']
+def get_Tag_list(romMainList_list):
+  "Extracts tags from filenames and creates a dictionary with them"
+
+  rom_Tag_dic = {};
+  for item in romMainList_list:
+    filenames_list = item.filenames;
+    for filename in filenames_list:
+      rom_Tag_dic[filename] = extract_ROM_Tags_All(filename);
+   
+  return rom_Tag_dic;
+
+def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
+  "Score and filter the main ROM list"
+  print_info('[Filtering ROMs]');
+  __debug_main_ROM_list = 0;
+
+  upTag_list = filter_config.filterUpTags;
+  downTag_list = filter_config.filterDownTags;
+  includeTag_list = filter_config.includeTags;
+  excludeTag_list = filter_config.excludeTags;
+
+  # --- Add ROM scores to ROM main list
+  for mainROM_obj in romMain_list:
+    scores_list = [];
+    for filename in mainROM_obj.filenames:
+      tags = rom_Tag_dic[filename];
+      ROM_score = scoreROM(tags, upTag_list, downTag_list);
+      scores_list.append(ROM_score);
+    mainROM_obj.scores = scores_list;
+
+  # --- Add include/exclude filters to ROM main list
+  for mainROM_obj in romMain_list:
+    include_list = [];
+    for filename in mainROM_obj.filenames:
+      tags = rom_Tag_dic[filename];
+      has_excluded_tag = isTag(tags, excludeTag_list);
+      has_included_tag = isTag(tags, includeTag_list);
+      includeThisROM = 1;
+      if has_excluded_tag and not has_included_tag:
+        includeThisROM = 0;
+      include_list.append(includeThisROM);
+    mainROM_obj.include = include_list;
+
+  # --- DEBUG: print main ROM list wiht scores and include flags
+  if __debug_main_ROM_list:
+    print "[DEBUG main ROM list scored]";
+    for mainROM_obj in romMain_list:
+      print mainROM_obj.filenames;
+      print mainROM_obj.scores;
+      print mainROM_obj.include;
+
+  # --- Order the main List based on scores and include flags
+  #     Don't remove excluded ROMs because they may be useful to copy
+  #     artwork (for example, the use has artwork for an excluded ROM
+  #     belonging to the same set as the first ROM).
+  romMain_list_sorted = [];
+  for mainROM_obj in romMain_list:
+    # --- Get a list with the indices of the sorted list
+    sorted_idx = [i[0] for i in sorted(enumerate(mainROM_obj.scores), key=lambda x:x[1])];
+    # print sorted_idx;
+
+    # --- List comprehension
+    mainROM_sorted = MainROM();
+    mainROM_sorted.filenames = [mainROM_obj.filenames[i] for i in sorted_idx]
+    mainROM_sorted.scores = [mainROM_obj.scores[i] for i in sorted_idx]
+    mainROM_sorted.include = [mainROM_obj.include[i] for i in sorted_idx]
+
+  return romMain_list;
+
+def create_copy_list(romMain_list, filter_config):
+  "Creates the list of ROMs to be copied based on the ordered main ROM list"
+
+  # --- Scan sourceDir to get the list of available ROMs
+  print_info('[Scanning sourceDir for ROMs to be copied]');
+  sourceDir = filter_config.sourceDir;
+  rom_main_list = [];
+  for file in os.listdir(sourceDir):
+    if file.endswith(".zip"):
+      rom_main_list.append(file);
+
+  # - From the parent/clone list, pick the first available ROM (and
+  #   not excluded) to be copied.
+  print_info('[Creating list of ROMs to be copied/updated]');
+  rom_copy_list = [];
+  for mainROM_obj in romMain_list:
+    num_set_files = len(mainROM_obj.filenames);
+    for index in range(num_set_files):
+      filename = mainROM_obj.filenames[index];
+      includeFlag = mainROM_obj.include[index];
+      if filename in rom_main_list and includeFlag:
+        rom_copy_list.append(filename);
+        # Only pick first ROM of the list available
+        break;
+  
+  # --- Sort list alphabetically
+  rom_copy_list_sorted = sorted(rom_copy_list);
+  
+  # --- Remove extension
+  rom_copy_list_sorted_basename = [];
+  for s in rom_copy_list_sorted:
+    (name, extension) = os.path.splitext(s);
+    rom_copy_list_sorted_basename.append(name);
+
+  return rom_copy_list_sorted_basename;
+
+def delete_redundant_NFO(destDir):
+  print_info('[Deleting redundant NFO files]');
+  num_deletedNFO_files = 0;
+  for file in os.listdir(destDir):
+    if file.endswith(".nfo"):
+      # Chech if there is a corresponding ROM for this NFO file
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      romFileName_temp = thisFileName + '.zip';
+      if not exists_ROM_file(romFileName_temp, destDir):
+        delete_ROM_file(file, destDir);
+        num_deletedNFO_files += 1;
+        print_info(' <Deleted NFO> ' + file + '\n');
+  print_info(' Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
 
 # -----------------------------------------------------------------------------
 # Main body functions
@@ -563,8 +843,6 @@ def do_list_nointro(filterName):
   print_info(' Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
   filename = filter_config.NoIntro_XML;
-  print filter_config.NoIntro_XML;
-  
   print_info(' Parsing No-Intro XML DAT');
   print " Parsing No-Intro merged XML file " + filename + "...",;
   sys.stdout.flush();
@@ -691,172 +969,58 @@ def do_taglist(filterName):
 
 # ----------------------------------------------------------------------------
 # Update ROMs in destDir
-def do_update(configFile):
+def do_update(filterName):
   "Applies filter and updates (copies) ROMs"
+  print_info('[Copy/Update ROMs]');
+  print_info(' Filter name = ' + filterName);
 
-  # - Mandatory config file options
-  sourceDir = configFile.sourceDir;
-  destDir = configFile.destDir;
-  # - Optional config file options (deafault to empty string)
-  upTag_list = configFile.filterUpTags;
-  downTag_list = configFile.filterDownTags;
-  includeTag_list = configFile.includeTags;
-  excludeTag_list = configFile.excludeTags;
+  # --- Get configuration for the selected filter and check for errors
+  filter_config = get_Filter_Config(filterName);
+  sourceDir = filter_config.sourceDir;
+  destDir = filter_config.destDir;
 
-  # User wants to log operations performed to a file
-  if __prog_option_print_report:
-    reportFileName = 'xru-' + configFile.romSetName + '.txt';
-    print '[Writing report into ' + reportFileName + ']';
-    report_f = open(reportFileName, 'w');
-  
-  # Check if dest directory exists
+  # --- Check for errors, missing paths, etc...
   if not os.path.isdir(sourceDir):
-    print 'Source directory does not exist'
-    print sourceDir;
+    print_error('Source directory does not exist' + sourceDir);
     sys.exit(10);
 
   if not os.path.isdir(destDir):
-    print 'Source directory does not exist'
-    print destDir;
+    print_error('Destination directory does not exist' + destDir);
     sys.exit(10);
 
-  # Parse sourceDir ROM list and extract tags and base names. Create main ROM list
-  # Give scores to main ROM list based on filters
-  print '[Reading ROMs in source dir]';
-  romMainList_dict = {};
-  num_ROMs_sourceDir = 0;
-  for file in os.listdir(sourceDir):
-    if file.endswith(".zip"):
-      num_ROMs_sourceDir += 1;
-      romObject = ROM(file);
-      romObject.scoreROM(upTag_list, downTag_list);
-      romMainList_dict[file] = romObject;
-  print ' Found', str(num_ROMs_sourceDir), 'ROMs';
+  # --- Obtain main parent/clone list, either based on DAT or filelist
+  if filter_config.NoIntro_XML == '':
+    print_info(' Using directory listing');
+    romMainList_list = get_directory_Main_list(filter_config);
+  else:
+    print_info(' Using No-Intro parent/clone DAT');
+    romMainList_list = get_NoIntro_Main_list(filter_config);
 
-  # --- DEBUG main ROM list
-  if __debug_main_ROM_list:
-    print "========== Main ROM list (with scores) ==========";
-    for key in romMainList_dict:
-      romObject = romMainList_dict[key];
-      print '----- ' + romObject.romFileName + ' ----- '; # ROM file name
-      print "  Tags     : " + str(romObject.romTags).translate(None, "'") # Tags
-      print "  Base name: '" + romObject.romBaseName + "'"; # Base name
-      print "  Score    : " + str(romObject.score); # Score
-    print "\n";
-
-  # Pick ROMs with highest scores among ROMs with same Base Name
-  # Algol: iterate the main ROM list. Create a dictionary with key the base
-  # names and values the ROM file name.
-  print '[Filtering ROMs]';
-  highScoreUniqueRoms = {};
-  highScoreUniqueRoms_scores = {};
-  for key in romMainList_dict:
-    romObject = romMainList_dict[key];
-    key_string = romObject.romBaseName;
-    if key_string in highScoreUniqueRoms:
-      # Check if current object has highest score than stored one
-      scoreCurrent = romObject.score;
-      scoreStored = highScoreUniqueRoms_scores[key_string];
-      if scoreCurrent > scoreStored:
-        highScoreUniqueRoms[key_string] = romObject.romFileName;
-        highScoreUniqueRoms_scores[key_string] = romObject.score;
-    else:
-      highScoreUniqueRoms[key_string] = romObject.romFileName;
-      highScoreUniqueRoms_scores[key_string] = romObject.score;
-
-  # --- DEBUG filtered ROM list
-  if __debug_filtered_ROM_list:
-    print "========== Filtered ROM list ==========";
-    for key in highScoreUniqueRoms:
-      print key, highScoreUniqueRoms[key], highScoreUniqueRoms_scores[key];
-    print "\n";
-
-  # Apply include/exclude filters. Exclude filter is applied first (if a ROM
-  # contains a excluded tag remove, unless it also has an included tag)
-  uniqueAndFilteredRoms = [];
-  for key in highScoreUniqueRoms:
-    romFileName = highScoreUniqueRoms[key];
-    romObject = romMainList_dict[romFileName];
-    has_excluded_tag = romObject.isTag(excludeTag_list);
-    has_included_tag = romObject.isTag(includeTag_list);
-    includeThisROM = 1;
-    if has_excluded_tag and not has_included_tag:
-      includeThisROM = 0;
-
-    if includeThisROM:
-      uniqueAndFilteredRoms.append(romFileName);
-  print ' After filtering there are', str(len(uniqueAndFilteredRoms)), 'ROMs';
-
-  # --- DEBUG filtered ROM list
-  if __debug_total_filtered_ROM_list:
-    print "========== Total filtered ROM list ==========";
-    for romFileName in uniqueAndFilteredRoms:
-      print romFileName;
-    print "\n";
-
-  # --- Copy filtered files into destDir
-  # NOTE: use this function copy_ROM_list(rom_list, sourceDir, destDir):
-  # Don't want complex code here!
-  if __prog_option_sync: 
-    print '[Updating ROMs]';
-    num_checked_ROMs = 0;
-    num_copied_ROMs = 0;
-    for romFileName in uniqueAndFilteredRoms:
-      # If we are synchronising, only copy ROMs if size in sourceDir/destDir
-      # is different
-      retVal = update_ROM_file(romFileName, sourceDir, destDir);
-      if retVal: num_checked_ROMs += 1;
-      else:      num_copied_ROMs += 1;
-      if __prog_option_print_report:
-        if retVal:
-          report_f.write('[Updated] ' + romFileName + '\n');
-        else:
-          report_f.write('[Copied] ' + romFileName + '\n');
-    print ' Checked', str(num_checked_ROMs), 'ROMs';
-    print ' Copied', str(num_copied_ROMs), 'ROMs';
-  else: 
-    print '[Copying ROMs]';
-    num_copied_ROMs = 0;
-    for romFileName in uniqueAndFilteredRoms:
-      copy_ROM_file(romFileName, sourceDir, destDir);
-      num_copied_ROMs += 1;
-      if __prog_option_print_report:
-        report_f.write('[Copied] ' + romFileName + '\n');
-    print ' Copied', str(num_copied_ROMs), 'ROMs';
+  # --- Get tag list for every rom
+  rom_Tag_dic = get_Tag_list(romMainList_list);
+  
+  # --- Calculate scores based on filters and reorder the main
+  #     list with higher scores first. Also applies exclude/include filters.
+  romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config);
+  
+  # --- Make a list of files to be copied, depending on ROMS present in
+  #     sourceDir. Takes into account the ROM scores and the
+  #     exclude/include filters.
+  rom_copy_list = create_copy_list(romMainList_list, filter_config);
+  
+  # --- Copy/Update ROMs into destDir
+  if __prog_option_sync:
+    update_ROM_list(rom_copy_list, sourceDir, destDir);
+  else:
+    copy_ROM_list(rom_copy_list, sourceDir, destDir);  
 
   # --- Delete NFO files of ROMs not present in the destination directory.
-  if __prog_option_delete_NFO:
-    print '[Deleting redundant NFO files]';
-    num_deletedNFO_files = 0;
-    for file in os.listdir(destDir):
-      if file.endswith(".nfo"):
-        # Chech if there is a corresponding ROM for this NFO file
-        thisFileName, thisFileExtension = os.path.splitext(file);
-        romFileName_temp = thisFileName + '.zip';
-        if not exists_ROM_file(romFileName_temp, destDir):
-          delete_ROM_file(file, destDir);
-          num_deletedNFO_files += 1;
-          if __prog_option_print_report:
-            report_f.write('[Deleted NFO] ' + file + '\n');
-    print ' Deleted', str(num_deletedNFO_files), 'redundant NFO files';
+  if __prog_option_clean_NFO:
+    delete_redundant_NFO(destDir);
 
-  # --- Update command deletes redundant ROMs
-  if __prog_option_sync:
-    print '[Deleting filtered out/redundant ROMs in destination directory]';
-    # Delete ROMs present in destDir not present in the filtered list
-    num_deletedROMs_files = 0;
-    for file in os.listdir(destDir):
-      if file.endswith(".zip"):
-        if file not in uniqueAndFilteredRoms:
-          delete_ROM_file(file, destDir);
-          num_deletedROMs_files += 1;
-          if __prog_option_print_report:
-            report_f.write('[Deleted] ' + file + '\n');
-    print ' Deleted', str(num_deletedROMs_files), 'filtered out/redundant ROMs';
-
-  # Close log file
-  if __prog_option_print_report:
-    report_f.close();
+  # --- If --cleanROMs is on then delete unknown files.
+  if __prog_option_cleanROMs:
+    clean_ROMs_destDir(destDir, rom_copy_list);
 
 def do_printHelp():
   print """
@@ -906,11 +1070,11 @@ def do_printHelp():
   \033[35m--dryRun\033[0m
     Don't modify destDir at all, just print the operations to be done.
 
-   \033[35m--generateNFO\033[0m
-    Generates NFO files with game information for the launchers.
+   \033[35m--cleanNFO\033[0m
+    Deletes redundant NFO files in destination directory.
 
    \033[35m--withArtWork\033[0m
-    Copies/Updates art work: fanart and thumbs for the launchers.
+    Copies/Updates art work: fanart and thumbs for the launchers, if available.
     
    \033[35m--cleanROMs\033[0m
     Deletes ROMs in destDir not present in the filtered ROM list."""
@@ -931,7 +1095,7 @@ def main(argv):
      nargs = 1)
   parser.add_argument("--dryRun", help="don't modify any files", \
      action="store_true")
-  parser.add_argument("--generateNFO", help="generate NFO files", \
+  parser.add_argument("--cleanNFO", help="clean redundant NFO files", \
      action="store_true")
   parser.add_argument("--withArtWork", help="copy/update artwork", \
      action="store_true")
@@ -947,7 +1111,8 @@ def main(argv):
   # Needed to modify global copy of globvar
   global __prog_option_log, __prog_option_log_filename;
   global __prog_option_dry_run;
-  global __prog_option_generate_NFO, __prog_option_withArtWork;
+  global __prog_option_clean_NFO;
+  global __prog_option_withArtWork;
   global __prog_option_cleanROMs, __prog_option_sync;
 
   if args.verbose:
@@ -963,7 +1128,7 @@ def main(argv):
     __prog_option_log = 1;
     __prog_option_log_filename = args.logto[0];
   if args.dryRun:      __prog_option_dry_run = 1;
-  if args.generateNFO: __prog_option_generate_NFO = 1;
+  if args.cleanNFO:    __prog_option_clean_NFO = 1;
   if args.withArtWork: __prog_option_withArtWork = 1;
   if args.cleanROMs:   __prog_option_cleanROMs = 1;
 
