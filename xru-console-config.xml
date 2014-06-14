@@ -3,8 +3,15 @@
 
 <!-- Nintendo ROMS -->
 <collection name="SNES NoIntro" shortname="snes">
-  <source>/home/xbmc/roms/roms-snes/</source>
-  <dest>/home/xbmc/NUC/ROMs/roms-snes/</dest>
+  <NoIntroDat>/home/xbmc/roms/DATs/Nintendo - Super Nintendo Entertainment System Parent-Clone (20140608-202038).dat</NoIntroDat>
+  <ROMsSource>/home/xbmc/roms/roms-nintendo-snes/</ROMsSource>
+  <ROMsDest>/home/xbmc/NUC/ROMs/roms-nintendo-snes/</ROMsDest>
+
+  <ThumbsSource>/home/xbmc/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
+  <FanartSource>/home/xbmc/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
+  <ThumbsDest>/home/xbmc/NUC/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
+  <FanartDest>/home/xbmc/NUC/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
+
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto, France</filterDownTags>
   <includeTags>Europe, USA</includeTags>
@@ -13,8 +20,15 @@
 
 <!-- Sega ROMS -->
 <collection name="Sega Mega Drive NoIntro" shortname="genesis">
-  <source>/home/xbmc/roms/roms-genesis/</source>
-  <dest>/home/xbmc/NUC/ROMs/roms-genesis/</dest>
+  <NoIntroDat>/home/xbmc/roms/DATs/Sega - Mega Drive - Genesis Parent-Clone (20140601-111936).dat</NoIntroDat>
+  <ROMsSource>/home/xbmc/roms/roms-sega-genesis/</ROMsSource>
+  <ROMsDest>/home/xbmc/NUC/ROMs/roms-sega-genesis/</ROMsDest>
+
+  <ThumbsSource>/home/xbmc/roms/ArtWork/sega-genesis-boxes/</ThumbsSource>
+  <FanartSource>/home/xbmc/roms/ArtWork/sega-genesis-snaps/</FanartSource>
+  <ThumbsDest>/home/xbmc/NUC/ROMs/ArtWork/sega-genesis-thumbs/</ThumbsDest>
+  <FanartDest>/home/xbmc/NUC/ROMs/ArtWork/sega-genesis-fanart/</FanartDest>
+
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto</filterDownTags>
   <includeTags>Europe, USA</includeTags>
