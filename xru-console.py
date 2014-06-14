@@ -137,6 +137,63 @@ def print_debug(print_str):
 # -----------------------------------------------------------------------------
 # Filesystem functions
 # -----------------------------------------------------------------------------
+# Returns:
+#  0 - ArtWork file found in sourceDir and copied
+#  1 - ArtWork file not found in sourceDir
+def copy_ArtWork_file(fileName, sourceDir, destDir):
+  sourceFullFilename = sourceDir + fileName;
+  destFullFilename = destDir + fileName;
+
+  # Maybe artwork does not exist... Then do nothing
+  if not os.path.isfile(sourceFullFilename):
+    return 1;
+
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
+  if not __prog_option_dry_run:
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      print_debug("copy_ArtWork_file >> Error happened");
+
+  return 0;
+
+# Returns:
+#  0 - ArtWork file found in sourceDir and copied
+#  1 - ArtWork file not found in sourceDir
+#  2 - ArtWork file found in sourceDir and destDir, same size so not copied
+def update_ArtWork_file(fileName, sourceDir, destDir):
+  sourceFullFilename = sourceDir + fileName;
+  destFullFilename = destDir + fileName;
+  
+  existsSource = os.path.isfile(sourceFullFilename);
+  existsDest = os.path.isfile(destFullFilename);
+  # Maybe artwork does not exist... Then do nothing
+  if not os.path.isfile(sourceFullFilename):
+    return 1;
+
+  sizeSource = os.path.getsize(sourceFullFilename);
+  if existsDest:
+    sizeDest = os.path.getsize(destFullFilename);
+  else:
+    sizeDest = -1;
+
+  # If sizes are equal Skip copy and return 1
+  if sizeSource == sizeDest:
+    print_debug(' Updated ' + destFullFilename);
+    return 2;
+
+  # destFile does not exist or sizes are different, copy.
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
+  if not __prog_option_dry_run:
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      print_debug("update_ArtWork_file >> Error happened");
+
+  return 0
+
 def copy_ROM_file(fileName, sourceDir, destDir):
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
@@ -258,7 +315,7 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
   for file in os.listdir(destDir):
     if file.endswith(".zip"):
       rom_main_list.append(file);
-      
+
   num_cleaned_roms = 0;
   for file in sorted(rom_main_list):
     basename, ext = os.path.splitext(file); # Remove extension
@@ -267,6 +324,159 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
       delete_ROM_file(file, destDir);
       print_info(' <Deleted> ' + file);
   print_info(' Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
+
+def copy_ArtWork_list(filter_config, rom_copy_dic):
+  print_info('[Copying ArtWork]');
+  fanartSourceDir = filter_config.fanartSourceDir;
+  fanartDestDir = filter_config.fanartDestDir;
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  thumbsDestDir = filter_config.thumbsDestDir;
+  
+  # --- Check that directories exist
+  if not os.path.isdir(thumbsSourceDir):
+    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(thumbsDestDir):
+    print_error('thumbsDestDir not found ' + thumbsDestDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartSourceDir):
+    print_error('fanartSourceDir not found ' + fanartSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartDestDir):
+    print_error('fanartDestDir not found ' + fanartDestDir);
+    sys.exit(10);
+  
+  # --- Copy artwork
+  for rom_copy_item in rom_copy_dic:
+    romFileName = rom_copy_item + '.png';
+    # --- Thumbs
+    ret = copy_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
+    if ret == 0:
+      print_info(' <Copied Thumb  > ' + romFileName);
+    elif ret == 1:
+      print_info(' <Missing Thumb > ' + romFileName);
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+    # --- Fanart
+    ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
+    if ret == 0:
+      print_info(' <Copied Fanart > ' + romFileName);
+    elif ret == 1:
+      print_info(' <Missing Fanart> ' + romFileName);
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+
+def update_ArtWork_list(filter_config, rom_copy_dic):
+  print_info('[Updating ArtWork]');
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  thumbsDestDir = filter_config.thumbsDestDir;
+  fanartSourceDir = filter_config.fanartSourceDir;
+  fanartDestDir = filter_config.fanartDestDir;
+  
+  # --- Check that directories exist
+  if not os.path.isdir(thumbsSourceDir):
+    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(thumbsDestDir):
+    print_error('thumbsDestDir not found ' + thumbsDestDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartSourceDir):
+    print_error('fanartSourceDir not found ' + fanartSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartDestDir):
+    print_error('fanartDestDir not found ' + fanartDestDir);
+    sys.exit(10);
+  
+  # --- Copy artwork
+  for rom_copy_item in rom_copy_dic:
+    romFileName = rom_copy_item + '.png';
+    # --- Thumbs
+    ret = update_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
+    if ret == 0:
+      print_info(' <Copied  Thumb > ' + romFileName);
+    elif ret == 1:
+      print_info(' <Missing Thumb > ' + romFileName);
+    elif ret == 2:
+      print_info(' <Updated Thumb > ' + romFileName);
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+    # --- Fanart
+    ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
+    if ret == 0:
+      print_info(' <Copied  Fanart> ' + romFileName);
+    elif ret == 1:
+      print_info(' <Missing Fanart> ' + romFileName);
+    elif ret == 2:
+      print_info(' <Updated Fanart> ' + romFileName);
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+
+# Artwork maybe available for some of the parent/clones in the ROM set, but
+# not for the filtered ROMs. This function test this and makes a list of the
+# available artwork that approximates the filtered ROM list.
+def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
+  "Write me"
+  __debug_optimize_ArtWork = 0;
+  
+  print_info('[Optimising ArtWork file list]');
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  thumbsDestDir = filter_config.thumbsDestDir;
+  fanartSourceDir = filter_config.fanartSourceDir;
+  fanartDestDir = filter_config.fanartDestDir;
+  
+  # --- Check that directories exist
+  if not os.path.isdir(thumbsSourceDir):
+    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(thumbsDestDir):
+    print_error('thumbsDestDir not found ' + thumbsDestDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartSourceDir):
+    print_error('fanartSourceDir not found ' + fanartSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartDestDir):
+    print_error('fanartDestDir not found ' + fanartDestDir);
+    sys.exit(10);
+
+  # - For every ROM to be copied (filtered) check if ArtWork exists. If not,
+  # try artwork of other ROMs in the parent/clone set.
+  artwork_copy_list = [];
+  for rom_copy_item in rom_copy_list:
+    romFileName = rom_copy_item + '.png';
+    if __debug_optimize_ArtWork:
+      print 'Testing     ', romFileName;
+    if os.path.isfile(thumbsSourceDir + romFileName):
+      if __debug_optimize_ArtWork:
+        print ' Added      ', rom_copy_item;
+      artwork_copy_list.append(rom_copy_item);
+    else:
+      if __debug_optimize_ArtWork:
+        print ' NOT found  ', romFileName;
+      # Brute force check
+      file = rom_copy_item + '.zip';
+      pclone_list = [];
+      for item in romMainList_list:
+        filenames_list = item.filenames;
+        if file in filenames_list:
+          pclone_list = filenames_list;
+          break;
+      if len(pclone_list) == 0:
+        print_error('Logical error');
+        sys.exit(10);
+      # Check if artwork exists for this set
+      for file in pclone_list:
+        root, ext = os.path.splitext(file);
+        if os.path.isfile(thumbsSourceDir + root + '.png'):
+          if __debug_optimize_ArtWork:
+            print ' Added clone', root;
+          artwork_copy_list.append(root);
+          break;
+  
+  return artwork_copy_list;
 
 # -----------------------------------------------------------------------------
 # Configuration file functions
@@ -301,6 +511,10 @@ def parse_File_Config():
         destDirFound = 0;
 
         # -- Optional config file options (deafault to empty string)
+        filter_class.fanartSourceDir = '';
+        filter_class.fanartDestDir = '';
+        filter_class.thumbsSourceDir = '';
+        filter_class.thumbsDestDir = '';
         filter_class.filterUpTags = '';
         filter_class.filterDownTags = '';
         filter_class.includeTags = '';
@@ -310,15 +524,43 @@ def parse_File_Config():
         # - Initialise variables for the ConfigFileFilter object
         #   to avoid None objects later.
         for filter_child in root_child:
-          if filter_child.tag == 'source':
-            print_debug(' Source         = ' + filter_child.text);
+          if filter_child.tag == 'ROMsSource':
+            print_debug(' ROMsSource    = ' + filter_child.text);
             sourceDirFound = 1;
-            filter_class.sourceDir = filter_child.text
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.sourceDir = tempDir;
 
-          elif filter_child.tag == 'dest':
-            print_debug(' Destination    = ' + filter_child.text);
+          elif filter_child.tag == 'ROMsDest':
+            print_debug(' ROMsDest      = ' + filter_child.text);
             destDirFound = 1;
-            filter_class.destDir = filter_child.text
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.destDir = tempDir;
+
+          elif filter_child.tag == 'FanartSource':
+            print_debug(' FanartSource = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.fanartSourceDir = tempDir;
+
+          elif filter_child.tag == 'FanartDest':
+            print_debug(' FanartDest = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.fanartDestDir = tempDir;
+
+          elif filter_child.tag == 'ThumbsSource':
+            print_debug(' ThumbsSource = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.thumbsSourceDir = tempDir;
+
+          elif filter_child.tag == 'ThumbsDest':
+            print_debug(' ThumbsDest = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.thumbsDestDir = tempDir;
 
           elif filter_child.tag == 'filterUpTags' and \
                filter_child.text is not None:
@@ -1014,13 +1256,27 @@ def do_update(filterName):
   else:
     copy_ROM_list(rom_copy_list, sourceDir, destDir);  
 
+  # --- If --cleanROMs is on then delete unknown files.
+  if __prog_option_cleanROMs:
+    clean_ROMs_destDir(destDir, rom_copy_list);
+
   # --- Delete NFO files of ROMs not present in the destination directory.
   if __prog_option_clean_NFO:
     delete_redundant_NFO(destDir);
 
-  # --- If --cleanROMs is on then delete unknown files.
-  if __prog_option_cleanROMs:
-    clean_ROMs_destDir(destDir, rom_copy_list);
+  # --- ArtWork
+  if __prog_option_withArtWork or __prog_option_cleanArtWork:
+    artwork_copy_list = optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config);
+    
+    # --- Copy artwork    
+    if __prog_option_sync:
+      update_ArtWork_list(filter_config, artwork_copy_list);
+    else:
+      copy_ArtWork_list(filter_config, artwork_copy_list);
+
+    # --- If --cleanArtWork is on then delete unknown files.
+    # if __prog_option_cleanArtWork:
+    #   clean_ArtWork_destDir(filter_config, artwork_copy_list);
 
 def do_printHelp():
   print """
