@@ -48,9 +48,6 @@ ROM collections for missing ROMs. It prints a report with the launchers you have
 </sect1>
 
 <sect1>
-<title>Command line options</title>
-
-<sect2>
 <title>xru-console</title>
 
 <para>xru-console requires a mandatory command to specify the main action
@@ -64,91 +61,106 @@ $ xru-console.py [-options] command [romSetName]
 <para>The following commands are supported,</para>
 
 <itemizedlist mark='bullet'>
-<listitem><para>
-<emphasis>usage</emphasis> prints a summary of the commands and options
-</para></listitem>
+<listitem>
+<para><emphasis>usage</emphasis></para>
+<para>prints a summary of the commands and options</para>
+</listitem>
 
-<listitem><para>
-<emphasis>list</emphasis>  list every ROM set system defined in the 
-configuration file and some basic information. Use --verbose to get more information.
-</para></listitem>
+<listitem>
+<para><emphasis>list</emphasis></para>
+<para>list every ROM set system defined in the configuration file and 
+some basic information. Use --verbose to get more information.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>list-nointro &lt;filterName&gt;</emphasis> list every ROM set system 
-defined in the No-Intro DAT file.
-</para></listitem>
+<listitem>
+<para><emphasis>list-nointro &lt;filterName&gt;</emphasis></para>
+<para>list every ROM set system defined in the No-Intro DAT file.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>check-nointro &lt;filterName&gt;</emphasis> scan the source directory and 
-reads No-Intro XML data file. Checks if you have all the ROMs and reports the 
-number of missing ROMs.
-</para></listitem>
+<listitem>
+<para><emphasis>check-nointro &lt;filterName&gt;</emphasis></para>
+<para>scan the source directory and reads No-Intro XML data file. 
+Checks if you have all the ROMs and reports the number of missing 
+ROMs.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>list-tags &lt;filterName&gt;</emphasis> scan the source directory and 
-reports the total number of ROM files, all the tags found, and the number of ROMs 
-that have each tag. It also display tagless ROMs.
-</para></listitem>
+<listitem>
+<para><emphasis>list-tags &lt;filterName&gt;</emphasis></para>
+<para>scan the source directory and reports the total number 
+of ROM files, all the tags found, and the number of ROMs 
+that have each tag. It also display tagless ROMs.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>copy &lt;filterName&gt;</emphasis> applies the ROM filters defined in 
-the configuration file and copies the contents of the source directory into 
-the destination directory. This always overwrites ROMs in the destination
-directory and may take a long time for huge ROM collections and network-mounted
-destination directories.
-</para></listitem>
+<listitem>
+<para><emphasis>copy &lt;filterName&gt;</emphasis></para>
+<para>applies the ROM filters defined in the configuration file and 
+copies the contents of the source directory into the destination directory. 
+This always overwrites ROMs in the destination directory and may take a 
+long time for huge ROM collections and network-mounted destination 
+directories.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>update &lt;filterName&gt;</emphasis> is like copy, but only copies
-ROMs if file sizes are different. This may save a lot of time.
-</para></listitem>
+<listitem>
+<para><emphasis>update &lt;filterName&gt;</emphasis></para>
+<para>is like copy, but only copies ROMs if file sizes are different. 
+This may save a lot of time.</para>
+</listitem>
 </itemizedlist>
   
 <para>The following options are supported,</para>
 
-<itemizedlist mark='bullet'>
-<listitem><para>
-<emphasis>-h, --help</emphasis> print a short command reference
-</para></listitem>
+<itemizedlist>
+<listitem>
+<para><emphasis>-h, --help</emphasis></para>
+<para>print a short command reference</para>
+</listitem>
 
-<listitem><para>
-<emphasis>-v, --verbose</emphasis> print more information about what's going on.
-</para></listitem>
+<listitem>
+<para><emphasis>-v, --verbose</emphasis></para>
+<para>print more information about what's going on.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>-l, --log</emphasis> save program output in xru-console-log.txt.
-</para></listitem>
+<listitem>
+<para><emphasis>-l, --log</emphasis></para>
+<para>save program output in xru-console-log.txt.</para>
+</listitem>
 
-<listitem><para> 
-<emphasis>--logto &lt;logName&gt;</emphasis> save program output in the file 
-you specify.
-</para></listitem>
+<listitem>
+<para><emphasis>--logto &lt;logName&gt;</emphasis></para>
+<para>save program output in the file you specify.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>--dryRun</emphasis> don't modify the destination directory at all, 
-just print the operations to be done.
-</para></listitem>
+<listitem>
+<para><emphasis>--dryRun</emphasis></para>
+<para>don't modify the destination directory at all, just print the operations
+to be done.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>--cleanNFO</emphasis> deletes redundant NFO files in destination 
-directory.
-</para></listitem>
+<listitem>
+<para><emphasis>--cleanNFO</emphasis></para>
+<para>deletes redundant NFO files in destination directory.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>--withArtWork</emphasis> copies/updates art work (fanart and thumbs) 
-for the launchers.
-</para></listitem>
+<listitem>
+<para><emphasis>--withArtWork</emphasis></para>
+<para>copies/updates art work (fanart and thumbs) for the launchers.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>--cleanROMs</emphasis> deletes ROMs in the destination directory 
-not present in the filtered ROM list.
-</para></listitem>
+<listitem>
+<para><emphasis>--cleanROMs</emphasis></para>
+<para>deletes ROMs in the destination directory not present in the filtered 
+ROM list.</para>
+</listitem>
 
-<listitem><para>
-<emphasis>--cleanArtWork</emphasis> deletes thumbs and fanart in the artowork
-destiation directories not present in the filtered ROM list.
-</para></listitem>
+<listitem>
+<para><emphasis>--cleanArtWork</emphasis></para>
+<para>deletes thumbs and fanart in the artowork destiation directories not 
+present in the filtered ROM list.</para>
+</listitem>
 </itemizedlist>
+
+<sect2>
+<title>Configuration file</title>
 
 <para>xru-console requires a configuration file where you store the directories
 and filters for every ROM set. A typical configuration filter looks like this</para>
@@ -186,7 +198,6 @@ and filters for every ROM set. A typical configuration filter looks like this</p
 &lt;/collection>
 &lt;/ROMcollections>
 </programlisting>
-</sect2>
 
 <para>Every ROM collection requires a &lt;collection&gt; tag. The attribute
 <emphasis>shortname</emphasis> defines the name of this collection used
@@ -199,8 +210,9 @@ options).</para>
 ROMs in your collection. &lt;ROMsDest&gt; defines the destination directory
 where you ROMs will be copied after applying the filters. Both tags are
 mandatory for every collection</para>
+</sect2>
 
-<sect3>
+<sect2>
 <title>Understanding filters</title>
 
 <para>To use xru-console, your ROM collection needs to have the No-Intro
@@ -215,7 +227,7 @@ CLRMamePro, ROM Vault, or Advanced Tools</para>
 <para>For example, a No-Intro collection for the Sega Mega Drive
 may look like this</para>
 
-<screen>
+<programlisting>
 Super Mario All-Stars and Super Mario World (Europe).zip
 Super Mario All-Stars (Europe).zip
 Super Mario All-Stars (USA).zip
@@ -226,17 +238,17 @@ Super Mario World (USA).zip
 Super Mario - Yossy Island (Japan) (Rev 1).zip
 Super Mario - Yossy Island (Japan) (Rev 2).zip
 Super Mario - Yossy Island (Japan).zip
-</screen>
+</programlisting>
 
 <para>Every ROM in the collection has a base-name and then one or
 more tags. Every single tag is inside parenthesis and the most common
 tags are the ROM region: Europe, USA and Japan. Some ROMs maye have
 complex tags, separated with commans, as in the following example.</para>
 
-<screen>
+<programlisting>
 Super Solitaire (Europe) (En,Fr,De,Es,It) (Proto).zip
 Super Solitaire (USA) (En,Fr,De,Es,It).zip
-</screen>
+</programlisting>
 
 <para>XRU is able to remove all the tags from the ROM name, and complex
 tags are also separated into simpler tags.</para>
@@ -251,25 +263,25 @@ removed from the ROM name, and all ROMs that have a common name are
 grouped together. This is roughly like groupin ROMS into parent/clone
 set. Note that the order of the ROMs in every set is arbitrary.</para>
 
-<screen>
+<programlisting>
 "Super Mario All-Stars and Super Mario World"
   Super Mario All-Stars and Super Mario World (Europe).zip | (Europe)
 
 "Super Mario All-Stars"
-  Super Mario All-Stars (Europe).zip | (Europe)
-  Super Mario All-Stars (USA).zip | (USA)
+  Super Mario All-Stars (Europe).zip                       | (Europe)
+  Super Mario All-Stars (USA).zip                          | (USA)
 
 "Super Mario World"
-  Super Mario World (Europe) (Rev 1).zip | (Europe), (Rev 1)
-  Super Mario World (Europe).zip | (Europe)
-  Super Mario World (Japan) (En) (Arcade) [b].zip | (Japan), (En), (Arcade)
-  Super Mario World (USA).zip | (USA)
+  Super Mario World (Europe) (Rev 1).zip                   | (Europe), (Rev 1)
+  Super Mario World (Europe).zip                           | (Europe)
+  Super Mario World (Japan) (En) (Arcade) [b].zip          | (Japan), (En), (Arcade)
+  Super Mario World (USA).zip                              | (USA)
 
 "Super Mario - Yossy Island"
-  Super Mario - Yossy Island (Japan) (Rev 1).zip | (Japan), (Rev 1)
-  Super Mario - Yossy Island (Japan) (Rev 2).zip | (Japan), (Rev 2)
-  Super Mario - Yossy Island (Japan).zip | (Japan)
-</screen>
+  Super Mario - Yossy Island (Japan) (Rev 1).zip           | (Japan), (Rev 1)
+  Super Mario - Yossy Island (Japan) (Rev 2).zip           | (Japan), (Rev 2)
+  Super Mario - Yossy Island (Japan).zip                   | (Japan)
+</programlisting>
 
 <para>The first pass of the filtering uses the configuration tags
 &lt;filterUpTags> and &lt;filterDownTags>. For every tag you configure, 
@@ -283,44 +295,44 @@ point. Following with the example, if we define the following filter,</para>
 
 <para>Then the scores will be,</para>
 
-<screen>
+<programlisting>
 "Super Mario All-Stars and Super Mario World"
   1 | Super Mario All-Stars and Super Mario World (Europe).zip | (Europe)
 
 "Super Mario All-Stars"
-  1 | Super Mario All-Stars (Europe).zip | (Europe)
-  0 | Super Mario All-Stars (USA).zip | (USA)
+  1 | Super Mario All-Stars (Europe).zip                       | (Europe)
+  0 | Super Mario All-Stars (USA).zip                          | (USA)
 
 "Super Mario World"
-  2 | Super Mario World (Europe) (Rev 1).zip | (Europe), (Rev 1)
-  1 | Super Mario World (Europe).zip | (Europe)
- -1 | Super Mario World (Japan) (En) (Arcade) [b].zip | (Japan), (En), (Arcade)
-  0 | Super Mario World (USA).zip | (USA)
+  2 | Super Mario World (Europe) (Rev 1).zip                   | (Europe), (Rev 1)
+  1 | Super Mario World (Europe).zip                           | (Europe)
+ -1 | Super Mario World (Japan) (En) (Arcade) [b].zip          | (Japan), (En), (Arcade)
+  0 | Super Mario World (USA).zip                              | (USA)
 
 "Super Mario - Yossy Island"
-  0 | Super Mario - Yossy Island (Japan) (Rev 1).zip | (Japan), (Rev 1)
- -1 | Super Mario - Yossy Island (Japan) (Rev 2).zip | (Japan), (Rev 2)
- -1 | Super Mario - Yossy Island (Japan).zip | (Japan)
-</screen>
+  0 | Super Mario - Yossy Island (Japan) (Rev 1).zip           | (Japan), (Rev 1)
+ -1 | Super Mario - Yossy Island (Japan) (Rev 2).zip           | (Japan), (Rev 2)
+ -1 | Super Mario - Yossy Island (Japan).zip                   | (Japan)
+</programlisting>
 
 <para>So, the first pass of the filter takes the ROM with highest score on every
 set. If more than one ROM have the same highest score, then the first ROM in the
 list is selected. Following with the example, after the first filter the ROM
 collection will look like,</para>
 
-<screen>
+<programlisting>
 "Super Mario All-Stars and Super Mario World"
   1 | Super Mario All-Stars and Super Mario World (Europe).zip | (Europe)
 
 "Super Mario All-Stars"
-  1 | Super Mario All-Stars (Europe).zip | (Europe)
+  1 | Super Mario All-Stars (Europe).zip                       | (Europe)
 
 "Super Mario World"
-  2 | Super Mario World (Europe) (Rev 1).zip | (Europe), (Rev 1)
+  2 | Super Mario World (Europe) (Rev 1).zip                   | (Europe), (Rev 1)
 
 "Super Mario - Yossy Island"
-  0 | Super Mario - Yossy Island (Japan) (Rev 1).zip | (Japan), (Rev 1)
-</screen>
+  0 | Super Mario - Yossy Island (Japan) (Rev 1).zip           | (Japan), (Rev 1)
+</programlisting>
 
 <para>The second part of the filtering process allows you to remove
 unwanted ROMs. Typically, users in Europe or USA don't want ROMs from Japan
@@ -337,7 +349,7 @@ tags like (Japan, USA) or (Japan, Europe). After the filtering
 process, the list of ROMs to be copied to the destiation directory
 will look like,</para>
 
-<screen>
+<programlisting>
 "Super Mario All-Stars and Super Mario World"
   1 | Super Mario All-Stars and Super Mario World (Europe).zip | (Europe)
 
@@ -346,7 +358,7 @@ will look like,</para>
 
 "Super Mario World"
   2 | Super Mario World (Europe) (Rev 1).zip | (Europe), (Rev 1)
-</screen>
+</programlisting>
 
 <para>The list of tags for every ROM collection can be displayed with the
 <emphasis>list-tags</emphasis> command, which also prints how many ROMs
@@ -369,32 +381,162 @@ XBMC ROM utilities - Console ROMs version 0.1.0
    968  USA
   1925  Japan
 </screen>
-</sect3>
-
-<sect3>
-<title>No-Intro One ROM-One Game (1R1G) DATs</title>
-
-</sect3>
-
-<sect3>
-<title>Art Work</title>
-
-
-</sect3>
+</sect2>
 
 <sect2>
+<title>No-Intro One ROM-One Game (1R1G) DATs</title>
+
+<para>The first pass of the filtering process allows to group several ROMs
+belonging to the same game together. However, based only on the ROM names
+this process is not perfect and will produce wrong results for some games.
+For example, the following games</para>
+
+<programlisting>
+WRITE ME
+</programlisting>
+
+<para>will be grouped into different</para>
+
+<para>For many users, the basic filtering will be fine. However, this problem
+may be solved using the No-Intro One ROM-One Game (1G1R) DATs. A typical
+No-Intro DAT looks like this</para>
+
+<programlisting>
+game (
+  name "Sonic The Hedgehog (Japan, Korea)"
+  description "Sonic The Hedgehog (Japan, Korea)"
+  rom ( name "Sonic The Hedgehog (Japan, Korea).md" size 524288 crc AFE05EEE md5 09DADB5071EB35050067A32462E39C5F )
+)
+
+game (
+  name "Sonic The Hedgehog (USA, Europe)"
+  description "Sonic The Hedgehog (USA, Europe)"
+  rom ( name "Sonic The Hedgehog (USA, Europe).md" size 524288 crc F9394E97 md5 1BC674BE034E43C96B86487AC69D9293 flags verified )
+)
+</programlisting>
+
+<para>However, from Dat o Matic a parent/clone list in XML can be downloaded. This is also
+referred as a 1G1R list. This is how a 1G1R XML DAT looks</para>
+
+<programlisting>
+&lt;game name="Sonic The Hedgehog (USA, Europe)">
+  &lt;description>Sonic The Hedgehog (USA, Europe)&lt;/description>
+  &lt;release name="Sonic The Hedgehog" region="EUR"/>
+  &lt;release name="Sonic The Hedgehog" region="USA"/>
+  &lt;rom name="Sonic The Hedgehog (USA, Europe).md" size="524288" crc="F9394E97" md5="1BC674BE034E43C96B86487AC69D9293" status="verified"/>
+&lt;/game>
+&lt;game name="Sonic The Hedgehog (Japan, Korea)" cloneof="Sonic The Hedgehog (USA, Europe)">
+  &lt;description>Sonic The Hedgehog (Japan, Korea)&lt;/description>
+  &lt;release name="Sonic The Hedgehog" region="JPN"/>
+  &lt;release name="Sonic The Hedgehog" region="KOR"/>
+  &lt;rom name="Sonic The Hedgehog (Japan, Korea).md" size="524288" crc="AFE05EEE" md5="09DADB5071EB35050067A32462E39C5F"/>
+&lt;/game>
+</programlisting>
+
+<para>If you pay attention, there is a cloneof attribute on every clone ROM in the 
+collection. This allows xru-console to make a perfect parent/clone list before applying
+filters, and this will produce a better filtered list.</para>
+
+<para>In order to use a No-Intro 1G1R XML with xru-console, you need to configure
+the following option for every collection</para>
+
+<programlisting>
+&lt;collection&gt;
+...
+&lt;NoIntroDat&gt;./XBMC-NoIntro-dats/Sega - Mega Drive - Genesis Parent-Clone (20140601-111936) - PClone XML.dat&lt;/NoIntroDat&gt;
+...
+&lt;/collection&gt;
+</programlisting>
+
+<para>If you specify the NoIntroDat tag, the xru-console will use that DAT file
+to build the main parent/clone list. Then, the two pass filtering will be aplied
+in the usual way. Finally, your source directory will be scanned and ROMs and
+the list of ROMs to be copied created.</para>
+
+<para>NOTE: what happens with ROMs the user does not have?</para>
+
+<para>If you configure the 1G1R XML file, two additional commands
+will be available in xr-console. list-nointro &lt;romSetName> lists all the games in the
+1G1R DAT, for example.</para>
+
+<screen>
+$ ./xru-console.py list-nointro genesis
+XBMC ROM utilities - Console ROMs version 0.1.0
+[Parsing config file]
+[Listing No-Intro XML DAT]
+ Filter name = genesis
+ Parsing No-Intro XML DAT
+ Parsing No-Intro merged XML file ./XBMC-NoIntro-dats/Sega - Mega Drive - Genesis Parent-Clone (20140601-111936) - PClone XML.dat...  done
+...
+ &lt;game> Sonic The Hedgehog (USA, Europe)
+ &lt;game> Sonic The Hedgehog (Japan, Korea)
+ &lt;game> Sonic The Hedgehog 2 (World) (Rev A)
+ &lt;game> Sonic The Hedgehog 2 (World)
+ &lt;game> Sonic The Hedgehog 2 (World) (Beta)
+ &lt;game> Sonic The Hedgehog 3 (Europe)
+ &lt;game> Sonic The Hedgehog 3 (Japan, Korea)
+ &lt;game> Sonic The Hedgehog 3 (USA)
+...
+ &lt;game> Zoop (USA)
+Number of games = 1681
+</screen>
+
+<para>check-nointro &lt;romSetName> will scan you source directory and will report how many ROMs
+you have, how many ROMs you don't have (missing ROMs), and how many ROMs you
+have no listed in the DAT (unknown ROMs).</para>
+
+<screen>
+$ ./xru-console.py check-nointro genesis
+XBMC ROM utilities - Console ROMs version 0.1.0
+[Parsing config file]
+[Checking ROMs with No-Intro XML DAT]
+ Filter name = genesis
+ Parsing No-Intro XML DAT
+ Parsing ./XBMC-NoIntro-dats/Sega - Mega Drive - Genesis Parent-Clone (20140601-111936) - PClone XML.dat...  done
+Games in DAT = 1681
+Have ROMs    = 1681
+Missing ROMs = 0
+Unknown ROMs = 47
+</screen>
+
+<para>Note that xru-console only looks at the file name of the ROM! It does not
+check the CRC like more advanced ROM Managers, for example CRLMamePro or ROM Vault.</para>
+</sect2>
+
+<sect2>
+<title>Art Work and NFO files</title>
+
+<para>Both Advanced Launcher and ROM Collection Browser have good scrapers
+that will download most of the artwork for your ROMs. However, the scraping
+process may be very slow for huge ROM collections (for example, a collection having
+2,000 ROMs may take 10 hours to scrap). This problem may be solved if you
+have locally available collections of artwork. xru-console can copy the
+matching artwork for your filtered collection in the directories you specify,
+and then you can choose the offline scraper that simply reads those files
+from the disk instead of dowloading them from the Internet</para>
+
+<para>To copy the local artwork, the following tags needs to be configured
+for every collection</para>
+
+<programlisting>
+Write me
+</programlisting>
+
+</sect2>
+</sect1>
+
+<sect1>
 <title>xru-mame</title>
 
 <para>Write me.</para>
 
-</sect2>
+</sect1>
 
-<sect2>
+<sect1>
 <title>xru-launcher-AL</title>
 
 <para>Write me.</para>
 
-</sect2>
 </sect1>
 
 <sect1>
@@ -415,7 +557,8 @@ XBMC ROM utilities - Console ROMs version 0.1.0
 
 </sect2>
 </sect1>
-  
+
+<!--  
 <sect1>
 <title>TODO</title>
 
@@ -423,6 +566,7 @@ XBMC ROM utilities - Console ROMs version 0.1.0
 <listitem><para>Nothing.</para></listitem>
 </itemizedlist>
 </sect1>
+-->
 
 <sect1>
 <title>Changelog</title>
