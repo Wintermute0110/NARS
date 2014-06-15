@@ -280,14 +280,17 @@ def update_ROM_list(rom_list, sourceDir, destDir):
     # Update progress
     romFileName = rom_copy_item + '.zip';
     percentage = 100 * step / num_steps;
-    sys.stdout.write(' {:3d}%'.format(percentage));
 
     # Copy file (this function succeeds or aborts program)
     ret = update_ROM_file(romFileName, sourceDir, destDir);
     if ret == 0:
+      # On default verbosity level only report copied files
+      sys.stdout.write(' {:3d}%'.format(percentage));
       print_info(' <Copied > ' + romFileName);
     elif ret == 1:
-      print_info(' <Updated> ' + romFileName);
+      if log_level >= Log.verb:
+        sys.stdout.write(' {:3d}%'.format(percentage));
+      print_verb(' <Updated> ' + romFileName);
     else:
       print_error('Wrong value returned by update_ROM_file()');
       sys.exit(10);
@@ -296,7 +299,7 @@ def update_ROM_list(rom_list, sourceDir, destDir):
     # Update progress
     step += 1;
     num_files += 1;
-  print_info(' Updated ' + str(num_files) + ' ROMs');
+  print_info(' Updated/Copied ' + str(num_files) + ' ROMs');
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
   print_info('[Cleaning ROMs in ROMsDest]');
@@ -343,18 +346,18 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
     # --- Thumbs
     ret = copy_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
     if ret == 0:
-      print_info(' <Copied Thumb  > ' + romFileName);
+      print_verb(' <Copied Thumb  > ' + romFileName);
     elif ret == 1:
-      print_info(' <Missing Thumb > ' + romFileName);
+      print_verb(' <Missing Thumb > ' + romFileName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
     # --- Fanart
     ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
     if ret == 0:
-      print_info(' <Copied Fanart > ' + romFileName);
+      print_verb(' <Copied Fanart > ' + romFileName);
     elif ret == 1:
-      print_info(' <Missing Fanart> ' + romFileName);
+      print_verb(' <Missing Fanart> ' + romFileName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
@@ -380,31 +383,52 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     print_error('fanartDestDir not found ' + fanartDestDir);
     sys.exit(10);
   
-  # --- Copy artwork
+  # --- Copy/update artwork
+  num_copied_thumbs = 0;
+  num_updated_thumbs = 0;
+  num_missing_thumbs = 0;
+  num_copied_fanart = 0;
+  num_updated_fanart = 0;
+  num_missing_fanart = 0;
   for rom_copy_item in rom_copy_dic:
     romFileName = rom_copy_item + '.png';
     # --- Thumbs
     ret = update_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
+    # NOTE: if source thumb was changed for another ROM in the set, the
+    # destination file should be renamed accordingly!!!
     if ret == 0:
-      print_info(' <Copied  Thumb > ' + romFileName);
+      num_copied_thumbs += 1;
+      print_verb(' <Copied  Thumb > ' + romFileName);
     elif ret == 1:
-      print_info(' <Missing Thumb > ' + romFileName);
+      num_missing_thumbs += 1;
+      print_verb(' <Missing Thumb > ' + romFileName);
     elif ret == 2:
-      print_info(' <Updated Thumb > ' + romFileName);
+      num_updated_thumbs += 1;
+      print_verb(' <Updated Thumb > ' + romFileName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
     # --- Fanart
     ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
     if ret == 0:
-      print_info(' <Copied  Fanart> ' + romFileName);
+      num_copied_fanart += 1;
+      print_verb(' <Copied  Fanart> ' + romFileName);
     elif ret == 1:
-      print_info(' <Missing Fanart> ' + romFileName);
+      num_missing_fanart += 1;
+      print_verb(' <Missing Fanart> ' + romFileName);
     elif ret == 2:
-      print_info(' <Updated Fanart> ' + romFileName);
+      num_updated_fanart += 1;
+      print_verb(' <Updated Fanart> ' + romFileName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
+
+  print_info(' ' + str(num_copied_thumbs) + ' copied thumbs');
+  print_info(' ' + str(num_updated_thumbs) + ' updated thumbs');
+  print_info(' ' + str(num_missing_thumbs) + ' missing thumbs');
+  print_info(' ' + str(num_copied_fanart) + ' copied fanart');
+  print_info(' ' + str(num_updated_fanart) + ' updated fanart');
+  print_info(' ' + str(num_missing_fanart) + ' missing fanart');
 
 # Artwork maybe available for some of the parent/clones in the ROM set, but
 # not for the filtered ROMs. This function test this and makes a list of the
@@ -1370,7 +1394,7 @@ def do_printHelp():
    \033[35m--cleanROMs\033[0m
     Deletes ROMs in destDir not present in the filtered ROM list.
     
-    \033[35m--cleanArtWork\033[0m
+   \033[35m--cleanArtWork\033[0m
     Deletes ROMs in destDir not present in the filtered ROM list."""
 
 # -----------------------------------------------------------------------------
