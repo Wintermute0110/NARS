@@ -1140,18 +1140,18 @@ def do_list():
 
 def do_list_nointro(filterName):
   "List of NoIntro XML file"
-  print_info('[Listing No-Intro DAT file]');
+  print_info('[Listing No-Intro XML DAT]');
   print_info(' Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
   filename = filter_config.NoIntro_XML;
   print_info(' Parsing No-Intro XML DAT');
-  print " Parsing No-Intro merged XML file " + filename + "...",;
+  print " Parsing No-Intro XML file " + filename + "...",;
   sys.stdout.flush();
   try:
     tree = ET.parse(filename);
   except IOError:
     print '\n';
-    print_error('[ERROR] cannot find file ' + input_filename);
+    print_error('[ERROR] cannot find file ' + filename);
     sys.exit(10);
   print ' done';
   
@@ -1161,22 +1161,21 @@ def do_list_nointro(filterName):
   for game_EL in root:
     if game_EL.tag == 'game':
       num_games += 1;
-      # Game attributes
+      # --- Game attributes
       game_attrib = game_EL.attrib;
-      print 'Game name = ' + game_attrib['name'];
+      print ' <game> ' + game_attrib['name'];
 
-      # Iterate through the children of a game
-      for game_child in game_EL:
-        if game_child.tag == 'description':
-          print ' description = ' + game_child.text;
-  
-  print '\n';
+      # --- Iterate through the children of a game
+      # for game_child in game_EL:
+      #   if game_child.tag == 'description':
+      #     print '  <desc> ' + game_child.text;
+
   print 'Number of games = ' + str(num_games);
 
 def do_check_nointro(filterName):
   "List of NoIntro XML file"
 
-  print_info('[Listing No-Intro DAT file]');
+  print_info('[Checking ROMs with No-Intro XML DAT]');
   print_info(' Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
   filename = filter_config.NoIntro_XML;
@@ -1188,7 +1187,7 @@ def do_check_nointro(filterName):
     tree = ET.parse(filename);
   except IOError:
     print '\n';
-    print_error('[ERROR] cannot find file ' + input_filename);
+    print_error('[ERROR] cannot find file ' + filename);
     sys.exit(10);
   print ' done';
   
