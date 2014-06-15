@@ -1537,13 +1537,11 @@ def do_copy_ROMs(filterName):
 
   # --- Check for errors, missing paths, etc...
   if not os.path.isdir(sourceDir):
-    print_error('Source directory does not exist');
-    print_error(sourceDir);
+    print_error('Source directory does not exist ' + sourceDir);
     sys.exit(10);
 
   if not os.path.isdir(destDir):
-    print_error('Source directory does not exist');
-    print_error(destDir);
+    print_error('Source directory does not exist ' + destDir);
     sys.exit(10);
 
   # --- Get MAME parent/clone dictionary --------------------------------------
