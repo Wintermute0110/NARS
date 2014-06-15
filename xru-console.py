@@ -1371,13 +1371,13 @@ def do_printHelp():
 
 \033[32mOptions:
   \033[35m-h\033[0m, \033[35m--help\033[0m
-    Print short command reference
+    Print short command reference.
     
   \033[35m-v\033[0m, \033[35m--verbose\033[0m
-    Print more information about what's going on
+    Print more information about what's going on.
 
   \033[35m-l\033[0m, \033[35m--log\033[0m
-    Save program output in xru-mame-log.txt.
+    Save program output in xru-console-log.txt.
 
   \033[35m--logto\033[0m \033[31m[logName]\033[0m
     Save program output in the file you specify.
