@@ -20,8 +20,12 @@ html body {
 
 .screen {
   padding: 1ex;
-  background-color: #aaa;
-  border: 1px solid #ccc;
+  background-color: #ccc;
+  border: 1px solid #aaa;
+}
+
+.application {
+  font-family: Consolas,monospace;
 }
 
 .itemizedlist {
