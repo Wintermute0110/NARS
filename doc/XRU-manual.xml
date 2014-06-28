@@ -4,11 +4,17 @@
 
 <title>XBMC ROM utilities</title>
 <articleinfo>
-<author>
-  <surname>Wintermute0110 <email>wintermute0110@gmail.com</email></surname>
-</author>
-<date>Jun 2014</date>
-<version>0.1</version>
+  <author>
+    <surname>Wintermute0110</surname>
+    <affiliation>
+      <address><email>wintermute0110@gmail.com</email></address>
+    </affiliation>
+  </author>
+  <copyright>
+    <year>2014</year>
+    <holder role="mailto:wintermute0110@gmail.com">Wintermute0110</holder>
+  </copyright>
+  <releaseinfo>XBMC ROM utilities 0.1</releaseinfo>
 </articleinfo>
 
 <sect1>
@@ -27,20 +33,21 @@ XRU includes three programs
 
 <itemizedlist mark='bullet'>
 <listitem><para>
-xru-console filters a ROM collection with No-Intro naming conventions and copy 
+<application>xru-console</application> filters a ROM collection with No-Intro naming conventions and copy 
 the filtered list to the destination directory of your choice. Multiple ROM collections, 
 each with a different filter, can be configured. Also, if artwork is available, it may 
 also be synchronised.
 </para></listitem>
 
 <listitem><para>
-xru-mame takes the MAME-generated XML game database and merges it with Catver.ini. Then, 
+<application>xru-mame</application> takes the MAME-generated XML game database 
+and merges it with <filename>Catver.ini</filename>. Then, 
 a set of filters can be defined (for example, to remove mechanical games) so filtered 
 ROMs are copied to different destination directories. It also creates NFO files with 
 game information and copies local artwork if available.
 </para></listitem>
 <listitem><para>
-    xru-launcher-AL parses XBMC's Advanced Launcher configuration file and scans your 
+<application>xru-launcher-AL</application> parses XBMC's Advanced Launcher configuration file and scans your 
 ROM collections for missing ROMs. It prints a report with the launchers you have to update.
 </para></listitem>
 </itemizedlist>
@@ -50,49 +57,50 @@ ROM collections for missing ROMs. It prints a report with the launchers you have
 <sect1>
 <title>xru-console</title>
 
-<para>xru-console requires a mandatory command to specify the main action
-to do. Optionally, some commands can be modified with options. Several
-command also require a romSetName</para>
+<para><application>xru-console</application> requires a mandatory command to 
+specify the main action to do. Optionally, some commands can be modified with options. Several command also require a 
+<userinput>filterName</userinput></para>
 
 <screen>
-$ xru-console.py [-options] command [romSetName]
+$ xru-console.py [-options] command [filterName]
 </screen>
 
 <para>The following commands are supported,</para>
 
 <itemizedlist mark='bullet'>
 <listitem>
-<para><emphasis>usage</emphasis></para>
+<para><userinput>usage</userinput></para>
 <para>prints a summary of the commands and options</para>
 </listitem>
 
 <listitem>
-<para><emphasis>list</emphasis></para>
+<para><userinput>list</userinput></para>
 <para>list every ROM set system defined in the configuration file and 
-some basic information. Use --verbose to get more information.</para>
+some basic information. Use <userinput>--verbose</userinput> to get more 
+information.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>list-nointro &lt;filterName&gt;</emphasis></para>
+<para><userinput>list-nointro &lt;filterName&gt;</userinput></para>
 <para>list every ROM set system defined in the No-Intro DAT file.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>check-nointro &lt;filterName&gt;</emphasis></para>
+<para><userinput>check-nointro &lt;filterName&gt;</userinput></para>
 <para>scan the source directory and reads No-Intro XML data file. 
 Checks if you have all the ROMs and reports the number of missing 
 ROMs.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>list-tags &lt;filterName&gt;</emphasis></para>
+<para><userinput>list-tags &lt;filterName&gt;</userinput></para>
 <para>scan the source directory and reports the total number 
 of ROM files, all the tags found, and the number of ROMs 
 that have each tag. It also display tagless ROMs.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>copy &lt;filterName&gt;</emphasis></para>
+<para><userinput>copy &lt;filterName&gt;</userinput></para>
 <para>applies the ROM filters defined in the configuration file and 
 copies the contents of the source directory into the destination directory. 
 This always overwrites ROMs in the destination directory and may take a 
@@ -101,60 +109,60 @@ directories.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>update &lt;filterName&gt;</emphasis></para>
+<para><userinput>update &lt;filterName&gt;</userinput></para>
 <para>is like copy, but only copies ROMs if file sizes are different. 
 This may save a lot of time.</para>
 </listitem>
 </itemizedlist>
-  
-<para>The following options are supported,</para>
+
+<para>The following options are supported.</para>
 
 <itemizedlist>
 <listitem>
-<para><emphasis>-h, --help</emphasis></para>
+<para><userinput>-h, --help</userinput></para>
 <para>print a short command reference</para>
 </listitem>
 
 <listitem>
-<para><emphasis>-v, --verbose</emphasis></para>
+<para><userinput>-v, --verbose</userinput></para>
 <para>print more information about what's going on.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>-l, --log</emphasis></para>
-<para>save program output in xru-console-log.txt.</para>
+<para><userinput>-l, --log</userinput></para>
+<para>save program output in <filename>xru-console-log.txt</filename>.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>--logto &lt;logName&gt;</emphasis></para>
+<para><userinput>--logto &lt;logName&gt;</userinput></para>
 <para>save program output in the file you specify.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>--dryRun</emphasis></para>
+<para><userinput>--dryRun</userinput></para>
 <para>don't modify the destination directory at all, just print the operations
 to be done.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>--cleanNFO</emphasis></para>
+<para><userinput>--cleanNFO</userinput></para>
 <para>deletes redundant NFO files in destination directory.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>--withArtWork</emphasis></para>
+<para><userinput>--withArtWork</userinput></para>
 <para>copies/updates art work (fanart and thumbs) for the launchers.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>--cleanROMs</emphasis></para>
+<para><userinput>--cleanROMs</userinput></para>
 <para>deletes ROMs in the destination directory not present in the filtered 
 ROM list.</para>
 </listitem>
 
 <listitem>
-<para><emphasis>--cleanArtWork</emphasis></para>
-<para>deletes thumbs and fanart in the artowork destiation directories not 
+<para><userinput>--cleanArtWork</userinput></para>
+<para>deletes thumbs and fanart in the artwork destination directories not 
 present in the filtered ROM list.</para>
 </listitem>
 </itemizedlist>
@@ -162,8 +170,10 @@ present in the filtered ROM list.</para>
 <sect2>
 <title>Configuration file</title>
 
-<para>xru-console requires a configuration file where you store the directories
-and filters for every ROM set. A typical configuration filter looks like this</para>
+<para><application>xru-console</application> requires a configuration file,
+named <filename>xru-console-config.xml</filename>, 
+where you store the directories and filters for every ROM set. A typical 
+configuration filter looks like this</para>
 
 <programlisting>
 &lt;!-- Example configuration file for XBMC ROM utilities -->
@@ -171,7 +181,7 @@ and filters for every ROM set. A typical configuration filter looks like this</p
 
 &lt;!-- Nintendo ROMS -->
 &lt;collection name="SNES NoIntro" shortname="snes">
-  &lt;NoIntroDat>/home/xbmc/roms/DATs/Nintendo - Super Nintendo Entertainment System Parent-Clone (20140608-202038).dat&lt;/NoIntroDat>
+  &lt;NoIntroDat>/home/xbmc/roms/DATs/Nintendo - SNES Parent-Clone (20140608-202038).dat&lt;/NoIntroDat>
   &lt;ROMsSource>/home/xbmc/roms/roms-nintendo-snes/&lt;/ROMsSource>
   &lt;ROMsDest>/home/xbmc/NUC/ROMs/roms-nintendo-snes/&lt;/ROMsDest>
 
@@ -199,24 +209,25 @@ and filters for every ROM set. A typical configuration filter looks like this</p
 &lt;/ROMcollections>
 </programlisting>
 
-<para>Every ROM collection requires a &lt;collection&gt; tag. The attribute
-<emphasis>shortname</emphasis> defines the name of this collection used
-with the commands. <emphasis>name</emphasis> defines a longer name to
+<para>Every ROM collection requires a <userinput>&lt;collection&gt;</userinput> 
+tag. The attribute
+<userinput>shortname</userinput> defines the name of this collection used
+with the commands. <userinput>name</userinput> defines a longer name to
 better describe this ROM collection (useful when you have many collection
 or different collections for the same ROM set with different filtering 
 options).</para>
 
-<para>&lt;ROMsSource&gt; defines the source directory, where you have all the
-ROMs in your collection. &lt;ROMsDest&gt; defines the destination directory
+<para><userinput>&lt;ROMsSource&gt;</userinput> defines the source directory, where you have all the
+ROMs in your collection. <userinput>&lt;ROMsDest&gt;</userinput> defines the destination directory
 where you ROMs will be copied after applying the filters. Both tags are
-mandatory for every collection</para>
+mandatory for every ROM collection.</para>
 </sect2>
 
 <sect2>
-<title>Understanding filters</title>
+<title>Understanding No-Intro collection filters</title>
 
-<para>To use xru-console, your ROM collection needs to have the No-Intro
-naming conventions.</para>
+<para>To use <application>xru-console</application>, your ROM collection needs 
+to have the No-Intro naming conventions.</para>
 
 <tip>
 <para>If you have a ROM collection with different naming (TOSEC, Goodtools, or
@@ -492,7 +503,7 @@ XBMC ROM utilities - Console ROMs version 0.1.0
 [Checking ROMs with No-Intro XML DAT]
  Filter name = genesis
  Parsing No-Intro XML DAT
- Parsing ./XBMC-NoIntro-dats/Sega - Mega Drive - Genesis Parent-Clone (20140601-111936) - PClone XML.dat...  done
+ Parsing ./XBMC-NoIntro-dats/Sega - Mega Drive Parent-Clone (20140601).dat...  done
 Games in DAT = 1681
 Have ROMs    = 1681
 Missing ROMs = 0
@@ -528,27 +539,251 @@ Write me
 <sect1>
 <title>xru-mame</title>
 
-<para>Write me.</para>
+<screen>
+$ xru-mame.py [options] &lt;command&gt; [filterName]
+</screen>
 
+<para>The following commands are supported.</para>
+
+<itemizedlist mark='bullet'>
+<listitem>
+<para><userinput>usage</userinput></para>
+<para>prints a summary of the commands and options.</para>
+</listitem>
+
+<listitem>
+<para><userinput>reduce-XML</userinput></para>
+<para>Takes MAME XML as input, picks the useful information, and writes an
+stripped XML with only meaningful information. The reason for doing this
+is because MAME XML file is huge and takes a long time to process it. After
+reducing it, all subsequent processing should be much quicker.</para>
+</listitem>
+
+<listitem>
+<para><userinput>merge</userinput></para>
+<para>Takes MAME XML (reduced) info file and Catver.ini and makes an output XML
+file with all the necessary information for proper game filtering.</para>
+</listitem>
+
+<listitem>
+<para><userinput>list-merged</userinput></para>
+<para>List every ROM set system defined in the merged MAME XML information file.
+Use <userinput>--verbose</userinput> to get more information.</para>
+</listitem>
+
+<listitem>
+<para><userinput>list-categories</userinput></para>
+<para>Reads <filename>Catver.ini</filename> and makes a histogram of the categories (prints all
+available categories and tells how many ROMs every category has).</para>
+</listitem>
+
+<listitem>
+<para><userinput>list-drivers</userinput></para>
+<para>Reads merged XML database and prints a histogram of the drivers (how many
+games use each driver).</para>
+</listitem>
+
+
+<listitem>
+<para><userinput>copy &lt;filterName&gt;</userinput></para>
+<para>Applies ROM filters defined in the configuration file and copies the
+contents of sourceDir into destDir. This overwrites ROMs in destDir.</para>
+</listitem>
+
+<listitem>
+<para><userinput>update &lt;filterName&gt;</userinput></para>
+<para>Like copy, but only copies files if file size is different (this saves
+a lot of time, particularly if sourceDir and/or destDir are on a
+network-mounted filesystem).</para>
+</listitem>
+</itemizedlist>
+
+<para>The following options are supported.</para>
+
+<itemizedlist mark='bullet'>
+<listitem>
+<para><userinput>-h, --help</userinput></para>
+<para>Print short command reference</para>
+</listitem>
+
+<listitem>
+<para><userinput>-v, --verbose</userinput></para>
+<para>Print more information about what's going on</para>
+</listitem>
+
+<listitem>
+<para><userinput>-l, --log</userinput></para>
+<para>Save program output in <filename>xru-mame-log.txt</filename>.</para>
+</listitem>
+
+<listitem>
+<para><userinput>--logto [logName]</userinput></para>
+<para>Save program output in the file you specify.</para>
+</listitem>
+
+<listitem>
+<para><userinput>--dryRun</userinput></para>
+<para>Don't modify destDir at all, just print the operations to be done.</para>
+</listitem>
+
+<listitem>
+<para><userinput>--generateNFO</userinput></para>
+<para>Generates NFO files with game information for the launchers.</para>
+</listitem>
+
+<listitem>
+<para><userinput>--withArtWork</userinput></para>
+<para>Copies/Updates art work: fanart and thumbs for the launchers.</para>
+</listitem>
+
+<listitem>
+<para><userinput>--cleanROMs</userinput></para>
+<para>Deletes ROMs in destDir not present in the filtered ROM list.</para>
+</listitem>
+</itemizedlist>
+
+<sect2>
+<title>Configuration file</title>
+
+<para><application>xru-mame</application> requires a configuration file,
+named <filename>xru-mame-config.xml</filename>, 
+where you store the ROM directories and filters. A typical 
+configuration filter looks like this.</para>
+
+<programlisting>
+&lt;!-- Example configuration file for XBMC ROM utilities -->
+&lt;MAMEConfig>
+&lt;General>
+  &lt;MAME_XML>../XBMC-mame/mame-0153.xml&lt;/MAME_XML>
+  &lt;MAME_XML_redux>../XBMC-mame/mame-0153-reduced.xml&lt;/MAME_XML_redux>
+  &lt;Catver>../XBMC-mame/Catver.ini&lt;/Catver>
+    &lt;MergedInfo>../XBMC-mame/mame-0153-merged.xml&lt;/MergedInfo>
+&lt;/General>
+
+&lt;MAMEFilter name="main">
+  &lt;source>/home/xbmc/roms/roms-mame/&lt;/source>
+  &lt;dest>/home/xbmc/NUC/ROMs/roms-mame-main/&lt;/dest>
+
+  &lt;!-- Main filter -->
+  &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
+
+  &lt;!-- MAME driver, important drivers
+       neogeo    Neo-Geo
+       cps1      Capcom CPS1
+       cps2      Capcom CPS2
+       cps3      Capcom CPS3
+  -->
+  &lt;Driver>not cps1&lt;/Driver>
+
+  &lt;!-- Categories -->
+  &lt;!-- Some catoegories you probably don't want
+       PinMAME
+       Casino
+  -->
+  &lt;Categories>no PinMAME, no Casino&lt;/Categories>
+&lt;/MAMEFilter>
+
+&lt;MAMEFilter name="cps1">
+  &lt;source>/home/xbmc/roms/roms-mame/&lt;/source>
+  &lt;dest>/home/xbmc/NUC/ROMs/roms-mame-cps1/&lt;/dest>
+  &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
+  &lt;Driver>cps1&lt;/Driver>
+&lt;/MAMEFilter>
+&lt;/MAMEConfig> 
+</programlisting>
+</sect2>
+
+<sect2>
+<title>Understanding MAME filters</title>
+
+<para>test</para>
+
+</sect2>
+
+<sect2>
+<title>Art Work and NFO files</title>
+
+<para>test</para>
+</sect2>
 </sect1>
 
 <sect1>
 <title>xru-launcher-AL</title>
 
-<para>Write me.</para>
+<para><application>xru-launcher-AL</application> reads XBMC's Advanced
+Launcher configuration file and checks the launchers configured by
+the user. It reports if there are missing/unknown ROMs in your
+launcher, missing/unknown artwork, and tells what launchers need
+to be updated.</para>
+
+<screen>
+$ xru-console.py [-options] command [filterName]
+</screen>
+
+<para>The following commands are supported,</para>
+
+<itemizedlist mark='bullet'>
+<listitem>
+<para><userinput>ar</userinput></para>
+<para>er</para>
+</listitem>
+</itemizedlist>
+
+<para>The following options are supported.</para>
+
+<itemizedlist>
+<listitem>
+<para><userinput>ir</userinput></para>
+<para>ur</para>
+</listitem>
+</itemizedlist>
 
 </sect1>
+
 
 <sect1>
 <title>Examples</title>
 
 <sect2>
-<title>Filtering and copying a console ROM collection</title>
+<title>Simple filtering of a console ROM collection</title>
+
+<para>You have a No-Intro ROM collection of the Sega Genesis and want to
+filter this collection to remove clone ROMs and Japanese ROMs. This is the situation.</para>
+
+<itemizedlist>
+<listitem><para>The ROM collection is stored in your desktop computer in 
+the directory <filename>/home/wintermute/No-Intro/Sega Genesis/</filename>. 
+</para></listitem>
+
+<listitem><para>
+XBMC is installed on a dedicated HTPC, whichi uses XBMCbuntu. XBMC runs with user xbmc.</para></listitem>
+
+<listitem><para>The xbmc user's home directory is network-mounted in the desktop computer using FUSE's <application>sshfs</application> in <filename>/home/wintermute/XBMC/</filename>.
+</para></listitem>
+
+<listitem><para>You want to store your ROM collection in the HTPC computer in
+the directory <filename>/home/xbmc/ROMs/roms-sega-genesis/</filename>. Note that in the desktop computer this directory is <filename>/home/wintermute/XBMC/ROMs/roms-sega-genesis/</filename>.</para></listitem>
+</itemizedlist>
+
+</sect2>
+
+
+<sect2>
+<title>Filtering of a console ROM collection with available artwork</title>
+
+<para>You have a No-Intro ROM collection and artwork</para>
 
 </sect2>
 
 <sect2>
-<title>Filtering and copying a MAME ROM set</title>
+<title>Simple filtering of MAME ROMs</title>
+
+<para>para</para>
+
+</sect2>
+
+<sect2>
+<title>Splitting MAME ROMs into several launchers</title>
 
 </sect2>
 
