@@ -439,7 +439,7 @@ def main(argv):
      action='store_true')
   parser.add_argument('--logto', help="log output to specified file", \
      nargs = 1)
-  parser.add_argument("command", help="usage, list, list-config, check")
+  parser.add_argument("command", help="usage, list, list-config, check", nargs = 1)
   args = parser.parse_args();
 
   # --- Optional arguments
