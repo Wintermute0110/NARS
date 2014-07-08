@@ -569,16 +569,17 @@ def parse_File_Config():
         sourceDirFound = 0;
         destDirFound = 0;
 
-        # -- Optional config file options (deafault to empty string)
-        filter_class.fanartSourceDir = '';
-        filter_class.fanartDestDir = '';
-        filter_class.thumbsSourceDir = '';
-        filter_class.thumbsDestDir = '';
-        filter_class.filterUpTags = '';
-        filter_class.filterDownTags = '';
-        filter_class.includeTags = '';
-        filter_class.excludeTags = '';
-        filter_class.NoIntro_XML = '';
+        # - Optional config file options (deafault to empty string)
+        # NOTE: missing values from config file must be initialised to None
+        filter_class.fanartSourceDir = None;
+        filter_class.fanartDestDir = None;
+        filter_class.thumbsSourceDir = None;
+        filter_class.thumbsDestDir = None;
+        filter_class.filterUpTags = None;
+        filter_class.filterDownTags = None;
+        filter_class.includeTags = None;
+        filter_class.excludeTags = None;
+        filter_class.NoIntro_XML = None;
         
         # - Initialise variables for the ConfigFileFilter object
         #   to avoid None objects later.
@@ -776,14 +777,20 @@ def scoreROM(romTags, upTag_list, downTag_list):
   # Iterate through the tags, and add/subtract points depending on the list
   # of given tags.
   for tag in romTags:
-    # Up tags increase score
+    # - Up tags increase score
+    #   Tags defined first have more score
+    tag_score = len(upTag_list);
     for upTag in upTag_list:
       if tag == upTag:
-        score += 1;
-    # Down tags decrease the score
+        score += tag_score;
+      tag_score -= 1;
+    # - Down tags decrease the score
+    tag_score = len(downTag_list);
     for downTag in downTag_list:
       if tag == downTag:
-        score -= 1;  
+        score -= tag_score;
+      tag_score -= 1;
+
   return score;
 
 def isTag(tags, tag_list):
@@ -820,8 +827,8 @@ def get_NoIntro_Main_list(filter_config):
   __debug_parse_NoIntro_XML_Config = 0;
   
   filename = filter_config.NoIntro_XML;
-  print_info(' Parsing No-Intro XML DAT');
-  print " Parsing No-Intro XML file " + filename + "...",;
+  print_info('Parsing No-Intro XML DAT');
+  print "Parsing No-Intro XML file " + filename + "...",;
   sys.stdout.flush();
   try:
     tree = ET.parse(filename);
@@ -861,9 +868,9 @@ def get_NoIntro_Main_list(filter_config):
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
   del tree;
-  print_info(' Total number of games = ' + str(num_games));
-  print_info(' Number of parents = ' + str(num_parents));
-  print_info(' Number of clones = ' + str(num_clones));
+  print_info('Total number of games = ' + str(num_games));
+  print_info('Number of parents = ' + str(num_parents));
+  print_info('Number of clones = ' + str(num_clones));
 
   # --- Create a parent-clone list
   rom_pclone_dict = {};
@@ -1024,21 +1031,37 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
       print mainROM_obj.scores;
       print mainROM_obj.include;
 
-  # --- Order the main List based on scores and include flags
-  #     Don't remove excluded ROMs because they may be useful to copy
-  #     artwork (for example, the use has artwork for an excluded ROM
-  #     belonging to the same set as the first ROM).
+  # - Order the main List based on scores and include flags
+  #   Don't remove excluded ROMs because they may be useful to copy
+  #   artwork (for example, the use has artwork for an excluded ROM
+  #   belonging to the same set as the first ROM).
   romMain_list_sorted = [];
+  romSetName_list = [];
   for mainROM_obj in romMain_list:
     # --- Get a list with the indices of the sorted list
     sorted_idx = [i[0] for i in sorted(enumerate(mainROM_obj.scores), key=lambda x:x[1])];
-    # print sorted_idx;
+    sorted_idx.reverse();
 
     # --- List comprehension
     mainROM_sorted = MainROM();
-    mainROM_sorted.filenames = [mainROM_obj.filenames[i] for i in sorted_idx]
-    mainROM_sorted.scores = [mainROM_obj.scores[i] for i in sorted_idx]
-    mainROM_sorted.include = [mainROM_obj.include[i] for i in sorted_idx]
+    mainROM_sorted.filenames = [mainROM_obj.filenames[i] for i in sorted_idx];
+    mainROM_sorted.scores = [mainROM_obj.scores[i] for i in sorted_idx];
+    mainROM_sorted.include = [mainROM_obj.include[i] for i in sorted_idx];
+    # - Set name is the stripped name of the first ROM
+    #   This is compatible with both No-Intro and directory listings
+    setFileName = mainROM_sorted.filenames[0];
+    thisFileName, thisFileExtension = os.path.splitext(setFileName);
+    stripped_ROM_name = get_ROM_baseName(thisFileName);
+    mainROM_sorted.setName = stripped_ROM_name;
+    romMain_list_sorted.append(mainROM_sorted);
+    romSetName_list.append(stripped_ROM_name);
+  romMain_list = romMain_list_sorted;
+
+  # --- Finally, sort the list by ROM set name for nice listings
+  sorted_idx = [i[0] for i in sorted(enumerate(romSetName_list), key=lambda x:x[1])];
+  romMain_list_sorted = [];
+  romMain_list_sorted = [romMain_list[i] for i in sorted_idx];
+  romMain_list = romMain_list_sorted;
 
   return romMain_list;
 
@@ -1114,8 +1137,8 @@ def do_list():
   for collection in root:
     # print collection.tag, collection.attrib;
     print_info('<ROM Collection>');
-    print_info(' Short name      ' + collection.attrib['shortname']);
-    print_info(' Name            ' + collection.attrib['name']);
+    print_info('Short name      ' + collection.attrib['shortname']);
+    print_info('Name            ' + collection.attrib['name']);
 
     # - For every collection, iterate over the elements
     # - This is not very efficient
@@ -1154,7 +1177,7 @@ def do_list_nointro(filterName):
     print_error('[ERROR] cannot find file ' + filename);
     sys.exit(10);
   print ' done';
-  
+
   # Child elements (NoIntro pclone XML)
   # Create a list containing game name
   num_games = 0;
@@ -1175,8 +1198,8 @@ def do_list_nointro(filterName):
 
   # Print game list in alphabetical order
   for game in sorted(gameList):
-    print '<game> ' + game;
-  print 'Number of games in No-Intro XML DAT = ' + str(num_games);
+    print_info('<game> ' + game);
+  print_info('Number of games in No-Intro XML DAT = ' + str(num_games));
 
 def do_check_nointro(filterName):
   "List of NoIntro XML file"
@@ -1194,7 +1217,7 @@ def do_check_nointro(filterName):
     sys.exit(10);
 
   # Load No-Intro DAT
-  print_info(' Parsing No-Intro XML DAT');
+  print_info('Parsing No-Intro XML DAT');
   print "Parsing " + filename + "...",;
   sys.stdout.flush();
   try:
@@ -1279,12 +1302,10 @@ def do_taglist(filterName):
   for key in sorted_propertiesDic:
     print_info('{:6d}'.format(key[1]) + '  ' + key[0]);
 
-# ----------------------------------------------------------------------------
-# Update ROMs in destDir
-def do_update(filterName):
-  "Applies filter and updates (copies) ROMs"
-  print_info('[Copy/Update ROMs]');
-  print_info(' Filter name = ' + filterName);
+def do_checkFilter(filterName):
+  "Applies filter and prints filtered parent/clone list"
+  print_info('[Check-filter ROM]');
+  print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -1292,12 +1313,73 @@ def do_update(filterName):
   destDir = filter_config.destDir;
 
   # --- Check for errors, missing paths, etc...
+  # WARNING: create a function that checks for errors before copying/updating
+  # and put this stuff inside.
   if not os.path.isdir(sourceDir):
-    print_error('Source directory does not exist' + sourceDir);
+    print_error('[ERROR] Source directory does not exist ' + sourceDir);
     sys.exit(10);
 
   if not os.path.isdir(destDir):
-    print_error('Destination directory does not exist' + destDir);
+    print_error('[ERROR] Destination directory does not exist ' + destDir);
+    sys.exit(10);
+
+  # --- Obtain main parent/clone list, either based on DAT or filelist
+  if filter_config.NoIntro_XML == None:
+    print_info('Using directory listing');
+    romMainList_list = get_directory_Main_list(filter_config);
+  else:
+    print_info('Using No-Intro parent/clone DAT');
+    romMainList_list = get_NoIntro_Main_list(filter_config);
+
+  # --- Get tag list for every rom
+  rom_Tag_dic = get_Tag_list(romMainList_list);
+  
+  # --- Calculate scores based on filters and reorder the main
+  #     list with higher scores first. Also applies exclude/include filters.
+  romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config);
+
+  # Print list in alphabetical order
+  index_main = 0;
+  for index_main in range(len(romMainList_list)):
+    romObject = romMainList_list[index_main];
+    print_info("<ROM set> " + romObject.setName);
+    for index in range(len(romObject.filenames)):
+      # --- Check if file exists (maybe it does not exist for No-Intro lists)
+      sourceFullFilename = sourceDir + romObject.filenames[index];
+      fullROMFilename = os.path.isfile(sourceFullFilename);
+      haveFlag = 'H';
+      if not os.path.isfile(sourceFullFilename):
+        haveFlag = 'M';
+      excludeFlag = 'I';
+      if romObject.include[index] == 0:
+        excludeFlag = 'E';
+
+      # --- Print
+      print_info('  ' + '{:2d} '.format(romObject.scores[index]) + \
+                 '[' + excludeFlag + haveFlag + '] ' + \
+                 romObject.filenames[index]);
+
+# ----------------------------------------------------------------------------
+# Update ROMs in destDir
+def do_update(filterName):
+  "Applies filter and updates (copies) ROMs"
+  print_info('[Copy/Update ROMs]');
+  print_info('Filter name = ' + filterName);
+
+  # --- Get configuration for the selected filter and check for errors
+  filter_config = get_Filter_Config(filterName);
+  sourceDir = filter_config.sourceDir;
+  destDir = filter_config.destDir;
+
+  # --- Check for errors, missing paths, etc...
+  # WARNING: create a function that checks for errors before copying/updating
+  # and put this stuff inside.
+  if not os.path.isdir(sourceDir):
+    print_error('[ERROR] Source directory does not exist ' + sourceDir);
+    sys.exit(10);
+
+  if not os.path.isdir(destDir):
+    print_error('[ERROR] Destination directory does not exist ' + destDir);
     sys.exit(10);
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
@@ -1308,13 +1390,13 @@ def do_update(filterName):
     print_info(' Using No-Intro parent/clone DAT');
     romMainList_list = get_NoIntro_Main_list(filter_config);
 
-  # --- Get tag list for every rom
+  # --- Get tag list for every ROM
   rom_Tag_dic = get_Tag_list(romMainList_list);
   
   # --- Calculate scores based on filters and reorder the main
   #     list with higher scores first. Also applies exclude/include filters.
   romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config);
-  
+
   # --- Make a list of files to be copied, depending on ROMS present in
   #     sourceDir. Takes into account the ROM scores and the
   #     exclude/include filters.
@@ -1337,13 +1419,11 @@ def do_update(filterName):
   # --- ArtWork
   if __prog_option_withArtWork or __prog_option_cleanArtWork:
     artwork_copy_list = optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config);
-    
     # --- Copy artwork    
     if __prog_option_sync:
       update_ArtWork_list(filter_config, artwork_copy_list);
     else:
       copy_ArtWork_list(filter_config, artwork_copy_list);
-
     # --- If --cleanArtWork is on then delete unknown files.
     if __prog_option_cleanArtWork:
       clean_ArtWork_destDir(filter_config, artwork_copy_list);
@@ -1371,6 +1451,11 @@ def do_printHelp():
     Scan the source directory and reports the total number of ROM files, all the
     tags found, and the number of ROMs that have each tag. It also display 
     tagless ROMs.
+
+ \033[31m check-filter <filterName>\033[0m
+    Applies ROM filters defined in the configuration file and prints a list of
+    the scored ROMs. If a No-Intro DAT is configure for this filter it will be
+    used.
 
  \033[31m copy <filterName>\033[0m
     Applies ROM filters defined in the configuration file and copies the 
@@ -1433,8 +1518,8 @@ def main(argv):
   parser.add_argument("--cleanArtWork", help="clean unknown ArtWork", \
      action="store_true")
   parser.add_argument("command", \
-     help="usage, list, list-nointro, check-nointro, list-tags, copy, \
-           update", nargs = 1)
+     help="usage, list, list-nointro, check-nointro, list-tags, \
+           check-filter, copy, update", nargs = 1)
   parser.add_argument("romSetName", help="ROM collection name", nargs='?')
   args = parser.parse_args();
 
@@ -1478,35 +1563,41 @@ def main(argv):
   # --- Positional arguments
   if command == 'list':
     do_list();
-    
+
   elif command == 'list-nointro':
     if args.romSetName == None:
-      print_error('romSetName required');
+      print_error('[ERROR] romSetName required');
       sys.exit(10);
     do_list_nointro(args.romSetName);
 
   elif command == 'check-nointro':
     if args.romSetName == None:
-      print_error('romSetName required');
+      print_error('[ERROR] romSetName required');
       sys.exit(10);
     do_check_nointro(args.romSetName);
-    
+
   elif command == 'list-tags':
     if args.romSetName == None:
-      print_error('romSetName required');
+      print_error('[ERROR] romSetName required');
       sys.exit(10);
     do_taglist(args.romSetName);
 
+  elif command == 'check-filter':
+    if args.romSetName == None:
+      print_error('[ERROR] romSetName required');
+      sys.exit(10);
+    do_checkFilter(args.romSetName);
+
   elif command == 'copy':
     if args.romSetName == None:
-      print_error('romSetName required');
+      print_error('[ERROR] romSetName required');
       sys.exit(10);
     do_update(args.romSetName);
 
   elif command == 'update':
     __prog_option_sync = 1;
     if args.romSetName == None:
-      print_error('romSetName required');
+      print_error('[ERROR] romSetName required');
       sys.exit(10);
     do_update(args.romSetName);  
 
