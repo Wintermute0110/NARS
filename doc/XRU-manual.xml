@@ -275,20 +275,20 @@ grouped together. This is roughly like groupin ROMS into parent/clone
 set. Note that the order of the ROMs in every set is arbitrary.</para>
 
 <programlisting>
-"Super Mario All-Stars and Super Mario World"
+&lt;pcloneList> "Super Mario All-Stars and Super Mario World"
   Super Mario All-Stars and Super Mario World (Europe).zip | (Europe)
 
-"Super Mario All-Stars"
+&lt;pcloneList> "Super Mario All-Stars"
   Super Mario All-Stars (Europe).zip                       | (Europe)
   Super Mario All-Stars (USA).zip                          | (USA)
 
-"Super Mario World"
+&lt;pcloneList> "Super Mario World"
   Super Mario World (Europe) (Rev 1).zip                   | (Europe), (Rev 1)
   Super Mario World (Europe).zip                           | (Europe)
   Super Mario World (Japan) (En) (Arcade) [b].zip          | (Japan), (En), (Arcade)
   Super Mario World (USA).zip                              | (USA)
 
-"Super Mario - Yossy Island"
+&lt;pcloneList> "Super Mario - Yossy Island"
   Super Mario - Yossy Island (Japan) (Rev 1).zip           | (Japan), (Rev 1)
   Super Mario - Yossy Island (Japan) (Rev 2).zip           | (Japan), (Rev 2)
   Super Mario - Yossy Island (Japan).zip                   | (Japan)
@@ -416,13 +416,13 @@ No-Intro DAT looks like this</para>
 game (
   name "Sonic The Hedgehog (Japan, Korea)"
   description "Sonic The Hedgehog (Japan, Korea)"
-  rom ( name "Sonic The Hedgehog (Japan, Korea).md" size 524288 crc AFE05EEE md5 09DADB5071EB35050067A32462E39C5F )
+  rom ( name "Sonic The Hedgehog (Japan, Korea).md" size 524288 crc AFE05EEE md5 09DAD...39C5F )
 )
 
 game (
   name "Sonic The Hedgehog (USA, Europe)"
   description "Sonic The Hedgehog (USA, Europe)"
-  rom ( name "Sonic The Hedgehog (USA, Europe).md" size 524288 crc F9394E97 md5 1BC674BE034E43C96B86487AC69D9293 flags verified )
+  rom ( name "Sonic The Hedgehog (USA, Europe).md" size 524288 crc F9394E97 md5 1B...93 flags verified )
 )
 </programlisting>
 
@@ -434,13 +434,13 @@ referred as a 1G1R list. This is how a 1G1R XML DAT looks</para>
   &lt;description>Sonic The Hedgehog (USA, Europe)&lt;/description>
   &lt;release name="Sonic The Hedgehog" region="EUR"/>
   &lt;release name="Sonic The Hedgehog" region="USA"/>
-  &lt;rom name="Sonic The Hedgehog (USA, Europe).md" size="524288" crc="F9394E97" md5="1BC674BE034E43C96B86487AC69D9293" status="verified"/>
+  &lt;rom name="Sonic The Hedgehog (USA, Europe).md" size="524288" crc="F9394E97" md5="1B...93" status="verified"/>
 &lt;/game>
 &lt;game name="Sonic The Hedgehog (Japan, Korea)" cloneof="Sonic The Hedgehog (USA, Europe)">
   &lt;description>Sonic The Hedgehog (Japan, Korea)&lt;/description>
   &lt;release name="Sonic The Hedgehog" region="JPN"/>
   &lt;release name="Sonic The Hedgehog" region="KOR"/>
-  &lt;rom name="Sonic The Hedgehog (Japan, Korea).md" size="524288" crc="AFE05EEE" md5="09DADB5071EB35050067A32462E39C5F"/>
+  &lt;rom name="Sonic The Hedgehog (Japan, Korea).md" size="524288" crc="AFE05EEE" md5="09DADB...39C5F"/>
 &lt;/game>
 </programlisting>
 
@@ -454,7 +454,7 @@ the following option for every collection</para>
 <programlisting>
 &lt;collection&gt;
 ...
-&lt;NoIntroDat&gt;./XBMC-NoIntro-dats/Sega - Mega Drive - Genesis Parent-Clone (20140601-111936) - PClone XML.dat&lt;/NoIntroDat&gt;
+&lt;NoIntroDat&gt;./XBMC-NoIntro-dats/Sega - Genesis Parent-Clone (20140601).dat&lt;/NoIntroDat&gt;
 ...
 &lt;/collection&gt;
 </programlisting>
@@ -475,20 +475,20 @@ $ ./xru-console.py list-nointro genesis
 XBMC ROM utilities - Console ROMs version 0.1.0
 [Parsing config file]
 [Listing No-Intro XML DAT]
- Filter name = genesis
- Parsing No-Intro XML DAT
- Parsing No-Intro merged XML file ./XBMC-NoIntro-dats/Sega - Mega Drive - Genesis Parent-Clone (20140601-111936) - PClone XML.dat...  done
+Filter name = genesis
+Parsing No-Intro XML DAT
+Parsing No-Intro merged XML file ./XBMC-NoIntro-dats/Sega - Genesis Parent-Clone (20140601).dat...  done
 ...
- &lt;game> Sonic The Hedgehog (USA, Europe)
- &lt;game> Sonic The Hedgehog (Japan, Korea)
- &lt;game> Sonic The Hedgehog 2 (World) (Rev A)
- &lt;game> Sonic The Hedgehog 2 (World)
- &lt;game> Sonic The Hedgehog 2 (World) (Beta)
- &lt;game> Sonic The Hedgehog 3 (Europe)
- &lt;game> Sonic The Hedgehog 3 (Japan, Korea)
- &lt;game> Sonic The Hedgehog 3 (USA)
+&lt;game> Sonic The Hedgehog (USA, Europe)
+&lt;game> Sonic The Hedgehog (Japan, Korea)
+&lt;game> Sonic The Hedgehog 2 (World) (Rev A)
+&lt;game> Sonic The Hedgehog 2 (World)
+&lt;game> Sonic The Hedgehog 2 (World) (Beta)
+&lt;game> Sonic The Hedgehog 3 (Europe)
+&lt;game> Sonic The Hedgehog 3 (Japan, Korea)
+&lt;game> Sonic The Hedgehog 3 (USA)
 ...
- &lt;game> Zoop (USA)
+&lt;game> Zoop (USA)
 Number of games = 1681
 </screen>
 
@@ -510,7 +510,7 @@ Missing ROMs = 0
 Unknown ROMs = 47
 </screen>
 
-<para>Note that xru-console only looks at the file name of the ROM! It does not
+<para>Note that <application>xru-console</application> only looks at the file name of the ROM! It does not
 check the CRC like more advanced ROM Managers, for example CRLMamePro or ROM Vault.</para>
 </sect2>
 
