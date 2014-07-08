@@ -546,7 +546,7 @@ def parse_File_Config():
   try:
     tree = ET.parse(__config_configFileName);
   except IOError:
-    pprint_error('[ERROR] cannot find file ' + __config_configFileName);
+    print_error('[ERROR] cannot find file ' + __config_configFileName);
     sys.exit(10);
   root = tree.getroot();
 
@@ -1141,11 +1141,11 @@ def do_list():
 def do_list_nointro(filterName):
   "List of NoIntro XML file"
   print_info('[Listing No-Intro XML DAT]');
-  print_info(' Filter name = ' + filterName);
+  print_info('Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
   filename = filter_config.NoIntro_XML;
-  print_info(' Parsing No-Intro XML DAT');
-  print " Parsing No-Intro XML file " + filename + "...",;
+  print_info('Parsing No-Intro XML DAT');
+  print "Parsing No-Intro XML file " + filename + "...",;
   sys.stdout.flush();
   try:
     tree = ET.parse(filename);
@@ -1155,39 +1155,53 @@ def do_list_nointro(filterName):
     sys.exit(10);
   print ' done';
   
-  # Child elements (NoIntro pclone XML):
+  # Child elements (NoIntro pclone XML)
+  # Create a list containing game name
   num_games = 0;
   root = tree.getroot();
+  gameList = [];
   for game_EL in root:
     if game_EL.tag == 'game':
       num_games += 1;
       # --- Game attributes
       game_attrib = game_EL.attrib;
-      print ' <game> ' + game_attrib['name'];
+      # print '<game> ' + game_attrib['name'];
+      gameList.append(game_attrib['name']);
 
       # --- Iterate through the children of a game
       # for game_child in game_EL:
       #   if game_child.tag == 'description':
       #     print '  <desc> ' + game_child.text;
 
-  print 'Number of games = ' + str(num_games);
+  # Print game list in alphabetical order
+  for game in sorted(gameList):
+    print '<game> ' + game;
+  print 'Number of games in No-Intro XML DAT = ' + str(num_games);
 
 def do_check_nointro(filterName):
   "List of NoIntro XML file"
 
   print_info('[Checking ROMs with No-Intro XML DAT]');
-  print_info(' Filter name = ' + filterName);
+  print_info('Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
   filename = filter_config.NoIntro_XML;
   
+  # --- Get parameters and check for errors
+  sourceDir = filter_config.sourceDir;
+  # Check if source directory exists
+  if not os.path.isdir(sourceDir):
+    print_error('\033[31m[ERROR]\033[0m Source directory does not exist ' + sourceDir);
+    sys.exit(10);
+
+  # Load No-Intro DAT
   print_info(' Parsing No-Intro XML DAT');
-  print " Parsing " + filename + "...",;
+  print "Parsing " + filename + "...",;
   sys.stdout.flush();
   try:
     tree = ET.parse(filename);
   except IOError:
     print '\n';
-    print_error('[ERROR] cannot find file ' + filename);
+    print_error('\033[31m[ERROR]\033[0m cannot find file ' + filename);
     sys.exit(10);
   print ' done';
   
@@ -1203,7 +1217,6 @@ def do_check_nointro(filterName):
       nointro_roms.append(game_attrib['name'] + '.zip');
 
   # Check how many ROMs we have in sourceDir and the DAT
-  sourceDir = filter_config.sourceDir;
   have_roms = 0;
   unknown_roms = 0;
   file_list = [];
@@ -1213,17 +1226,17 @@ def do_check_nointro(filterName):
     if file.endswith(".zip"):
       if file in nointro_roms:
         have_roms += 1;
-        print_vverb(' <Have ROM  > ' + file);
+        print_vverb('<Have ROM  > ' + file);
       else:
         unknown_roms += 1;
-        print_verb(' <Unknown ROM> ' + file);
+        print_verb('<Unknown ROM> ' + file);
 
   # Check how many ROMs we have in the DAT not in sourceDir
   missing_roms = 0;  
   for game in sorted(nointro_roms):
     filename = sourceDir + game;
     if not os.path.isfile(filename):
-      print_verb(' <Missing ROM> ' + game);
+      print_verb('<Missing ROM> ' + game);
       missing_roms += 1;
 
   print_info('Games in DAT = ' + str(num_games));
@@ -1235,20 +1248,19 @@ def do_taglist(filterName):
   "Makes a histograms of the tags"
 
   print_info('[Listing tags]');
-  print_info(' Filter name = ' + filterName);
+  print_info('Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
-  folderName = filter_config.sourceDir;
+  sourceDir = filter_config.sourceDir;
 
   # Check if dest directory exists
-  if not os.path.isdir(folderName):
-    print_error('Source directory not found');
-    print_error(folderName);
+  if not os.path.isdir(sourceDir):
+    print_error('\033[31m[ERROR]\033[0m Source directory does not exist ' + sourceDir);
     sys.exit(10);
 
   # Traverse directory, for every file extract properties, and add them to the
   # dictionary.
   propertiesDic = {};
-  for file in os.listdir(folderName):
+  for file in os.listdir(sourceDir):
     if file.endswith(".zip"):
       romProperties = extract_ROM_Tags_All(file);
       if len(romProperties) == 0:
