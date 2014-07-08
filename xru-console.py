@@ -258,17 +258,17 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
     # Update progress
     romFileName = rom_copy_item + '.zip';
     percentage = 100 * step / num_steps;
-    sys.stdout.write(' {:3d}%'.format(percentage));
+    sys.stdout.write('{:3d}% '.format(percentage));
 
     # Copy file (this function succeeds or aborts program)
     copy_ROM_file(romFileName, sourceDir, destDir);
-    print_info(' <Copied> ' + romFileName);
+    print_info('<Copied> ' + romFileName);
     sys.stdout.flush()
 
     # Update progress
     step += 1;
     num_files += 1;
-  print_info(' Copied ' + str(num_files) + ' ROMs');
+  print_info('Copied ' + str(num_files) + ' ROMs');
 
 def update_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Updating ROMs into destDir]');
@@ -285,12 +285,12 @@ def update_ROM_list(rom_list, sourceDir, destDir):
     ret = update_ROM_file(romFileName, sourceDir, destDir);
     if ret == 0:
       # On default verbosity level only report copied files
-      sys.stdout.write(' {:3d}%'.format(percentage));
-      print_info(' <Copied > ' + romFileName);
+      sys.stdout.write('{:3d}% '.format(percentage));
+      print_info('<Copied > ' + romFileName);
     elif ret == 1:
       if log_level >= Log.verb:
-        sys.stdout.write(' {:3d}%'.format(percentage));
-      print_verb(' <Updated> ' + romFileName);
+        sys.stdout.write('{:3d}% '.format(percentage));
+      print_verb('<Updated> ' + romFileName);
     else:
       print_error('Wrong value returned by update_ROM_file()');
       sys.exit(10);
@@ -299,7 +299,7 @@ def update_ROM_list(rom_list, sourceDir, destDir):
     # Update progress
     step += 1;
     num_files += 1;
-  print_info(' Updated/Copied ' + str(num_files) + ' ROMs');
+  print_info('Updated/Copied ' + str(num_files) + ' ROMs');
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
   print_info('[Cleaning ROMs in ROMsDest]');
@@ -316,8 +316,22 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
     if basename not in rom_copy_dic:
       num_cleaned_roms += 1;
       delete_ROM_file(file, destDir);
-      print_info(' <Deleted> ' + file);
-  print_info(' Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
+      print_info('<Deleted> ' + file);
+  print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
+
+def delete_redundant_NFO(destDir):
+  print_info('[Deleting redundant NFO files]');
+  num_deletedNFO_files = 0;
+  for file in os.listdir(destDir):
+    if file.endswith(".nfo"):
+      # Chech if there is a corresponding ROM for this NFO file
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      romFileName_temp = thisFileName + '.zip';
+      if not exists_ROM_file(romFileName_temp, destDir):
+        delete_ROM_file(file, destDir);
+        num_deletedNFO_files += 1;
+        print_info('<Deleted NFO> ' + file);
+  print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
   print_info('[Copying ArtWork]');
@@ -346,18 +360,18 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
     # --- Thumbs
     ret = copy_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
     if ret == 0:
-      print_verb(' <Copied Thumb  > ' + romFileName);
+      print_verb('<Copied Thumb  > ' + romFileName);
     elif ret == 1:
-      print_verb(' <Missing Thumb > ' + romFileName);
+      print_verb('<Missing Thumb > ' + romFileName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
     # --- Fanart
     ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
     if ret == 0:
-      print_verb(' <Copied Fanart > ' + romFileName);
+      print_verb('<Copied Fanart > ' + romFileName);
     elif ret == 1:
-      print_verb(' <Missing Fanart> ' + romFileName);
+      print_verb('<Missing Fanart> ' + romFileName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
@@ -368,7 +382,7 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
   thumbsDestDir = filter_config.thumbsDestDir;
   fanartSourceDir = filter_config.fanartSourceDir;
   fanartDestDir = filter_config.fanartDestDir;
-  
+
   # --- Check that directories exist
   if not os.path.isdir(thumbsSourceDir):
     print_error('thumbsSourceDir not found ' + thumbsSourceDir);
@@ -398,13 +412,13 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     # destination file should be renamed accordingly!!!
     if ret == 0:
       num_copied_thumbs += 1;
-      print_verb(' <Copied  Thumb > ' + romFileName);
+      print_verb('<Copied  Thumb > ' + romFileName);
     elif ret == 1:
       num_missing_thumbs += 1;
-      print_verb(' <Missing Thumb > ' + romFileName);
+      print_verb('<Missing Thumb > ' + romFileName);
     elif ret == 2:
       num_updated_thumbs += 1;
-      print_verb(' <Updated Thumb > ' + romFileName);
+      print_verb('<Updated Thumb > ' + romFileName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
@@ -412,23 +426,23 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
     if ret == 0:
       num_copied_fanart += 1;
-      print_verb(' <Copied  Fanart> ' + romFileName);
+      print_verb('<Copied  Fanart> ' + romFileName);
     elif ret == 1:
       num_missing_fanart += 1;
-      print_verb(' <Missing Fanart> ' + romFileName);
+      print_verb('<Missing Fanart> ' + romFileName);
     elif ret == 2:
       num_updated_fanart += 1;
-      print_verb(' <Updated Fanart> ' + romFileName);
+      print_verb('<Updated Fanart> ' + romFileName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
 
-  print_info(' ' + str(num_copied_thumbs) + ' copied thumbs');
-  print_info(' ' + str(num_updated_thumbs) + ' updated thumbs');
-  print_info(' ' + str(num_missing_thumbs) + ' missing thumbs');
-  print_info(' ' + str(num_copied_fanart) + ' copied fanart');
-  print_info(' ' + str(num_updated_fanart) + ' updated fanart');
-  print_info(' ' + str(num_missing_fanart) + ' missing fanart');
+  print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
+  print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs));
+  print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
+  print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
+  print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart));
+  print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
 
 # Artwork maybe available for some of the parent/clones in the ROM set, but
 # not for the filtered ROMs. This function test this and makes a list of the
@@ -518,7 +532,7 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_list):
     if basename not in artwork_copy_list:
       num_cleaned_thumbs += 1;
       delete_ROM_file(file, thumbsDestDir);
-      print_info(' <Deleted thumb > ' + file);
+      print_info('<Deleted thumb > ' + file);
 
   # --- Delete unknown fanart
   fanart_list = [];
@@ -534,8 +548,8 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_list):
       print_info(' <Deleted fanart> ' + file);
 
   # --- Report
-  print_info(' Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
-  print_info(' Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
+  print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
+  print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
 
 # -----------------------------------------------------------------------------
 # Configuration file functions
@@ -585,74 +599,74 @@ def parse_File_Config():
         #   to avoid None objects later.
         for filter_child in root_child:
           if filter_child.tag == 'ROMsSource':
-            print_debug(' ROMsSource    = ' + filter_child.text);
+            print_debug('ROMsSource    = ' + filter_child.text);
             sourceDirFound = 1;
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.sourceDir = tempDir;
 
           elif filter_child.tag == 'ROMsDest':
-            print_debug(' ROMsDest      = ' + filter_child.text);
+            print_debug('ROMsDest      = ' + filter_child.text);
             destDirFound = 1;
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.destDir = tempDir;
 
           elif filter_child.tag == 'FanartSource':
-            print_debug(' FanartSource = ' + filter_child.text);
+            print_debug('FanartSource = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.fanartSourceDir = tempDir;
 
           elif filter_child.tag == 'FanartDest':
-            print_debug(' FanartDest = ' + filter_child.text);
+            print_debug('FanartDest = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.fanartDestDir = tempDir;
 
           elif filter_child.tag == 'ThumbsSource':
-            print_debug(' ThumbsSource = ' + filter_child.text);
+            print_debug('ThumbsSource = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsSourceDir = tempDir;
 
           elif filter_child.tag == 'ThumbsDest':
-            print_debug(' ThumbsDest = ' + filter_child.text);
+            print_debug('ThumbsDest = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsDestDir = tempDir;
 
           elif filter_child.tag == 'filterUpTags' and \
                filter_child.text is not None:
-            print_debug(' filterUpTags   = ' + filter_child.text);
+            print_debug('filterUpTags   = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.filterUpTags = list;
 
           elif filter_child.tag == 'filterDownTags' and \
                filter_child.text is not None:
-            print_debug(' filterDownTags = ' + filter_child.text);
+            print_debug('filterDownTags = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.filterDownTags = list;
 
           elif filter_child.tag == 'includeTags' and \
                filter_child.text is not None:
-            print_debug(' includeTags    = ' + filter_child.text);
+            print_debug('includeTags    = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.includeTags = list;
 
           elif filter_child.tag == 'excludeTags' and \
                filter_child.text is not None:
-            print_debug(' excludeTags    = ' + filter_child.text);
+            print_debug('excludeTags    = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.excludeTags = list;
 
           elif filter_child.tag == 'NoIntroDat' and \
                filter_child.text is not None:
-            print_debug(' NoIntroDat    = ' + filter_child.text);
+            print_debug('NoIntroDat    = ' + filter_child.text);
             filter_class.NoIntro_XML = filter_child.text;
 
         # - Trim blank spaces on filter lists
@@ -834,7 +848,7 @@ def get_NoIntro_Main_list(filter_config):
     tree = ET.parse(filename);
   except IOError:
     print '\n';
-    print_error('[ERROR] cannot find file ' + input_filename);
+    print_error('[ERROR] cannot find file ' + filename);
     sys.exit(10);
   print ' done';
 
@@ -1101,20 +1115,6 @@ def create_copy_list(romMain_list, filter_config):
 
   return rom_copy_list_sorted_basename;
 
-def delete_redundant_NFO(destDir):
-  print_info('[Deleting redundant NFO files]');
-  num_deletedNFO_files = 0;
-  for file in os.listdir(destDir):
-    if file.endswith(".nfo"):
-      # Chech if there is a corresponding ROM for this NFO file
-      thisFileName, thisFileExtension = os.path.splitext(file);
-      romFileName_temp = thisFileName + '.zip';
-      if not exists_ROM_file(romFileName_temp, destDir):
-        delete_ROM_file(file, destDir);
-        num_deletedNFO_files += 1;
-        print_info(' <Deleted NFO> ' + file + '\n');
-  print_info(' Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
-
 # -----------------------------------------------------------------------------
 # Main body functions
 # -----------------------------------------------------------------------------
@@ -1144,19 +1144,19 @@ def do_list():
     # - This is not very efficient
     for collectionEL in collection:
       if collectionEL.tag == 'source':
-        print_verb(' Source          ' + collectionEL.text);
+        print_verb('Source          ' + collectionEL.text);
       elif collectionEL.tag == 'dest':
-        print_verb(' Destination     ' + collectionEL.text);
+        print_verb('Destination     ' + collectionEL.text);
       elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
-        print_verb(' filterUpTags    ' + collectionEL.text);
+        print_verb('filterUpTags    ' + collectionEL.text);
       elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
-        print_verb(' filterDownTags  ' + collectionEL.text);
+        print_verb('filterDownTags  ' + collectionEL.text);
       elif collectionEL.tag == 'includeTags' and collectionEL.text is not None:
-        print_verb(' includeTags     ' + collectionEL.text);
+        print_verb('includeTags     ' + collectionEL.text);
       elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
-        print_verb(' excludeTags     ' + collectionEL.text);
+        print_verb('excludeTags     ' + collectionEL.text);
       elif collectionEL.tag == 'NoIntroDat' and collectionEL.text is not None:
-        print_info(' NoIntroDat      ' + collectionEL.text);
+        print_info('NoIntroDat      ' + collectionEL.text);
 
     # - Test if all mandatory elements are there
     # TODO: finish this
@@ -1383,11 +1383,11 @@ def do_update(filterName):
     sys.exit(10);
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
-  if filter_config.NoIntro_XML == '':
-    print_info(' Using directory listing');
+  if filter_config.NoIntro_XML == None:
+    print_info('Using directory listing');
     romMainList_list = get_directory_Main_list(filter_config);
   else:
-    print_info(' Using No-Intro parent/clone DAT');
+    print_info('Using No-Intro parent/clone DAT');
     romMainList_list = get_NoIntro_Main_list(filter_config);
 
   # --- Get tag list for every ROM
