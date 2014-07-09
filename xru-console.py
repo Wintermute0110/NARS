@@ -481,20 +481,20 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
     sys.exit(10);
 
   # - For every ROM to be copied (filtered) check if ArtWork exists. If not,
-  # try artwork of other ROMs in the parent/clone set.
-  artwork_copy_list = [];
+  #   try artwork of other ROMs in the parent/clone set.
+  artwork_copy_dic = {};
   for rom_copy_item in rom_copy_list:
     romFileName = rom_copy_item + '.png';
     if __debug_optimize_ArtWork:
-      print 'Testing     ', romFileName;
+      print '<<Testing>> ', romFileName;
     if os.path.isfile(thumbsSourceDir + romFileName):
       if __debug_optimize_ArtWork:
         print ' Added      ', rom_copy_item;
-      artwork_copy_list.append(rom_copy_item);
+      artwork_copy_dic[rom_copy_item] = rom_copy_item;
     else:
       if __debug_optimize_ArtWork:
         print ' NOT found  ', romFileName;
-      # Brute force check
+      # - Brute force check
       file = rom_copy_item + '.zip';
       pclone_list = [];
       for item in romMainList_list:
@@ -505,13 +505,13 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
       if len(pclone_list) == 0:
         print_error('Logical error');
         sys.exit(10);
-      # Check if artwork exists for this set
+      # - Check if artwork exists for this set
       for file in pclone_list:
         root, ext = os.path.splitext(file);
         if os.path.isfile(thumbsSourceDir + root + '.png'):
           if __debug_optimize_ArtWork:
             print ' Added clone', root;
-          artwork_copy_list.append(root);
+          artwork_copy_dic[rom_copy_item] = root;
           break;
   
   return artwork_copy_dic;
@@ -1441,16 +1441,19 @@ def do_checkArtwork(filterName):
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
-  sourceDir = filter_config.sourceDir;
   destDir = filter_config.destDir;
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  fanartSourceDir = filter_config.fanartSourceDir;
 
   # --- Check for errors, missing paths, etc...
-  if not os.path.isdir(sourceDir):
-    print_error('[ERROR] Source directory does not exist ' + sourceDir);
-    sys.exit(10);
-
   if not os.path.isdir(destDir):
     print_error('[ERROR] Destination directory does not exist ' + destDir);
+    sys.exit(10);
+  if not os.path.isdir(thumbsSourceDir):
+    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
+    sys.exit(10);
+  if not os.path.isdir(fanartSourceDir):
+    print_error('fanartSourceDir not found ' + fanartSourceDir);
     sys.exit(10);
 
   # --- Create a list of ROMs in destDir
@@ -1472,29 +1475,55 @@ def do_checkArtwork(filterName):
   artwork_copy_dic = optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config);
 
   # --- Print list in alphabetical order
-  for rom_baseName, art_baseName in artwork_copy_dic:
-    print_info("<ROM> " + rom_baseName + ".zip");
+  print_info('[Artwork report]');
+  num_original = 0;
+  num_replaced = 0;
+  num_have_thumbs = 0;
+  num_missing_thumbs = 0;
+  num_have_fanart = 0;
+  num_missing_fanart = 0;
+  for rom_baseName in artwork_copy_dic:
+    art_baseName = artwork_copy_dic[rom_baseName];
+    print_info("<<  ROM  >> " + rom_baseName + ".zip");
+    # print_info(" bName " + rom_baseName);
+    
     # --- Check if artwork exist
-    thumb_Source_fullFileName = sourceDir + art_baseName + '.png';
-    fanart_Source_fullFileName = sourceDir + art_baseName + '.png';
+    thumb_Source_fullFileName = thumbsSourceDir + art_baseName + '.png';
+    fanart_Source_fullFileName = fanartSourceDir + art_baseName + '.png';
 
     # - Has artwork been replaced?
-    replaceFlag = 'Original';
     if rom_baseName != art_baseName:
-      replaceFlag = 'Replaced';
+      num_original += 1;
+      print ' Replaced   ' + art_baseName;
+    else:
+      num_replaced += 1;
+      print ' Original   ' + art_baseName;
 
     # - Have thumb
-    haveFlag = 'Have thumb';
-    fullROMFilename = os.path.isfile(thumb_Source_fullFileName);
-    if not os.path.isfile(sourceFullFilename):
-      haveFlag = 'M';
+    if not os.path.isfile(thumb_Source_fullFileName):
+      num_missing_thumbs += 1;
+      print ' Missing T  ' + art_baseName + '.png';
+    else:
+      num_have_thumbs += 1;
+      print ' Have T     ' + art_baseName + '.png';
 
     # - Have fanart
+    if not os.path.isfile(fanart_Source_fullFileName):
+      num_missing_fanart += 1;
+      print ' Missing F  ' + art_baseName + '.png';
+    else:
+      num_have_fanart += 1;
+      print ' Have F     ' + art_baseName + '.png';
 
-    # --- Print
-    print_info('  ' + '{:2d} '.format(romObject.scores[index]) + \
-               '[' + excludeFlag + haveFlag + '] ' + \
-               romObject.filenames[index]);
+  print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
+  print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
+  print_info('Number of original ArtWork = ' + str(num_original));
+  print_info('Number of replaced ArtWork = ' + str(num_replaced));
+
+  print_info('Number of have Thumbs    = ' + str(num_have_thumbs));
+  print_info('Number of missing Thumbs = ' + str(num_missing_thumbs));
+  print_info('Number of have Fanart    = ' + str(num_have_fanart));
+  print_info('Number of missing Fanart = ' + str(num_missing_fanart));
 
 # ----------------------------------------------------------------------------
 def do_update_artwork(filterName):
