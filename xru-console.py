@@ -252,7 +252,7 @@ def exists_ROM_file(fileName, dir):
 
 def haveDir_or_abort(dirName):
   if not os.path.isdir(dirName):
-    print_error('\033[31m[ERROR]\033[0m Destination directory does not exist ' + dirName);
+    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
     sys.exit(10);
 
 # -----------------------------------------------------------------------------
@@ -548,7 +548,7 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
     if art_baseName not in artwork_copy_dic:
       num_cleaned_thumbs += 1;
       delete_ROM_file(file, thumbsDestDir);
-      print_info('<Deleted thumb > ' + rom_baseName);
+      print_info('<Deleted thumb > ' + file);
 
   # --- Delete unknown fanart
   fanart_file_list = [];
@@ -1329,11 +1329,9 @@ def do_checkFilter(filterName):
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
   sourceDir = filter_config.sourceDir;
-  destDir = filter_config.destDir;
 
   # --- Check for errors, missing paths, etc...
   haveDir_or_abort(sourceDir);
-  haveDir_or_abort(destDir);
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
   if filter_config.NoIntro_XML == None:
