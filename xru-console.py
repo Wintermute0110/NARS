@@ -443,19 +443,29 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
   print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart));
   print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
 
-# Artwork maybe available for some of the parent/clones in the ROM set, but
+# Artwork may be available for some of the parent/clones in the ROM set, but
 # not for the filtered ROMs. This function test this and makes a list of the
 # available artwork that approximates the filtered ROM list.
+#
+# Returns a dictionary
+#  artwork_copy_dic
+#   key   -> string, ROM filename in destDir with no extension
+#   value -> string, Artwork filename to be copied, no extension
+#
+# The name of the artwork file should be the same for thumbs an fanarts. To get
+# the actual filename, add the graphical extension (.png).
+# Checking if artwork was replaced is easy: if key is equal to value, it was not
+# replaced. Otherwise, it was replaced.
 def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
   "Write me"
   __debug_optimize_ArtWork = 0;
-  
+
   print_info('[Optimising ArtWork file list]');
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
   fanartSourceDir = filter_config.fanartSourceDir;
   fanartDestDir = filter_config.fanartDestDir;
-  
+
   # --- Check that directories exist
   if not os.path.isdir(thumbsSourceDir):
     print_error('thumbsSourceDir not found ' + thumbsSourceDir);
@@ -504,7 +514,7 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
           artwork_copy_list.append(root);
           break;
   
-  return artwork_copy_list;
+  return artwork_copy_dic;
 
 def clean_ArtWork_destDir(filter_config, artwork_copy_list):
   print_info('[Cleaning ArtWork]');
@@ -711,8 +721,24 @@ def get_Filter_Config(filterName):
   sys.exit(20);
 
 # -----------------------------------------------------------------------------
-# Miscellaneous functions
+# Miscellaneous ArtWork functions
 # -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# Miscellaneous ROM functions
+# -----------------------------------------------------------------------------
+class MainROM:
+  pass
+
+class NoIntro_ROM:
+  def __init__(self, baseName):
+    self.baseName = baseName;
+
+class dir_ROM:
+  def __init__(self, fileName):
+    self.fileName = fileName;
+
 def extract_ROM_Properties_Raw(romFileName):
   "Given a ROM file name extracts all the tags and returns a list"
   __debug_propertyParsers = 0;
@@ -817,20 +843,10 @@ def isTag(tags, tag_list):
 
   return result;
 
-class MainROM:
-  pass
-
-class NoIntro_ROM:
-  def __init__(self, baseName):
-    self.baseName = baseName;
-
-class dir_ROM:
-  def __init__(self, fileName):
-    self.fileName = fileName;
-
 # Parses a No-Intro DAT and creates an object with the XML information
 # Then, it creates a ROM main dictionary
-# romMainList [list of ROMMain]
+#  romMainList [list of ROMMain objects]
+# ROMMain object
 #  ROMMain.filenames [list] full game filename (with extension)
 #
 # The first game in the list is the parent game according to the DAT,
@@ -1303,6 +1319,7 @@ def do_taglist(filterName):
 
 def do_checkFilter(filterName):
   "Applies filter and prints filtered parent/clone list"
+
   print_info('[Check-filter ROM]');
   print_info('Filter name = ' + filterName);
 
@@ -1337,7 +1354,7 @@ def do_checkFilter(filterName):
   #     list with higher scores first. Also applies exclude/include filters.
   romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config);
 
-  # Print list in alphabetical order
+  # --- Print list in alphabetical order
   index_main = 0;
   for index_main in range(len(romMainList_list)):
     romObject = romMainList_list[index_main];
@@ -1415,29 +1432,86 @@ def do_update(filterName):
   if __prog_option_clean_NFO:
     delete_redundant_NFO(destDir);
 
-  # --- ArtWork
-  if __prog_option_withArtWork or __prog_option_clean_ArtWork:
-    artwork_copy_list = optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config);
-    # --- Copy artwork    
-    if __prog_option_sync:
-      update_ArtWork_list(filter_config, artwork_copy_list);
-    else:
-      copy_ArtWork_list(filter_config, artwork_copy_list);
-    # --- If --cleanArtWork is on then delete unknown files.
-    if __prog_option_clean_ArtWork:
-      clean_ArtWork_destDir(filter_config, artwork_copy_list);
-
 # ----------------------------------------------------------------------------
 def do_checkArtwork(filterName):
   "Checks for missing artwork and prints a report"
 
-  print "Implement me!";
+  print_info('[Check-ArtWork]');
+  print_info('Filter name = ' + filterName);
+
+  # --- Get configuration for the selected filter and check for errors
+  filter_config = get_Filter_Config(filterName);
+  sourceDir = filter_config.sourceDir;
+  destDir = filter_config.destDir;
+
+  # --- Check for errors, missing paths, etc...
+  if not os.path.isdir(sourceDir):
+    print_error('[ERROR] Source directory does not exist ' + sourceDir);
+    sys.exit(10);
+
+  if not os.path.isdir(destDir):
+    print_error('[ERROR] Destination directory does not exist ' + destDir);
+    sys.exit(10);
+
+  # --- Create a list of ROMs in destDir
+  roms_destDir_list = [];
+  for file in os.listdir(destDir):
+    if file.endswith(".zip"):
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      roms_destDir_list.append(thisFileName);
+
+  # --- Obtain main parent/clone list, either based on DAT or filelist
+  if filter_config.NoIntro_XML == None:
+    print_info('Using directory listing');
+    romMainList_list = get_directory_Main_list(filter_config);
+  else:
+    print_info('Using No-Intro parent/clone DAT');
+    romMainList_list = get_NoIntro_Main_list(filter_config);
+
+  # --- Replace missing artwork for alternative artwork in the parent/clone set
+  artwork_copy_dic = optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config);
+
+  # --- Print list in alphabetical order
+  for rom_baseName, art_baseName in artwork_copy_dic:
+    print_info("<ROM> " + rom_baseName + ".zip");
+    # --- Check if artwork exist
+    thumb_Source_fullFileName = sourceDir + art_baseName + '.png';
+    fanart_Source_fullFileName = sourceDir + art_baseName + '.png';
+
+    # - Has artwork been replaced?
+    replaceFlag = 'Original';
+    if rom_baseName != art_baseName:
+      replaceFlag = 'Replaced';
+
+    # - Have thumb
+    haveFlag = 'Have thumb';
+    fullROMFilename = os.path.isfile(thumb_Source_fullFileName);
+    if not os.path.isfile(sourceFullFilename):
+      haveFlag = 'M';
+
+    # - Have fanart
+
+    # --- Print
+    print_info('  ' + '{:2d} '.format(romObject.scores[index]) + \
+               '[' + excludeFlag + haveFlag + '] ' + \
+               romObject.filenames[index]);
 
 # ----------------------------------------------------------------------------
 def do_update_artwork(filterName):
   "Reads ROM destDir and copies Artwork"
 
-  print "Implement me!";
+  # --- Replace missing artwork for alternative artwork in the parent/clone set
+  artwork_copy_list = optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config);
+
+  # --- Copy artwork    
+  if __prog_option_sync:
+    update_ArtWork_list(filter_config, artwork_copy_list);
+  else:
+    copy_ArtWork_list(filter_config, artwork_copy_list);
+
+  # --- If --cleanArtWork is on then delete unknown files.
+  if __prog_option_clean_ArtWork:
+    clean_ArtWork_destDir(filter_config, artwork_copy_list);
 
 def do_printHelp():
   print """
