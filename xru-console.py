@@ -40,10 +40,9 @@ configuration = ConfigFile();
 __prog_option_log = 0;
 __prog_option_log_filename = __config_logFileName;
 __prog_option_dry_run = 0;
+__prog_option_clean_ROMs = 0;
 __prog_option_clean_NFO = 0;
-__prog_option_withArtWork = 0;
-__prog_option_cleanROMs = 0;
-__prog_option_cleanArtWork = 0;
+__prog_option_clean_ArtWork = 0;
 __prog_option_sync = 0;
 
 # -----------------------------------------------------------------------------
@@ -1409,7 +1408,7 @@ def do_update(filterName):
     copy_ROM_list(rom_copy_list, sourceDir, destDir);  
 
   # --- If --cleanROMs is on then delete unknown files.
-  if __prog_option_cleanROMs:
+  if __prog_option_clean_ROMs:
     clean_ROMs_destDir(destDir, rom_copy_list);
 
   # --- Delete NFO files of ROMs not present in the destination directory.
@@ -1417,7 +1416,7 @@ def do_update(filterName):
     delete_redundant_NFO(destDir);
 
   # --- ArtWork
-  if __prog_option_withArtWork or __prog_option_cleanArtWork:
+  if __prog_option_withArtWork or __prog_option_clean_ArtWork:
     artwork_copy_list = optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config);
     # --- Copy artwork    
     if __prog_option_sync:
@@ -1425,8 +1424,20 @@ def do_update(filterName):
     else:
       copy_ArtWork_list(filter_config, artwork_copy_list);
     # --- If --cleanArtWork is on then delete unknown files.
-    if __prog_option_cleanArtWork:
+    if __prog_option_clean_ArtWork:
       clean_ArtWork_destDir(filter_config, artwork_copy_list);
+
+# ----------------------------------------------------------------------------
+def do_checkArtwork(filterName):
+  "Checks for missing artwork and prints a report"
+
+  print "Implement me!";
+
+# ----------------------------------------------------------------------------
+def do_update_artwork(filterName):
+  "Reads ROM destDir and copies Artwork"
+
+  print "Implement me!";
 
 def do_printHelp():
   print """
@@ -1459,39 +1470,36 @@ def do_printHelp():
 
  \033[31m copy <filterName>\033[0m
     Applies ROM filters defined in the configuration file and copies the 
-    contents of sourceDir into destDir. This overwrites ROMs in destDir.
+    contents of sourceDir into destDir. This overwrites ROMs in destDir. No
+    files will be removed on destDir.
 
  \033[31m update <filterName>\033[0m
-    Like update, but also delete ROMs in destDir not present in the filtered
-    ROM list.
+    Like copy, but also delete ROMs in destDir not present in the filtered
+    ROM list. Also, ROMs having same size in sourceDir and destDir will not be
+    copied.
+
+ \033[31m check-artwork <filterName>\033[0m
+    Reads the ROMs in destDir, checks if you have the corresponding artwork 
+    files, and prints a report.
+
+ \033[31m copy-artwork <filterName>\033[0m
+    Reads the ROMs in destDir and tries to copy the artwork to destination
+    directory. If No-Intro DAT is available, missing artwork
+
+ \033[31m update-artwork <filterName>\033[0m
+    Like copy-artwork, but also delete unknown images in artwork destination
+    directories. Artwork files having same size in sourceDir and destDir will 
+    not be copied.
 
 \033[32mOptions:
-  \033[35m-h\033[0m, \033[35m--help\033[0m
-    Print short command reference.
-    
-  \033[35m-v\033[0m, \033[35m--verbose\033[0m
-    Print more information about what's going on.
-
-  \033[35m-l\033[0m, \033[35m--log\033[0m
-    Save program output in xru-console-log.txt.
-
-  \033[35m--logto\033[0m \033[31m[logName]\033[0m
-    Save program output in the file you specify.
-
-  \033[35m--dryRun\033[0m
-    Don't modify destDir at all, just print the operations to be done.
-
-   \033[35m--cleanNFO\033[0m
-    Deletes redundant NFO files in destination directory.
-
-   \033[35m--withArtWork\033[0m
-    Copies/Updates art work: fanart and thumbs for the launchers, if available.
-    
-   \033[35m--cleanROMs\033[0m
-    Deletes ROMs in destDir not present in the filtered ROM list.
-    
-   \033[35m--cleanArtWork\033[0m
-    Deletes ROMs in destDir not present in the filtered ROM list."""
+  \033[35m-h\033[0m, \033[35m--help\033[0m  Print short command reference.
+  \033[35m-v\033[0m, \033[35m--verbose\033[0m  Print more information about what's going on.
+  \033[35m-l\033[0m, \033[35m--log\033[0m  Save program output in xru-console-log.txt.
+  \033[35m--logto\033[0m \033[31m[logName]\033[0m  Save program output in the file you specify.
+  \033[35m--dryRun\033[0m  Don't modify destDir at all, just print the operations to be done.
+  \033[35m--cleanROMs\033[0m  Deletes ROMs in destDir not present in the filtered ROM list.
+  \033[35m--cleanNFO\033[0m  Deletes redundant NFO files in destination directory.
+  \033[35m--cleanArtWork\033[0m  Deletes unknown artwork in destination."""
 
 # -----------------------------------------------------------------------------
 # main function
@@ -1509,17 +1517,16 @@ def main(argv):
      nargs = 1)
   parser.add_argument("--dryRun", help="don't modify any files", \
      action="store_true")
-  parser.add_argument("--cleanNFO", help="clean redundant NFO files", \
-     action="store_true")
-  parser.add_argument("--withArtWork", help="copy/update artwork", \
-     action="store_true")
   parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", \
+     action="store_true")
+  parser.add_argument("--cleanNFO", help="clean redundant NFO files", \
      action="store_true")
   parser.add_argument("--cleanArtWork", help="clean unknown ArtWork", \
      action="store_true")
   parser.add_argument("command", \
      help="usage, list, list-nointro, check-nointro, list-tags, \
-           check-filter, copy, update", nargs = 1)
+           check-filter, copy, update \
+           check-artwork, copy-artwork, update-artwork", nargs = 1)
   parser.add_argument("romSetName", help="ROM collection name", nargs='?')
   args = parser.parse_args();
 
@@ -1527,10 +1534,10 @@ def main(argv):
   # Needed to modify global copy of globvar
   global __prog_option_log, __prog_option_log_filename;
   global __prog_option_dry_run;
+  global __prog_option_clean_ROMs;
   global __prog_option_clean_NFO;
-  global __prog_option_withArtWork;
-  global __prog_option_cleanROMs, __prog_option_cleanArtWork;
-  global __prog_option_sync;
+  global __prog_option_clean_ArtWork;
+  global __prog_option_sync; # 1 update, 0 copies
 
   if args.verbose:
     if args.verbose == 1:
@@ -1545,10 +1552,9 @@ def main(argv):
     __prog_option_log = 1;
     __prog_option_log_filename = args.logto[0];
   if args.dryRun:       __prog_option_dry_run = 1;
+  if args.cleanROMs:    __prog_option_clean_ROMs = 1;
   if args.cleanNFO:     __prog_option_clean_NFO = 1;
-  if args.withArtWork:  __prog_option_withArtWork = 1;
-  if args.cleanROMs:    __prog_option_cleanROMs = 1;
-  if args.cleanArtWork: __prog_option_cleanArtWork = 1;
+  if args.cleanArtWork: __prog_option_clean_ArtWork = 1;
 
   # --- Positional arguments that don't require parsing of the config file
   command = args.command[0];
@@ -1560,46 +1566,44 @@ def main(argv):
   global configuration;
   configuration = parse_File_Config();
 
-  # --- Positional arguments
+  # --- Positional arguments that don't require a romSetName
   if command == 'list':
     do_list();
+    sys.exit(0);
 
-  elif command == 'list-nointro':
-    if args.romSetName == None:
-      print_error('[ERROR] romSetName required');
-      sys.exit(10);
+  # --- Positional arguments that require a romSetName
+  if args.romSetName == None:
+    print_error('\033[31m[ERROR]\033[0m romSetName required');
+    sys.exit(10);
+
+  if command == 'list-nointro':
     do_list_nointro(args.romSetName);
 
   elif command == 'check-nointro':
-    if args.romSetName == None:
-      print_error('[ERROR] romSetName required');
-      sys.exit(10);
     do_check_nointro(args.romSetName);
 
   elif command == 'list-tags':
-    if args.romSetName == None:
-      print_error('[ERROR] romSetName required');
-      sys.exit(10);
     do_taglist(args.romSetName);
 
   elif command == 'check-filter':
-    if args.romSetName == None:
-      print_error('[ERROR] romSetName required');
-      sys.exit(10);
     do_checkFilter(args.romSetName);
 
   elif command == 'copy':
-    if args.romSetName == None:
-      print_error('[ERROR] romSetName required');
-      sys.exit(10);
     do_update(args.romSetName);
 
   elif command == 'update':
     __prog_option_sync = 1;
-    if args.romSetName == None:
-      print_error('[ERROR] romSetName required');
-      sys.exit(10);
     do_update(args.romSetName);  
+
+  elif command == 'check-artwork':
+    do_checkArtwork(args.romSetName);
+
+  elif command == 'copy-artwork':
+    do_update_artwork(args.romSetName);
+
+  elif command == 'update-artwork':
+    __prog_option_sync = 1;
+    do_update_artwork(args.romSetName);  
 
   else:
     print_error('Unrecognised command');
