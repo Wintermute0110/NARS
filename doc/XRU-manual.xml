@@ -207,7 +207,7 @@ configuration filter looks like this.</para>
 
 &lt;!-- Nintendo ROMS -->
 &lt;collection name="SNES NoIntro" shortname="snes">
-  &lt;NoIntroDat>/home/xbmc/roms/DATs/Nintendo - SNES Parent-Clone (20140608-202038).dat&lt;/NoIntroDat>
+  &lt;NoIntroDat>./DATs/Nintendo - SNES Parent-Clone (20140608-202038).dat&lt;/NoIntroDat>
   &lt;ROMsSource>/home/xbmc/roms/roms-nintendo-snes/&lt;/ROMsSource>
   &lt;ROMsDest  >/home/xbmc/NUC/ROMs/roms-nintendo-snes/&lt;/ROMsDest>
 
@@ -449,14 +449,41 @@ XBMC ROM utilities - Console ROMs version 0.1.0
 
 <para>Before you copy/update your filtered ROM collection, you may
 want to check what will happen and the <userinput>check-filter</userinput> does
-precisely this. For example.
+precisely this. For example:
 </para>
 
 <screen>
 $ ./xru-console.py check-filter snes
-
-COMPLETE ME!
+XBMC ROM utilities - Console ROMs version 0.1.0
+[Parsing config file]
+[Check-filter ROM]
+Filter name = snes
+Using No-Intro parent/clone DAT
+Parsing No-Intro XML DAT
+Parsing No-Intro XML file ./Nintendo - SNES Parent-Clone (20140608-202038).dat...  done
+Total number of games = 3366
+Number of parents = 1828
+Number of clones = 1538
+[Filtering ROMs]
+...
+&lt;ROM set> Super Mario All-Stars + Super Mario World
+   0 [IH] Super Mario All-Stars + Super Mario World (USA).zip
+&lt;ROM set> Super Mario All-Stars and Super Mario World
+   7 [IH] Super Mario All-Stars and Super Mario World (Europe).zip
+...
+&lt;ROM set> Super Mario Kart
+   7 [IH] Super Mario Kart (Europe).zip
+   0 [IH] Super Mario Kart (USA).zip
+  -3 [EH] Super Mario Kart (Japan).zip
+&lt;ROM set> Super Mario RPG
+  -3 [EH] Super Mario RPG (Japan).zip
+&lt;ROM set> Super Mario RPG - Legend of the Seven Stars
+   0 [IH] Super Mario RPG - Legend of the Seven Stars (USA).zip
+...
 </screen>
+
+<para>Have a look at the end of next section for a quick explanation of
+the flags and numbers in this listing.</para>
 
 </sect2>
 
@@ -534,7 +561,7 @@ sure you use the correct XML DAT for the collection!</para>
 <programlisting>
 &lt;collection&gt;
 ...
-&lt;NoIntroDat&gt;./Sega - Genesis Parent-Clone (20140601).dat&lt;/NoIntroDat&gt;
+  &lt;NoIntroDat&gt;./Sega - Genesis Parent-Clone (20140601).dat&lt;/NoIntroDat&gt;
 ...
 &lt;/collection&gt;
 </programlisting>
@@ -579,23 +606,73 @@ have (missing ROMs), and how many ROMs you have no listed in the
 DAT (unknown ROMs).</para>
 
 <screen>
-$ ./xru-console.py check-nointro genesis
+$ ./xru-console.py check-nointro genesis-local-nointro
 XBMC ROM utilities - Console ROMs version 0.1.0
 [Parsing config file]
 [Checking ROMs with No-Intro XML DAT]
- Filter name = genesis
- Parsing No-Intro XML DAT
- Parsing ./XBMC-NoIntro-dats/Sega - Mega Drive Parent-Clone (20140601).dat...  done
+Filter name = genesis-local-nointro
+Parsing No-Intro XML DAT
+Parsing ./DAT-No-Intro/Sega - Genesis Parent-Clone (20140601-111936).dat...  done
+[Scanning ROMs in sourceDir]
+[Report]
 Games in DAT = 1681
 Have ROMs    = 1681
 Missing ROMs = 0
 Unknown ROMs = 47
 </screen>
 
+<para>If you specify the option <userinput>-v</userinput>,  
+<application>xru-console</application> will print the missing and unknown ROMs.
+<userinput>-vv</userinput> will also print the ROMs you have.</para>
+
 <para>Note that <application>xru-console</application> only looks at the 
 file name of the ROM! It does not check the ROM checksum like more advanced 
 ROM Managers, for example <application>CRLMamePro</application> or 
 <application>ROM Vault</application>.</para>
+
+<para>Before you copy/update your filtered ROM collection, you may
+want to check what will happen and the <userinput>check-filter</userinput> 
+command does precisely that. For example:
+</para>
+
+<screen>
+$ ./xru-console.py check-filter snes
+XBMC ROM utilities - Console ROMs version 0.1.0
+[Parsing config file]
+[Check-filter ROM]
+Filter name = snes
+Using No-Intro parent/clone DAT
+Parsing No-Intro XML DAT
+Parsing No-Intro XML file ./Nintendo - SNES Parent-Clone (20140608-202038).dat...  done
+Total number of games = 3366
+Number of parents = 1828
+Number of clones = 1538
+[Filtering ROMs]
+...
+&lt;ROM set> Super Mario All-Stars and Super Mario World
+   7 [IH] Super Mario All-Stars and Super Mario World (Europe).zip
+   0 [IH] Super Mario All-Stars + Super Mario World (USA).zip
+...
+&lt;ROM set> Super Mario RPG - Legend of the Seven Stars
+   0 [IH] Super Mario RPG - Legend of the Seven Stars (USA).zip
+  -3 [EH] Super Mario RPG (Japan).zip
+&lt;ROM set> Super Mario World
+  11 [IH] Super Mario World (Europe) (Rev 1).zip
+   7 [IH] Super Mario World (Europe).zip
+   0 [IH] Super Mario World (USA).zip
+  -3 [EH] Super Mario World (Japan) (En) (Arcade) [b].zip
+  -3 [EH] Super Mario World - Super Mario Bros. 4 (Japan).zip
+...|  ||
+   |  |+-- Have flag
+   |  +--- Included flag
+   +------ Score
+</screen>
+
+<para>In this ROM listing, you can see the parent/clone sets, the score of each
+ROM, if the ROM is included or excluded, and if the ROM exists in the source
+directory or not. Note that if you use a No-Intro XML DAT you may have missing
+ROMs. However, if you don not use the DAT, then <emphasis>you will always have
+all the ROMs</emphasis> in this list.</para>
 </sect2>
 
 <sect2>
@@ -614,8 +691,26 @@ destination directory.</para>
 
 <screen>
 $ ./xru-console.py copy genesis
-
-COMPLETE ME!
+XBMC ROM utilities - Console ROMs version 0.1.0
+[Parsing config file]
+[Copy/Update ROMs]
+Filter name = genesis-local
+Using directory listing
+[Reading ROMs in source dir]
+Found 1728 ROMs
+[Filtering ROMs]
+[Scanning sourceDir for ROMs to be copied]
+[Creating list of ROMs to be copied/updated]
+[Copying ROMs into destDir]
+  0% &lt;Copied> 10 Super Jogos (Brazil).zip
+  0% &lt;Copied> 16 Zhang Ma Jiang (China) (Unl).zip
+  0% &lt;Copied> 3 Ninjas Kick Back (USA).zip
+...
+ 99% &lt;Copied> [BIOS] Sega CD 2 (USA) (v2.00W).zip
+ 99% &lt;Copied> [BIOS] Sega TMSS (World).zip
+ 99% &lt;Copied> [BIOS] X'Eye (USA) (v2.00).zip
+[Report]
+Copied 962 ROMs
 </screen>
 
 <para>The <userinput>update &lt;romSetName></userinput> command operates
@@ -626,10 +721,42 @@ ROM does not exist or the file sizes are different. This is very
 useful when you destination directory is network-mounted.</para>
 
 <screen>
-$ ./xru-console.py update genesis
-
-COMPLETE ME!
+$ ./xru-console.py update genesis --cleanROMs
+XBMC ROM utilities - Console ROMs version 0.1.0
+[Parsing config file]
+[Copy/Update ROMs]
+Filter name = genesis
+Using No-Intro parent/clone DAT
+Parsing No-Intro XML DAT
+Parsing No-Intro XML file ./Sega - Genesis Parent-Clone (20140601-111936).dat...  done
+Total number of games = 1681
+Number of parents = 1010
+Number of clones = 671
+[Filtering ROMs]
+[Scanning sourceDir for ROMs to be copied]
+[Creating list of ROMs to be copied/updated]
+[Updating ROMs into destDir]
+  0% &lt;Copied > Action 52 (USA) (Alt 1) (Unl).zip
+ 31% &lt;Copied > Gain Ground (World) (Alt 1).zip
+ 32% &lt;Copied > Ghostbusters (World).zip
+ 35% &lt;Copied > HardBall III (USA) (Unl).zip
+...
+ 98% &lt;Copied > Zany Golf (USA, Europe).zip
+ 99% &lt;Copied > [BIOS] LaserActive (USA) (v1.02).zip
+[Report]
+Copied ROMs     47
+Updated ROMs   821
+[Cleaning ROMs in ROMsDest]
+&lt;Deleted> ATP Tour Championship Tennis (USA).zip
+&lt;Deleted> Action 52 (USA) (Unl).zip
+...
+&lt;Deleted> [BIOS] Sega CD 2 (USA) (v2.00W).zip
+Deleted 122 redundant ROMs
 </screen>
+
+<para>By default, only the newly copied files are displayed during the update
+process. If you want to check also the updated files, then use the
+option <userinput>-v</userinput> in the command line.</para>
 
 <para>With both <userinput>copy</userinput> and <userinput>update</userinput> 
 commands, you can use the flags <userinput>--dryRun</userinput>,
@@ -646,13 +773,15 @@ show you inaccurate outcomes, since the destination directory is not modified.</
 <para><userinput>--cleanROMs</userinput> will delete any unknown ROM in the
 destination directory. After copying/update the filtered ROMs, the
 destination directory will be scanned and any ROM found not in the list of
-filtered ROMs will be deleted. Use this with caution!</para>
+filtered ROMs will be deleted. Use this with caution! The list of deleted ROMs 
+in destDir is always printed.</para>
 
 <para>Both <ulink url="http://forum.xbmc.org/showthread.php?tid=85724">Advanced Launcher</ulink> 
 and <ulink url="http://forum.xbmc.org/showthread.php?tid=70115">ROM Collection Browser</ulink> 
 create NFO files having the scrapped ROM information, like year of the release,
 genre, etc. Use the <userinput>--cleanNFO</userinput> to remove any unknown
-NFO file, in a similar way to the <userinput>--cleanROMs</userinput> flag.</para>
+NFO file, in a similar way to the <userinput>--cleanROMs</userinput> flag. The
+list of deleted NFO files in destDir is always printed.</para>
 </sect2>
 
 <sect2>
@@ -677,6 +806,17 @@ Roughly speaking, thumbs are images that will be displayed for every game and
 fanart will appear as a background. You can think of the thumbs as the game box
 and the fanart as the in-game screenshot.</para>
 
+<important>Artwork must have .png extension (lowercase).</important>
+
+<para>Full collections of No-Intro ROMs exist out there. However, it is very
+difficult to find a <emphasis>complete</emphasis> artwork collection that
+have boxes/screenshots/titles. Partial artwork collections are available, although.
+To overcome this problem, <application>xru-console</application> will
+try to replace any missing piece of artwork with another one belonging to
+the same parent/clone set of the filtered ROM, in the case you have a partial
+artwork set which does not belong to the region of the ROMs you are filtering. 
+We will see how this works later with an example.</para>
+
 <para>If you have local Artwork available and want to copy it into destination
 folders (synchronised with your filtered ROM list), then configure the following
 into your ROM collection</para>
@@ -696,16 +836,83 @@ into your ROM collection</para>
 <userinput>check-artwork &lt;romSetName></userinput> command. For example:</para>
 
 <screen>
-COMPLETE ME!
+$ ./xru-console.py check-artwork genesis
+XBMC ROM utilities - Console ROMsESC[0m version 0.1.0
+[Parsing config file]
+[Check-ArtWork]
+Filter name = genesis
+Using No-Intro parent/clone DAT
+Parsing No-Intro XML DAT
+Parsing No-Intro XML file ./Sega - Genesis Parent-Clone (20140601-111936).dat...  done
+Total number of games = 1681
+Number of parents = 1010
+Number of clones = 671
+[Optimising ArtWork file list]
+[Updating ArtWork]
+...
+&lt;&lt;  ROM  >> Sonic The Hedgehog (USA, Europe).zip
+ Original   Sonic The Hedgehog (USA, Europe)
+ Have T     Sonic The Hedgehog (USA, Europe).png
+ Have F     Sonic The Hedgehog (USA, Europe).png
+...
+&lt;&lt;  ROM  >> Speedball 2 (Europe).zip
+ Replaced   Speedball 2 - Brutal Deluxe (USA)
+ Have T     Speedball 2 - Brutal Deluxe (USA).png
+ Have F     Speedball 2 - Brutal Deluxe (USA).png
+...
+&lt;&lt;  ROM  >> [BIOS] X'Eye (USA) (v2.00).zip
+ Not found
+[Report]
+Number of ROMs in destDir  = 868
+Number of ArtWork found    = 722
+Number of original ArtWork = 179
+Number of replaced ArtWork = 543
+Number of have Thumbs    = 722
+Number of missing Thumbs = 0
+Number of have Fanart    = 707
+Number of missing Fanart = 15
 </screen>
 
-<para>EXPLAIN THE FLAGS IN THIS LIST AND THE ARTWORK SUBSTITUTION PROCESS.</para>
+<para>Note that for the game <emphasis>Speedball 2</emphasis> no artwork was
+found for the filtered game in destDir. However, a replacement belonging to
+another ROM in the set was found. Some other ROMs, particularly the BIOS,
+won't have any artwork and will produce a miss.</para>
 
 <para>When you are happy with the results, you can copy/update your
 Artwork with the commands <userinput>copy-artwork &lt;romSetName></userinput>
 and <userinput>update-artwork &lt;romSetName></userinput>. You can use the
 <userinput>--cleanArtWork</userinput> flag if you want to delete
-unknown Artwork into the thumbs and fanart destination directories.</para>
+unknown Artwork into the thumbs and fanart destination directories. For example:</para>
+
+<screen>
+$ ./xru-console.py update-artwork genesis --cleanArtWork
+XBMC ROM utilities - Console ROMs version 0.1.0
+[Parsing config file]
+[Updating/copying ArtWork]
+Filter name = genesis
+Using No-Intro parent/clone DAT
+Parsing No-Intro XML DAT
+Parsing No-Intro XML file ./Sega - Genesis Parent-Clone (20140601-111936).dat...  done
+Total number of games = 1681
+Number of parents = 1010
+Number of clones = 671
+[Optimising ArtWork file list]
+[Updating ArtWork]
+  1% &lt;Missing Fanart> Adventurous Boy - Mao Xian Xiao Zi (China) (Unl)
+  5% &lt;Missing Fanart> Awesome Possum Kicks Dr Machino's Butt! (USA) (Beta)
+...
+ 96% &lt;Missing Fanart> World Series Baseball 98 (USA)
+[Report]
+Copied thumbs      0
+Updated thumbs   722
+Missing thumbs     0
+Copied fanart      0
+Updated fanart   707
+Missing fanart    15
+[Cleaning ArtWork]
+Deleted 0 redundant thumbs
+Deleted 0 redundant fanart
+</screen>
 </sect2>
 </sect1>
 
