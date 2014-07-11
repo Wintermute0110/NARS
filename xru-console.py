@@ -987,7 +987,7 @@ def get_directory_Main_list(filter_config):
       if __debug_sourceDir_ROM_scanner:
         print "  ROM       '" + romObject.fileName + "'";
         print "   baseName '" + romObject.baseName + "'";
-  print_info(' Found ' + str(num_ROMs_sourceDir) + ' ROMs');
+  print_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs');
   
   # --- Create a parent/clone list based on the baseName of the ROM
   pclone_ROM_dict = {}; # Key is ROM basename
@@ -1237,6 +1237,9 @@ def do_check_nointro(filterName):
   haveDir_or_abort(sourceDir);
 
   # Load No-Intro DAT
+  if filename == None:
+    print_error('[ERROR] No-Intro XML DAT not configured for this filer.');
+    exit(10);
   print_info('Parsing No-Intro XML DAT');
   print "Parsing " + filename + "...",;
   sys.stdout.flush();
@@ -1260,6 +1263,7 @@ def do_check_nointro(filterName):
       nointro_roms.append(game_attrib['name'] + '.zip');
 
   # Check how many ROMs we have in sourceDir and the DAT
+  print_info('[Scanning ROMs in sourceDir]');
   have_roms = 0;
   unknown_roms = 0;
   file_list = [];
@@ -1282,6 +1286,7 @@ def do_check_nointro(filterName):
       print_verb('<Missing ROM> ' + game);
       missing_roms += 1;
 
+  print_info('[Report]');
   print_info('Games in DAT = ' + str(num_games));
   print_info('Have ROMs    = ' + str(have_roms));
   print_info('Missing ROMs = ' + str(missing_roms));
@@ -1463,44 +1468,45 @@ def do_checkArtwork(filterName):
   num_missing_thumbs = 0;
   num_have_fanart = 0;
   num_missing_fanart = 0;
-  for rom_baseName in artwork_copy_dic:
-    art_baseName = artwork_copy_dic[rom_baseName];
-    print_info("<<  ROM  >> " + rom_baseName + ".zip");
-    # print_info(" bName " + rom_baseName);
-    
-    # --- Check if artwork exist
-    thumb_Source_fullFileName = thumbsSourceDir + art_baseName + '.png';
-    fanart_Source_fullFileName = fanartSourceDir + art_baseName + '.png';
-
-    # - Has artwork been replaced?
-    if rom_baseName != art_baseName:
-      num_original += 1;
-      print ' Replaced   ' + art_baseName;
+  for rom_baseName in sorted(roms_destDir_list):
+    print_info("<<  ROM  >> " + rom_baseName + ".zip");    
+    if rom_baseName not in artwork_copy_dic:
+      print ' Not found';
     else:
-      num_replaced += 1;
-      print ' Original   ' + art_baseName;
+      art_baseName = artwork_copy_dic[rom_baseName];
+      
+      # --- Check if artwork exist
+      thumb_Source_fullFileName = thumbsSourceDir + art_baseName + '.png';
+      fanart_Source_fullFileName = fanartSourceDir + art_baseName + '.png';
 
-    # - Have thumb
-    if not os.path.isfile(thumb_Source_fullFileName):
-      num_missing_thumbs += 1;
-      print ' Missing T  ' + art_baseName + '.png';
-    else:
-      num_have_thumbs += 1;
-      print ' Have T     ' + art_baseName + '.png';
+      # - Has artwork been replaced?
+      if rom_baseName != art_baseName:
+        num_original += 1;
+        print ' Replaced   ' + art_baseName;
+      else:
+        num_replaced += 1;
+        print ' Original   ' + art_baseName;
 
-    # - Have fanart
-    if not os.path.isfile(fanart_Source_fullFileName):
-      num_missing_fanart += 1;
-      print ' Missing F  ' + art_baseName + '.png';
-    else:
-      num_have_fanart += 1;
-      print ' Have F     ' + art_baseName + '.png';
+      # - Have thumb
+      if not os.path.isfile(thumb_Source_fullFileName):
+        num_missing_thumbs += 1;
+        print ' Missing T  ' + art_baseName + '.png';
+      else:
+        num_have_thumbs += 1;
+        print ' Have T     ' + art_baseName + '.png';
+
+      # - Have fanart
+      if not os.path.isfile(fanart_Source_fullFileName):
+        num_missing_fanart += 1;
+        print ' Missing F  ' + art_baseName + '.png';
+      else:
+        num_have_fanart += 1;
+        print ' Have F     ' + art_baseName + '.png';
 
   print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
   print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
   print_info('Number of original ArtWork = ' + str(num_original));
   print_info('Number of replaced ArtWork = ' + str(num_replaced));
-
   print_info('Number of have Thumbs    = ' + str(num_have_thumbs));
   print_info('Number of missing Thumbs = ' + str(num_missing_thumbs));
   print_info('Number of have Fanart    = ' + str(num_have_fanart));
