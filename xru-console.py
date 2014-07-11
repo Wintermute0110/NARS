@@ -258,56 +258,66 @@ def haveDir_or_abort(dirName):
 # -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Copying ROMs into destDir]');
+
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
   num_files = 0;
+  num_copied_roms = 0;
   for rom_copy_item in rom_list:
-    # Update progress
-    romFileName = rom_copy_item + '.zip';
+    # --- Update progress
     percentage = 100 * step / num_steps;
     sys.stdout.write('{:3d}% '.format(percentage));
 
-    # Copy file (this function succeeds or aborts program)
+    # --- Copy file (this function succeeds or aborts program)
+    romFileName = rom_copy_item + '.zip';
     copy_ROM_file(romFileName, sourceDir, destDir);
+    num_copied_roms += 1;
     print_info('<Copied> ' + romFileName);
-    sys.stdout.flush()
+    sys.stdout.flush();
 
-    # Update progress
+    # --- Update progress
     step += 1;
-    num_files += 1;
-  print_info('Copied ' + str(num_files) + ' ROMs');
+
+  print_info('[Report]');
+  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
 
 def update_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Updating ROMs into destDir]');
+  
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
-  num_files = 0;
+  num_copied_roms = 0;
+  num_updated_roms = 0;
   for rom_copy_item in rom_list:
-    # Update progress
-    romFileName = rom_copy_item + '.zip';
+    # --- Update progress
     percentage = 100 * step / num_steps;
 
-    # Copy file (this function succeeds or aborts program)
+    # --- Copy file (this function succeeds or aborts program)
+    romFileName = rom_copy_item + '.zip';
     ret = update_ROM_file(romFileName, sourceDir, destDir);
     if ret == 0:
       # On default verbosity level only report copied files
       sys.stdout.write('{:3d}% '.format(percentage));
+      num_copied_roms += 1;
       print_info('<Copied > ' + romFileName);
     elif ret == 1:
       if log_level >= Log.verb:
         sys.stdout.write('{:3d}% '.format(percentage));
+      num_updated_roms += 1;
       print_verb('<Updated> ' + romFileName);
     else:
       print_error('Wrong value returned by update_ROM_file()');
       sys.exit(10);
     sys.stdout.flush()
 
-    # Update progress
+    # --- Update progress
     step += 1;
-    num_files += 1;
-  print_info('Updated/Copied ' + str(num_files) + ' ROMs');
+
+  print_info('[Report]');
+  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
+  print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
   print_info('[Cleaning ROMs in ROMsDest]');
@@ -325,6 +335,7 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
       num_cleaned_roms += 1;
       delete_ROM_file(file, destDir);
       print_info('<Deleted> ' + file);
+
   print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
 
 def delete_redundant_NFO(destDir):
@@ -339,6 +350,7 @@ def delete_redundant_NFO(destDir):
         delete_ROM_file(file, destDir);
         num_deletedNFO_files += 1;
         print_info('<Deleted NFO> ' + file);
+
   print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
@@ -355,37 +367,52 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
   haveDir_or_abort(fanartDestDir);
   
   # --- Copy artwork
+  num_steps = len(rom_copy_dic);
+  step = 0;
   num_copied_thumbs = 0;
   num_missing_thumbs = 0;
   num_copied_fanart = 0;
   num_missing_fanart = 0;
-  for rom_baseName in rom_copy_dic:
+  for rom_baseName in sorted(rom_copy_dic):
+    # --- Get artwork name
     art_baseName = rom_copy_dic[rom_baseName];
+
+    # --- Update progress
+    percentage = 100 * step / num_steps;
+    sys.stdout.write('{:3d}% '.format(percentage));
 
     # --- Thumbs
     ret = copy_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
     if ret == 0:
       num_copied_thumbs += 1;
-      print_verb('<Copied Thumb  > ' + art_baseName);
+      print_info('<Copied Thumb  > ' + art_baseName);
     elif ret == 1:
       num_missing_thumbs += 1;
-      print_verb('<Missing Thumb > ' + art_baseName);
+      print_info('<Missing Thumb > ' + art_baseName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
+
+    # --- Update progress
+    percentage = 100 * step / num_steps;
+    sys.stdout.write('{:3d}% '.format(percentage));
 
     # --- Fanart
     ret = copy_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
     if ret == 0:
       num_copied_fanart += 1;
-      print_verb('<Copied Fanart > ' + art_baseName);
+      print_info('<Copied Fanart > ' + art_baseName);
     elif ret == 1:
       num_missing_fanart += 1;
-      print_verb('<Missing Fanart> ' + art_baseName);
+      print_info('<Missing Fanart> ' + art_baseName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
 
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]');
   print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
   print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
   print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
@@ -393,6 +420,7 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
 
 def update_ArtWork_list(filter_config, rom_copy_dic):
   print_info('[Updating ArtWork]');
+  
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
   fanartSourceDir = filter_config.fanartSourceDir;
@@ -405,26 +433,36 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
   haveDir_or_abort(fanartDestDir);
   
   # --- Copy/update artwork
+  num_steps = len(rom_copy_dic);
+  step = 0;
   num_copied_thumbs = 0;
   num_updated_thumbs = 0;
   num_missing_thumbs = 0;
   num_copied_fanart = 0;
   num_updated_fanart = 0;
   num_missing_fanart = 0;
-  for rom_baseName in rom_copy_dic:
+  for rom_baseName in sorted(rom_copy_dic):
+    # --- Update progress
+    percentage = 100 * step / num_steps;
+
+    # --- Get artwork name
     art_baseName = rom_copy_dic[rom_baseName];
 
     # --- Thumbs
     ret = update_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
-    # NOTE: if source thumb was changed for another ROM in the set, the
-    # destination file should be renamed accordingly!!!
     if ret == 0:
+      # On default verbosity level only report copied files
+      sys.stdout.write('{:3d}% '.format(percentage));
       num_copied_thumbs += 1;
-      print_verb('<Copied  Thumb > ' + art_baseName);
+      print_info('<Copied  Thumb > ' + art_baseName);
     elif ret == 1:
+      # Also report missing artwork
+      sys.stdout.write('{:3d}% '.format(percentage));
       num_missing_thumbs += 1;
-      print_verb('<Missing Thumb > ' + art_baseName);
+      print_info('<Missing Thumb > ' + art_baseName);
     elif ret == 2:
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3d}% '.format(percentage));
       num_updated_thumbs += 1;
       print_verb('<Updated Thumb > ' + art_baseName);
     else:
@@ -434,18 +472,28 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     # --- Fanart
     ret = update_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
     if ret == 0:
+      # Also report missing artwork
+      sys.stdout.write('{:3d}% '.format(percentage));
       num_copied_fanart += 1;
-      print_verb('<Copied  Fanart> ' + art_baseName);
+      print_info('<Copied  Fanart> ' + art_baseName);
     elif ret == 1:
+      # Also report missing artwork
+      sys.stdout.write('{:3d}% '.format(percentage));
       num_missing_fanart += 1;
-      print_verb('<Missing Fanart> ' + art_baseName);
+      print_info('<Missing Fanart> ' + art_baseName);
     elif ret == 2:
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3d}% '.format(percentage));
       num_updated_fanart += 1;
       print_verb('<Updated Fanart> ' + art_baseName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
 
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]');
   print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
   print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs));
   print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
