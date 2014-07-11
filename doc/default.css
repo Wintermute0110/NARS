@@ -13,15 +13,15 @@ html body {
 
 .programlisting {
   padding: 1ex;
-  background-color: #eee;
+  background-color: #ddd;
   border: 1px solid #ccc;
   line-height: 1.1;
 }
 
 .screen {
   padding: 1ex;
-  background-color: #ccc;
-  border: 1px solid #aaa;
+  background-color: #aaa;
+  border: 1px solid #888;
 }
 
 .application {
@@ -52,7 +52,11 @@ html body {
 }
 
 .important {
-  margin: 0.75em;
+  margin: 0.2em;
+  padding-left: 0.2em;
+  padding-right: 0.2em;
+  padding-top: 0em;
+  padding-bottom: 0em;
   font-style: italic;
   border: 1px solid #a00;
   border-left: 12px solid #c00;
