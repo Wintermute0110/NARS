@@ -264,7 +264,7 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
   step = 0;
   num_files = 0;
   num_copied_roms = 0;
-  for rom_copy_item in rom_list:
+  for rom_copy_item in sorted(rom_list):
     # --- Update progress
     percentage = 100 * step / num_steps;
     sys.stdout.write('{:3d}% '.format(percentage));
@@ -290,7 +290,7 @@ def update_ROM_list(rom_list, sourceDir, destDir):
   step = 0;
   num_copied_roms = 0;
   num_updated_roms = 0;
-  for rom_copy_item in rom_list:
+  for rom_copy_item in sorted(rom_list):
     # --- Update progress
     percentage = 100 * step / num_steps;
 
@@ -1372,6 +1372,7 @@ def do_taglist(filterName):
   for key in sorted_propertiesDic:
     print_info('{:6d}'.format(key[1]) + '  ' + key[0]);
 
+# ----------------------------------------------------------------------------
 def do_checkFilter(filterName):
   "Applies filter and prints filtered parent/clone list"
 
@@ -1528,10 +1529,10 @@ def do_checkArtwork(filterName):
 
       # - Has artwork been replaced?
       if rom_baseName != art_baseName:
-        num_original += 1;
+        num_replaced += 1;
         print ' Replaced   ' + art_baseName;
       else:
-        num_replaced += 1;
+        num_original += 1;
         print ' Original   ' + art_baseName;
 
       # - Have thumb
