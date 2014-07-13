@@ -31,7 +31,7 @@ from xml.dom import minidom
 #   http://www.mamedev.org/source/src/emu/info.c.html
 
 # --- Global variables
-__software_version = '0.1.0';
+__software_version = '0.1.0 alpha 1';
 __config_configFileName = 'xru-mame-config.xml';
 __config_logFileName = 'xru-mame-log.txt';
 
@@ -46,20 +46,11 @@ configuration = ConfigFile();
 __prog_option_log = 0;
 __prog_option_log_filename = __config_logFileName;
 __prog_option_dry_run = 0;
+__prog_option_clean_ROMs = 0;
 __prog_option_generate_NFO = 0;
-__prog_option_withArtWork = 0;
-__prog_option_cleanROMs = 0;
+__prog_option_clean_NFO = 0;
+__prog_option_clean_ArtWork = 0;
 __prog_option_sync = 0;
-
-# --- Global DEBUG variables
-# TODO: debug variables should be where the debug functions are, not here
-# Comment them and check when the program fails
-# __debug_propertyParsers = 0;
-# __debug_copy_ROM_file = 0;
-# __debug_main_ROM_list = 0;
-# __debug_filtered_ROM_list = 1;
-# __debug_config_file_parser = 0;
-# __debug_apply_MAME_filters = 1;
 
 # -----------------------------------------------------------------------------
 # DEBUG functions
@@ -146,9 +137,11 @@ def print_debug(print_str):
 # Returns:
 #  0 - ArtWork file found in sourceDir and copied
 #  1 - ArtWork file not found in sourceDir
-def copy_ArtWork_file(fileName, sourceDir, destDir):
-  sourceFullFilename = sourceDir + fileName;
-  destFullFilename = destDir + fileName;
+# NOTE: be careful, maybe artwork should be when copied to match ROM name
+#       if artwork was subtituted.
+def copy_ArtWork_file(fileName, artName, sourceDir, destDir):
+  sourceFullFilename = sourceDir + artName + '.png';
+  destFullFilename = destDir + fileName + '.png';
 
   # Maybe artwork does not exist... Then do nothing
   if not os.path.isfile(sourceFullFilename):
@@ -168,13 +161,15 @@ def copy_ArtWork_file(fileName, sourceDir, destDir):
 #  0 - ArtWork file found in sourceDir and copied
 #  1 - ArtWork file not found in sourceDir
 #  2 - ArtWork file found in sourceDir and destDir, same size so not copied
-def update_ArtWork_file(fileName, sourceDir, destDir):
-  sourceFullFilename = sourceDir + fileName;
-  destFullFilename = destDir + fileName;
+# NOTE: be careful, maybe artwork should be when copied to match ROM name
+#       if artwork was subtituted.
+def update_ArtWork_file(fileName, artName, sourceDir, destDir):
+  sourceFullFilename = sourceDir + artName + '.png';
+  destFullFilename = destDir + fileName + '.png';
   
   existsSource = os.path.isfile(sourceFullFilename);
   existsDest = os.path.isfile(destFullFilename);
-  # Maybe artwork does not exist... Then do nothing
+  # --- Maybe artwork does not exist... Then do nothing
   if not os.path.isfile(sourceFullFilename):
     return 1;
 
@@ -186,6 +181,7 @@ def update_ArtWork_file(fileName, sourceDir, destDir):
 
   # If sizes are equal Skip copy and return 1
   if sizeSource == sizeDest:
+    print_debug(' Updated ' + destFullFilename);
     return 2;
 
   # destFile does not exist or sizes are different, copy.
@@ -261,56 +257,83 @@ def exists_ROM_file(fileName, dir):
 
   return os.path.isfile(fullFilename);
 
+def haveDir_or_abort(dirName, infoStr = None):
+  if infoStr == None:
+    if dirName == None:
+      print_error('\033[31m[ERROR]\033[0m Directory not configured');
+      sys.exit(10);
+  else:
+    if dirName == None:
+      print_error('\033[31m[ERROR]\033[0m Directory '+infoStr+' not configured');
+      sys.exit(10);
+    
+  if not os.path.isdir(dirName):
+    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
+    sys.exit(10);
+
 # -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Copying ROMs into destDir]');
+
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
   num_files = 0;
-  for rom_copy_item in rom_list:
-    # Update progress
-    romFileName = rom_copy_item + '.zip';
+  num_copied_roms = 0;
+  for rom_copy_item in sorted(rom_list):
+    # --- Update progress
     percentage = 100 * step / num_steps;
-    sys.stdout.write(' {:3d}%'.format(percentage));
+    sys.stdout.write('{:3d}% '.format(percentage));
 
-    # Copy file (this function succeeds or aborts program)
+    # --- Copy file (this function succeeds or aborts program)
+    romFileName = rom_copy_item + '.zip';
     copy_ROM_file(romFileName, sourceDir, destDir);
-    print_info(' <Copied> ' + romFileName);
-    sys.stdout.flush()
+    num_copied_roms += 1;
+    print_info('<Copied> ' + romFileName);
+    sys.stdout.flush();
 
-    # Update progress
+    # --- Update progress
     step += 1;
-    num_files += 1;
-  print_info(' Copied ' + str(num_files) + ' ROMs');
+
+  print_info('[Report]');
+  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
 
 def update_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Updating ROMs into destDir]');
+  
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
-  num_files = 0;
-  for rom_copy_item in rom_list:
-    # Update progress
-    romFileName = rom_copy_item + '.zip';
+  num_copied_roms = 0;
+  num_updated_roms = 0;
+  for rom_copy_item in sorted(rom_list):
+    # --- Update progress
     percentage = 100 * step / num_steps;
-    sys.stdout.write(' {:3d}%'.format(percentage));
 
-    # Copy file (this function succeeds or aborts program)
+    # --- Copy file (this function succeeds or aborts program)
+    romFileName = rom_copy_item + '.zip';
     ret = update_ROM_file(romFileName, sourceDir, destDir);
     if ret == 0:
-      print_info(' <Copied > ' + romFileName);
+      # On default verbosity level only report copied files
+      sys.stdout.write('{:3d}% '.format(percentage));
+      num_copied_roms += 1;
+      print_info('<Copied > ' + romFileName);
     elif ret == 1:
-      print_info(' <Updated> ' + romFileName);
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3d}% '.format(percentage));
+      num_updated_roms += 1;
+      print_verb('<Updated> ' + romFileName);
     else:
       print_error('Wrong value returned by update_ROM_file()');
       sys.exit(10);
     sys.stdout.flush()
 
-    # Update progress
+    # --- Update progress
     step += 1;
-    num_files += 1;
-  print_info(' Updated ' + str(num_files) + ' ROMs');
+
+  print_info('[Report]');
+  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
+  print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
   print_info('[Cleaning ROMs in ROMsDest]');
@@ -327,8 +350,24 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
     if basename not in rom_copy_dic:
       num_cleaned_roms += 1;
       delete_ROM_file(file, destDir);
-      print_info(' <Deleted> ' + file);
-  print_info(' Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
+      print_info('<Deleted> ' + file);
+
+  print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
+
+def delete_redundant_NFO(destDir):
+  print_info('[Deleting redundant NFO files]');
+  num_deletedNFO_files = 0;
+  for file in os.listdir(destDir):
+    if file.endswith(".nfo"):
+      # Chech if there is a corresponding ROM for this NFO file
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      romFileName_temp = thisFileName + '.zip';
+      if not exists_ROM_file(romFileName_temp, destDir):
+        delete_ROM_file(file, destDir);
+        num_deletedNFO_files += 1;
+        print_info('<Deleted NFO> ' + file);
+
+  print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
   print_info('[Copying ArtWork]');
@@ -338,87 +377,187 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
   thumbsDestDir = filter_config.thumbsDestDir;
   
   # --- Check that directories exist
-  if not os.path.isdir(thumbsSourceDir):
-    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
-    sys.exit(10);
-  if not os.path.isdir(thumbsDestDir):
-    print_error('thumbsDestDir not found ' + thumbsDestDir);
-    sys.exit(10);
-  if not os.path.isdir(fanartSourceDir):
-    print_error('fanartSourceDir not found ' + fanartSourceDir);
-    sys.exit(10);
-  if not os.path.isdir(fanartDestDir):
-    print_error('fanartDestDir not found ' + fanartDestDir);
-    sys.exit(10);
+  haveDir_or_abort(thumbsSourceDir);
+  haveDir_or_abort(thumbsDestDir);
+  haveDir_or_abort(fanartSourceDir);
+  haveDir_or_abort(fanartDestDir);
   
   # --- Copy artwork
-  for rom_copy_item in rom_copy_dic:
-    romFileName = rom_copy_item + '.png';
+  num_steps = len(rom_copy_dic);
+  step = 0;
+  num_copied_thumbs = 0;
+  num_missing_thumbs = 0;
+  num_copied_fanart = 0;
+  num_missing_fanart = 0;
+  for rom_baseName in sorted(rom_copy_dic):
+    # --- Get artwork name
+    art_baseName = rom_copy_dic[rom_baseName];
+
+    # --- Update progress
+    percentage = 100 * step / num_steps;
+    sys.stdout.write('{:3d}% '.format(percentage));
+
     # --- Thumbs
-    ret = copy_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
+    ret = copy_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
     if ret == 0:
-      print_info(' <Copied Thumb  > ' + romFileName);
+      num_copied_thumbs += 1;
+      print_info('<Copied Thumb  > ' + art_baseName);
     elif ret == 1:
-      print_info(' <Missing Thumb > ' + romFileName);    
-    else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
-      sys.exit(10);
-    # --- Fanart
-    ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
-    if ret == 0:
-      print_info(' <Copied Fanart > ' + romFileName);
-    elif ret == 1:
-      print_info(' <Missing Fanart> ' + romFileName);    
+      num_missing_thumbs += 1;
+      print_info('<Missing Thumb > ' + art_baseName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
 
+    # --- Update progress
+    percentage = 100 * step / num_steps;
+    sys.stdout.write('{:3d}% '.format(percentage));
+
+    # --- Fanart
+    ret = copy_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
+    if ret == 0:
+      num_copied_fanart += 1;
+      print_info('<Copied Fanart > ' + art_baseName);
+    elif ret == 1:
+      num_missing_fanart += 1;
+      print_info('<Missing Fanart> ' + art_baseName);
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]');
+  print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
+  print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
+  print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
+  print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
+
 def update_ArtWork_list(filter_config, rom_copy_dic):
   print_info('[Updating ArtWork]');
-  fanartSourceDir = filter_config.fanartSourceDir;
-  fanartDestDir = filter_config.fanartDestDir;
+  
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
+  fanartSourceDir = filter_config.fanartSourceDir;
+  fanartDestDir = filter_config.fanartDestDir;
+
+  # --- Check that directories exist
+  haveDir_or_abort(thumbsSourceDir);
+  haveDir_or_abort(thumbsDestDir);
+  haveDir_or_abort(fanartSourceDir);
+  haveDir_or_abort(fanartDestDir);
+  
+  # --- Copy/update artwork
+  num_steps = len(rom_copy_dic);
+  step = 0;
+  num_copied_thumbs = 0;
+  num_updated_thumbs = 0;
+  num_missing_thumbs = 0;
+  num_copied_fanart = 0;
+  num_updated_fanart = 0;
+  num_missing_fanart = 0;
+  for rom_baseName in sorted(rom_copy_dic):
+    # --- Update progress
+    percentage = 100 * step / num_steps;
+
+    # --- Get artwork name
+    art_baseName = rom_copy_dic[rom_baseName];
+
+    # --- Thumbs
+    ret = update_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
+    if ret == 0:
+      # On default verbosity level only report copied files
+      sys.stdout.write('{:3d}% '.format(percentage));
+      num_copied_thumbs += 1;
+      print_info('<Copied  Thumb > ' + art_baseName);
+    elif ret == 1:
+      # Also report missing artwork
+      sys.stdout.write('{:3d}% '.format(percentage));
+      num_missing_thumbs += 1;
+      print_info('<Missing Thumb > ' + art_baseName);
+    elif ret == 2:
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3d}% '.format(percentage));
+      num_updated_thumbs += 1;
+      print_verb('<Updated Thumb > ' + art_baseName);
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+
+    # --- Fanart
+    ret = update_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
+    if ret == 0:
+      # Also report missing artwork
+      sys.stdout.write('{:3d}% '.format(percentage));
+      num_copied_fanart += 1;
+      print_info('<Copied  Fanart> ' + art_baseName);
+    elif ret == 1:
+      # Also report missing artwork
+      sys.stdout.write('{:3d}% '.format(percentage));
+      num_missing_fanart += 1;
+      print_info('<Missing Fanart> ' + art_baseName);
+    elif ret == 2:
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3d}% '.format(percentage));
+      num_updated_fanart += 1;
+      print_verb('<Updated Fanart> ' + art_baseName);
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10);
+
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]');
+  print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
+  print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs));
+  print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
+  print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
+  print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart));
+  print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
+
+def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
+  print_info('[Cleaning ArtWork]');
+
+  thumbsDestDir = filter_config.thumbsDestDir;
+  fanartDestDir = filter_config.fanartDestDir;
   
   # --- Check that directories exist
-  if not os.path.isdir(thumbsSourceDir):
-    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
-    sys.exit(10);
-  if not os.path.isdir(thumbsDestDir):
-    print_error('thumbsDestDir not found ' + thumbsDestDir);
-    sys.exit(10);
-  if not os.path.isdir(fanartSourceDir):
-    print_error('fanartSourceDir not found ' + fanartSourceDir);
-    sys.exit(10);
-  if not os.path.isdir(fanartDestDir):
-    print_error('fanartDestDir not found ' + fanartDestDir);
-    sys.exit(10);
-  
-  # --- Copy artwork  
-  for rom_copy_item in rom_copy_dic:
-    romFileName = rom_copy_item + '.png';
-    # --- Thumbs
-    ret = update_ArtWork_file(romFileName, thumbsSourceDir, thumbsDestDir);
-    if ret == 0:
-      print_info(' <Copied  Thumb > ' + romFileName);
-    elif ret == 1:
-      print_info(' <Missing Thumb > ' + romFileName);
-    elif ret == 2:
-      print_info(' <Updated Thumb > ' + romFileName);    
-    else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
-      sys.exit(10);
-    # --- Fanart
-    ret = copy_ArtWork_file(romFileName, fanartSourceDir, fanartDestDir);
-    if ret == 0:
-      print_info(' <Copied  Fanart> ' + romFileName);
-    elif ret == 1:
-      print_info(' <Missing Fanart> ' + romFileName);
-    elif ret == 2:
-      print_info(' <Updated Fanart> ' + romFileName);    
-    else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
-      sys.exit(10);
+  haveDir_or_abort(thumbsDestDir);
+  haveDir_or_abort(thumbsDestDir);
+
+  # --- Delete unknown thumbs
+  thumbs_file_list = [];
+  for file in os.listdir(thumbsDestDir):
+    if file.endswith(".png"):
+      thumbs_file_list.append(file);
+
+  num_cleaned_thumbs = 0;
+  for file in sorted(thumbs_file_list):
+    art_baseName, ext = os.path.splitext(file); # Remove extension
+    if art_baseName not in artwork_copy_dic:
+      num_cleaned_thumbs += 1;
+      delete_ROM_file(file, thumbsDestDir);
+      print_info('<Deleted thumb > ' + file);
+
+  # --- Delete unknown fanart
+  fanart_file_list = [];
+  for file in os.listdir(fanartDestDir):
+    if file.endswith(".png"):
+      fanart_file_list.append(file);
+
+  num_cleaned_fanart = 0;
+  for file in sorted(fanart_file_list):
+    art_baseName, ext = os.path.splitext(file); # Remove extension
+    if art_baseName not in artwork_copy_dic:
+      num_cleaned_fanart += 1;
+      delete_ROM_file(file, fanartDestDir);
+      print_info(' <Deleted fanart> ' + file);
+
+  # --- Report
+  print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
+  print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
 
 # -----------------------------------------------------------------------------
 # Configuration file functions
@@ -470,6 +609,18 @@ def parse_File_Config():
         filter_class = ConfigFileFilter();
         filter_class.name = root_child.attrib['name'];
         print_debug(' name = ' + filter_class.name);
+        # --- By default things are None, which means user didn't
+        #     wrote them in config file.
+        filter_class.sourceDir = None;
+        filter_class.destDir = None;
+        filter_class.fanartSourceDir = None;
+        filter_class.fanartDestDir = None;
+        filter_class.thumbsSourceDir = None;
+        filter_class.thumbsDestDir = None;
+        filter_class.mainFilter = None;
+        filter_class.driver = None;
+        filter_class.machineType = None;
+        filter_class.categories = None;
         sourceDirFound = 0;
         destDirFound = 0;
         # - Initialise variables for the ConfigFileFilter object
@@ -648,7 +799,7 @@ def parse_MAME_merged_XML():
   "Parses a MAME merged XML and creates a parent/clone list"
   filename = configuration.MergedInfo_XML;
   print_info('[Parsing MAME merged XML]');
-  print " Parsing MAME merged XML file " + filename + "...",;
+  print "Parsing MAME merged XML file " + filename + "...",;
   sys.stdout.flush();
   try:
     tree = ET.parse(filename);
@@ -771,9 +922,9 @@ def parse_MAME_merged_XML():
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
   del tree;
-  print_info(' Total number of games = ' + str(num_games));
-  print_info(' Number of parents = ' + str(num_parents));
-  print_info(' Number of clones = ' + str(num_clones));
+  print_info('Total number of games = ' + str(num_games));
+  print_info('Number of parents = ' + str(num_parents));
+  print_info('Number of clones = ' + str(num_clones));
 
   # --- Create a parent-clone list
   # NOTE: a parent/clone hierarchy is not needed for MAME. In the ROM list
@@ -787,14 +938,15 @@ def parse_MAME_merged_XML():
 def apply_MAME_filters(mame_xml_dic, filter_config):
   "Apply filters to main parent/clone dictionary"
   print_info('[Applying MAME filters]');
-  print_info(' NOTE: -vv if you want to see filters in action');
+  print_info('NOTE: -vv if you want to see filters in action');
   
   # --- Default filters: remove crap
+  print_info('[Main filter]');
   # What is "crap"?
   # a) devices <game isdevice="yes" runnable="no"> 
   #    Question: isdevice = yes implies runnable = no? In MAME 0.153b XML yes!
   mame_filtered_dic = {};
-  print_info(' >> Default filter, removing devices');
+  print_info('>>> Default filter, removing devices');
   filtered_out_games = 0;
   for key in mame_xml_dic:
     romObject = mame_xml_dic[key];
@@ -804,14 +956,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       continue;
     mame_filtered_dic[key] = mame_xml_dic[key];
     print_debug(' Included ' + key);
-  print_info(' Removed   = ' + str(filtered_out_games) + \
-             ' / Remaining = ' + str(len(mame_filtered_dic)));
+  print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+             ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
 
   # --- Apply MainFilter: NoClones
   # This is a special filter, and MUST be done first.
   # Also, remove crap like chips, etc.
   if 'NoClones' in filter_config.mainFilter:
-    print_info(' >> Filtering out clones');
+    print_info('>>> Filtering out clones');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -824,14 +976,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_vverb(' FILTERED ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info(' Removed   = ' + str(filtered_out_games) + \
-               ' / Remaining = ' + str(len(mame_filtered_dic)));
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info(' >> NOT filtering clones');
+    print_info('>>> NOT filtering clones');
 
   # --- Apply MainFilter: NoSamples
   if 'NoSamples' in filter_config.mainFilter:
-    print_info(' >> Filtering out games with samples');
+    print_info('>>> Filtering out games with samples');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -844,14 +996,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug(' Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info(' Removed   = ' + str(filtered_out_games) + \
-               ' / Remaining = ' + str(len(mame_filtered_dic)));
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info(' >> NOT filtering samples');
+    print_info('>>> NOT filtering samples');
 
   # --- Apply MainFilter: NoMechanical
   if 'NoMechanical' in filter_config.mainFilter:
-    print_info(' >> Filtering out mechanical games');
+    print_info('>>> Filtering out mechanical games');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -864,10 +1016,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug(' Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info(' Removed   = ' + str(filtered_out_games) + \
-               ' / Remaining = ' + str(len(mame_filtered_dic)));
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info(' >> User wants mechanical games');
+    print_info('>>> User wants mechanical games');
 
   # --- Apply MainFilter: NoNonworking
   # http://www.mamedev.org/source/src/emu/info.c.html
@@ -882,7 +1034,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # /* some minor issues, games marked as status=preliminary */
   # /* don't work or have major emulation problems. */
   if 'NoNonworking' in filter_config.mainFilter:
-    print_info(' >> Filtering out Non-Working games');
+    print_info('>>> Filtering out Non-Working games');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -895,15 +1047,16 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug(' Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info(' Removed   = ' + str(filtered_out_games) + \
-               ' / Remaining = ' + str(len(mame_filtered_dic)));
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info(' >> User wants Non-Working games');
 
   # --- Apply Driver filter
+  print_info('[Driver filter]');
   __debug_apply_MAME_filters_Driver_tag = 0;
   if filter_config.driver is not None and filter_config.driver is not '':
-    print_info(' >> Filtering Drivers');
+    print_info('>>> Filtering Drivers');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -953,17 +1106,18 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug(' Included ' + key + ' driver ' + driverName);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info(' Removed   = ' + str(filtered_out_games) + \
-               ' / Remaining = ' + str(len(mame_filtered_dic)));
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info(' >> User wants all drivers');
+    print_info('>>> User wants all drivers');
 
   # --- Apply Categories filter
+  print_info('[Categories filter]');  
   __debug_apply_MAME_filters_Category_tag = 0;
   if hasattr(filter_config, 'categories') and \
              filter_config.categories is not None and \
              filter_config.categories is not '':
-    print_info('[Filtering Categories]');
+    print_info('>>> Filtering Categories');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1014,10 +1168,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug(' Included ' + key + ' category ' + category_name);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info(' Removed   = ' + str(filtered_out_games) + \
-               ' / Remaining = ' + str(len(mame_filtered_dic)));
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info(' >> User wants all categories');
+    print_info('>>> User wants all categories');
 
   return mame_filtered_dic;
 
@@ -1035,7 +1189,7 @@ def create_copy_list(mame_filtered_dic, rom_main_list):
       copy_list.append(rom_name);
       num_added_roms += 1;
       print_verb(' Added ROM ' + rom_name);
-  print_info(' Added ' + str(num_added_roms) + ' ROMs');
+  print_info('Added ' + str(num_added_roms) + ' ROMs');
 
   return copy_list;
 
@@ -1063,6 +1217,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
   "Generates game information files (NFO) in destDir"
 
   print_info('[Generating NFO files]');
+  num_NFO_files = 0;
   for rom_name in rom_copy_dic:
     romObj = mame_filtered_dic[rom_name];
     NFO_filename = rom_name + '.nfo';
@@ -1105,6 +1260,10 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     f = open(NFO_full_filename, "w")
     f.write(reparsed.toprettyxml(indent="  "))
     f.close()
+    num_NFO_files += 1;
+
+  print_info('[Report]');
+  print_info('Generated ' + str(num_NFO_files) + ' NFO files');
 
 # -----------------------------------------------------------------------------
 # Main body functions
@@ -1236,8 +1395,7 @@ def do_merge():
   root_output = ET.Element('mame');
   tree_output._setroot(root_output);
   print_info('[Parsing (reduced) MAME XML file]');
-  print_info(' NOTE: this may take a looong time...');
-  print " Parsing MAME XML file " + mame_redux_filename + "... ",;
+  print "Parsing MAME XML file " + mame_redux_filename + "... ",;
   sys.stdout.flush();
   try:
     tree = ET.parse(mame_redux_filename);
@@ -1307,7 +1465,7 @@ def do_merge():
 
   # --- Write output file
   print_info('[Writing output file]');
-  print_info(' Output file ' + merged_filename);
+  print_info('Output file ' + merged_filename);
   rough_string = ET.tostring(root_output, 'utf-8');
   reparsed = minidom.parseString(rough_string);
   del root_output; # Reduce memory consumption
@@ -1347,19 +1505,19 @@ def do_list_merged():
 
       # Game attributes
       if 'sourcefile' in game_attrib:
-        print_info('|- driver = ' + game_attrib['sourcefile']);
+        print_info('|-  driver = ' + game_attrib['sourcefile']);
 
       if 'sampleof' in game_attrib:
         num_samples += 1;
-        print_info('|- sampleof = ' + game_attrib['sampleof']);
+        print_info('|-  sampleof = ' + game_attrib['sampleof']);
 
       if 'cloneof' in game_attrib:
         num_clones += 1;
-        print_info('|- cloneof = ' + game_attrib['cloneof']);
+        print_info('|-  cloneof = ' + game_attrib['cloneof']);
 
       if 'isdevice' in game_attrib:
         num_devices += 1;
-        print_info('|- isdevice = ' + game_attrib['isdevice']);
+        print_info('|-  isdevice = ' + game_attrib['isdevice']);
 
       # Iterate through the children of a game
       for game_child in game_EL:
@@ -1374,7 +1532,7 @@ def do_list_merged():
         elif game_child.tag == 'category':
           print_info('+-- category = ' + game_child.text);
 
-  print_info('\n');
+  print_info('[Report]');
   print_info('Number of games = ' + str(num_games));
   print_info('Number of clones = ' + str(num_clones));
   print_info('Number of games with samples = ' + str(num_samples));
@@ -1387,7 +1545,7 @@ def do_list_categories():
 
   # --- Create a histogram with the categories. Parse Catver.ini
   cat_filename = configuration.Catver;
-  print_info(' Opening ' + cat_filename);
+  print_info('Opening ' + cat_filename);
   categories_dic = {};
   main_categories_dic = {};
   final_categories_dic = {};
@@ -1485,7 +1643,7 @@ def do_list_categories():
 def do_list_drivers():    
   "Parses merged XML database and makes driver histogram and statistics"
   print_info('[Listing MAME drivers]');
-  print_info(' NOTE: clones are not included');
+  print_info('NOTE: clones are not included');
 
   filename = configuration.MergedInfo_XML;
   print "Parsing merged MAME XML file '" + filename + "'... ",;
@@ -1524,11 +1682,12 @@ def do_list_drivers():
   for key in sorted_histo:
     print_info('{:4d}'.format(key[1]) + '  ' + key[0]);
 
-# Copy ROMs in destDir
-def do_copy_ROMs(filterName):
+# ----------------------------------------------------------------------------
+def do_checkFilter(filterName):
   "Applies filter and copies ROMs into destination directory"
-  print_info('[Copy/Update ROMs]');
-  print_info(' Filter name = ' + filterName);
+
+  print_info('[Checking filter]');
+  print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -1536,13 +1695,49 @@ def do_copy_ROMs(filterName):
   destDir = filter_config.destDir;
 
   # --- Check for errors, missing paths, etc...
-  if not os.path.isdir(sourceDir):
-    print_error('Source directory does not exist ' + sourceDir);
-    sys.exit(10);
+  haveDir_or_abort(sourceDir);
+  haveDir_or_abort(destDir);
 
-  if not os.path.isdir(destDir):
-    print_error('Source directory does not exist ' + destDir);
-    sys.exit(10);
+  # --- Get MAME parent/clone dictionary --------------------------------------
+  mame_xml_dic = parse_MAME_merged_XML();
+
+  # --- Create main ROM list in sourceDir -------------------------------------
+  rom_main_list = get_ROM_main_list(sourceDir);
+
+  # --- Apply filter and create list of files to be copied --------------------
+  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+
+  # --- Print list in alphabetical order
+  for key_main in sorted(mame_filtered_dic):
+    romObject = mame_filtered_dic[key_main];
+    print_info("<Game> " + romObject.name);
+    
+    # --- Check if file exists (maybe it does not exist for No-Intro lists)
+    sourceFullFilename = sourceDir + romObject.name + '.zip';
+    haveFlag = 'Have ROM';
+    if not os.path.isfile(sourceFullFilename):
+      haveFlag = 'Missing ROM ' + romObject.name;
+
+    # --- Print
+    print_info(' ' + haveFlag + '\n' + 
+               ' Description = ' + romObject.description);
+
+# ----------------------------------------------------------------------------
+# Copy ROMs in destDir
+def do_update(filterName):
+  "Applies filter and copies ROMs into destination directory"
+
+  print_info('[Copy/Update ROMs]');
+  print_info('Filter name = ' + filterName);
+
+  # --- Get configuration for the selected filter and check for errors
+  filter_config = get_Filter_Config(filterName);
+  sourceDir = filter_config.sourceDir;
+  destDir = filter_config.destDir;
+
+  # --- Check for errors, missing paths, etc...
+  haveDir_or_abort(sourceDir);
+  haveDir_or_abort(destDir);
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML();
@@ -1560,20 +1755,157 @@ def do_copy_ROMs(filterName):
   else:
     copy_ROM_list(rom_copy_list, sourceDir, destDir);
 
+  # If --cleanROMs is on then delete unknown files.
+  if __prog_option_clean_ROMs:
+    clean_ROMs_destDir(destDir, rom_copy_list);
+
   # --- Generate NFO XML files with information for launchers
   if __prog_option_generate_NFO:
     generate_NFO_files(rom_copy_list, mame_filtered_dic, destDir);
 
-  # --- Copy artwork
-  if __prog_option_withArtWork:
-    if __prog_option_sync:
-      update_ArtWork_list(filter_config, rom_copy_list);
-    else:
-      copy_ArtWork_list(filter_config, rom_copy_list);
+  # --- Delete NFO files of ROMs not present in the destination directory.
+  if __prog_option_clean_NFO:
+    delete_redundant_NFO(destDir);
 
-  # If --cleanROMs is on then delete unknown files.
-  if __prog_option_cleanROMs:
-    clean_ROMs_destDir(destDir, rom_copy_list);
+# ----------------------------------------------------------------------------
+def do_checkArtwork(filterName):
+  "Checks for missing artwork and prints a report"
+
+  print_info('[Check-ArtWork]');
+  print_info('Filter name = ' + filterName);
+
+  # --- Get configuration for the selected filter and check for errors
+  filter_config = get_Filter_Config(filterName);
+  destDir = filter_config.destDir;
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  fanartSourceDir = filter_config.fanartSourceDir;
+
+  # --- Check for errors, missing paths, etc...
+  haveDir_or_abort(destDir);
+  haveDir_or_abort(thumbsSourceDir, 'thumbsSourceDir');
+  haveDir_or_abort(fanartSourceDir, 'fanartSourceDir');
+
+  # --- Create a list of ROMs in destDir
+  roms_destDir_list = [];
+  for file in os.listdir(destDir):
+    if file.endswith(".zip"):
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      roms_destDir_list.append(thisFileName);
+
+  # --- Get MAME parent/clone dictionary --------------------------------------
+  mame_xml_dic = parse_MAME_merged_XML();
+
+  # --- Apply filter and create list of files to be copied --------------------
+  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+  rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list);
+  
+  # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
+  # Crate a dictionary where key and value are the same (no artwork
+  # substitution in xru-mame).
+  artwork_copy_dic = {};
+  for rom in rom_copy_list:
+    artwork_copy_dic[rom] = rom;
+
+  # --- Print list in alphabetical order
+  print_info('[Artwork report]');
+  num_original = 0;
+  num_replaced = 0;
+  num_have_thumbs = 0;
+  num_missing_thumbs = 0;
+  num_have_fanart = 0;
+  num_missing_fanart = 0;
+  for rom_baseName in sorted(roms_destDir_list):
+    print_info("<<  ROM  >> " + rom_baseName + ".zip");    
+    if rom_baseName not in artwork_copy_dic:
+      print ' Not found';
+    else:
+      art_baseName = artwork_copy_dic[rom_baseName];
+      
+      # --- Check if artwork exist
+      thumb_Source_fullFileName = thumbsSourceDir + art_baseName + '.png';
+      fanart_Source_fullFileName = fanartSourceDir + art_baseName + '.png';
+
+      # - Has artwork been replaced?
+      if rom_baseName != art_baseName:
+        num_replaced += 1;
+        print ' Replaced   ' + art_baseName;
+      else:
+        num_original += 1;
+        print ' Original   ' + art_baseName;
+
+      # - Have thumb
+      if not os.path.isfile(thumb_Source_fullFileName):
+        num_missing_thumbs += 1;
+        print ' Missing T  ' + art_baseName + '.png';
+      else:
+        num_have_thumbs += 1;
+        print ' Have T     ' + art_baseName + '.png';
+
+      # - Have fanart
+      if not os.path.isfile(fanart_Source_fullFileName):
+        num_missing_fanart += 1;
+        print ' Missing F  ' + art_baseName + '.png';
+      else:
+        num_have_fanart += 1;
+        print ' Have F     ' + art_baseName + '.png';
+
+  print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
+  print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
+  print_info('Number of original ArtWork = ' + str(num_original));
+  print_info('Number of replaced ArtWork = ' + str(num_replaced));
+  print_info('Number of have Thumbs    = ' + str(num_have_thumbs));
+  print_info('Number of missing Thumbs = ' + str(num_missing_thumbs));
+  print_info('Number of have Fanart    = ' + str(num_have_fanart));
+  print_info('Number of missing Fanart = ' + str(num_missing_fanart));
+
+# ----------------------------------------------------------------------------
+def do_update_artwork(filterName):
+  "Reads ROM destDir and copies Artwork"
+
+  print_info('[Updating/copying ArtWork]');
+  print_info('Filter name = ' + filterName);
+
+  # --- Get configuration for the selected filter and check for errors
+  filter_config = get_Filter_Config(filterName);
+  destDir = filter_config.destDir;
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  fanartSourceDir = filter_config.fanartSourceDir;
+
+  # --- Check for errors, missing paths, etc...
+  haveDir_or_abort(destDir);
+  haveDir_or_abort(thumbsSourceDir);
+  haveDir_or_abort(fanartSourceDir);
+
+  # --- Create a list of ROMs in destDir
+  roms_destDir_list = [];
+  for file in os.listdir(destDir):
+    if file.endswith(".zip"):
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      roms_destDir_list.append(thisFileName);
+
+  # --- Get MAME parent/clone dictionary --------------------------------------
+  mame_xml_dic = parse_MAME_merged_XML();
+
+  # --- Apply filter and create list of files to be copied --------------------
+  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+  rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list);
+  
+  # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
+  # Crate a dictionary where key and value are the same (no artwork
+  # substitution in xru-mame).
+  artwork_copy_dic = {};
+  for rom in rom_copy_list:
+    artwork_copy_dic[rom] = rom;
+
+  # --- Copy artwork    
+  if __prog_option_sync:
+    update_ArtWork_list(filter_config, artwork_copy_dic);
+  else:
+    copy_ArtWork_list(filter_config, artwork_copy_dic);
+
+  # --- If --cleanArtWork is on then delete unknown files.
+  if __prog_option_clean_ArtWork:
+    clean_ArtWork_destDir(filter_config, artwork_copy_dic);
 
 def do_printHelp():
   print """
@@ -1615,6 +1947,10 @@ if updated are needed.
     Reads merged XML database and prints a histogram of the drivers (how many
     games use each driver).
 
+ \033[31m check-filter <filterName>\033[0m
+    Reads merged XML database and prints a histogram of the drivers (how many
+    games use each driver).
+
  \033[31m copy <filterName>\033[0m
     Applies ROM filters defined in the configuration file and copies the 
     contents of sourceDir into destDir. This overwrites ROMs in destDir.
@@ -1624,30 +1960,29 @@ if updated are needed.
     a lot of time, particularly if sourceDir and/or destDir are on a 
     network-mounted filesystem).
 
+ \033[31m check-artwork <filterName>\033[0m
+    Reads the ROMs in destDir, checks if you have the corresponding artwork 
+    files, and prints a report.
+
+ \033[31m copy-artwork <filterName>\033[0m
+    Reads the ROMs in destDir and tries to copy the artwork to destination
+    directory. If No-Intro DAT is available, missing artwork
+
+ \033[31m update-artwork <filterName>\033[0m
+    Like copy-artwork, but also delete unknown images in artwork destination
+    directories. Artwork files having same size in sourceDir and destDir will 
+    not be copied.
+
 \033[32mOptions:\033[0m
-  \033[35m-h\033[0m, \033[35m--help\033[0m
-    Print short command reference
-
-  \033[35m-v\033[0m, \033[35m--verbose\033[0m
-    Print more information about what's going on
-
-  \033[35m-l\033[0m, \033[35m--log\033[0m
-    Save program output in xru-mame-log.txt.
-
-  \033[35m--logto\033[0m \033[31m[logName]\033[0m
-    Save program output in the file you specify.
-
-  \033[35m--dryRun\033[0m
-    Don't modify destDir at all, just print the operations to be done.
-
-   \033[35m--generateNFO\033[0m
-    Generates NFO files with game information for the launchers.
-
-   \033[35m--withArtWork\033[0m
-    Copies/Updates art work: fanart and thumbs for the launchers.
-    
-   \033[35m--cleanROMs\033[0m
-    Deletes ROMs in destDir not present in the filtered ROM list."""
+  \033[35m-h\033[0m, \033[35m--help\033[0m  Print short command reference
+  \033[35m-v\033[0m, \033[35m--verbose\033[0m Print more information about what's going on
+  \033[35m-l\033[0m, \033[35m--log\033[0m  Save program output in xru-mame-log.txt.
+  \033[35m--logto\033[0m \033[31m[logName]\033[0m  Save program output in the file you specify.
+  \033[35m--dryRun\033[0m  Don't modify destDir at all, just print the operations to be done.
+  \033[35m--cleanROMs\033[0m  Deletes ROMs in destDir not present in the filtered ROM list.
+  \033[35m--generateNFO\033[0m  Generates NFO files with game information for the launchers.
+  \033[35m--cleanNFO\033[0m  Deletes ROMs in destDir not present in the filtered ROM list.
+  \033[35m--cleanArtWork\033[0m  Deletes unknown Artowork in destination directories."""
 
 # -----------------------------------------------------------------------------
 # main function
@@ -1665,41 +2000,45 @@ def main(argv):
      nargs = 1)
   parser.add_argument("--dryRun", help="don't modify any files", \
      action="store_true")
-  parser.add_argument("--generateNFO", help="generate NFO files", \
-     action="store_true")
-  parser.add_argument("--withArtWork", help="copy/update artwork", \
-     action="store_true")
   parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", \
      action="store_true")
+  parser.add_argument("--generateNFO", help="generate NFO files", \
+     action="store_true")
+  parser.add_argument("--cleanNFO", help="clean redundant NFO files", \
+     action="store_true")
+  parser.add_argument("--cleanArtWork", help="clean unknown ArtWork", \
+     action="store_true")
   parser.add_argument("command", \
-     help="usage, reduce-XML, merge, list-merged, list-categories, \
-           list-drivers, copy, update", nargs = 1)
+     help="usage, reduce-XML, merge, list-merged, \
+           list-categories, list-drivers, \
+           check-filter, copy, update \
+           check-artwork, copy-artwork, update-artwork", nargs = 1)
   parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
   args = parser.parse_args();
 
   # --- Optional arguments
   global __prog_option_log, __prog_option_log_filename;
   global __prog_option_dry_run;
+  global __prog_option_cleanROMs;
   global __prog_option_generate_NFO;
-  global __prog_option_withArtWork;
-  global __prog_option_cleanROMs, __prog_option_sync;
+  global __prog_option_clean_NFO;
+  global __prog_option_clean_ArtWork;
+  global __prog_option_sync;
 
   if args.verbose:
-    if args.verbose == 1:
-      change_log_level(Log.verb);
-    elif args.verbose == 2:
-      change_log_level(Log.vverb);
-    elif args.verbose >= 3:
-      change_log_level(Log.debug);
+    if args.verbose == 1:   change_log_level(Log.verb);
+    elif args.verbose == 2: change_log_level(Log.vverb);
+    elif args.verbose >= 3: change_log_level(Log.debug);
   if args.log:
     __prog_option_log = 1;
   if args.logto:
     __prog_option_log = 1;
     __prog_option_log_filename = args.logto[0];
   if args.dryRun:      __prog_option_dry_run = 1;
-  if args.generateNFO: __prog_option_generate_NFO = 1;
-  if args.withArtWork: __prog_option_withArtWork = 1;
   if args.cleanROMs:   __prog_option_cleanROMs = 1;
+  if args.generateNFO: __prog_option_generate_NFO = 1;
+  if args.cleanNFO:     __prog_option_clean_NFO = 1;
+  if args.cleanArtWork: __prog_option_clean_ArtWork = 1;
 
   # --- Positional arguments that don't require parsing of the config file
   command = args.command[0];
@@ -1711,34 +2050,51 @@ def main(argv):
   global configuration; # Needed to modify global copy of globvar
   configuration = parse_File_Config();
 
-  # --- Positional arguments that required the configuration file
+  # --- Positional arguments that don't require a filterName
   if command == 'reduce-XML':
     do_reduce_XML();
-
+    sys.exit(0);
+    
   elif command == 'merge':
     do_merge();
-
+    sys.exit(0);
+    
   elif command == 'list-merged':
     do_list_merged();
-
+    sys.exit(0);
+    
   elif command == 'list-categories':
     do_list_categories();
-
+    sys.exit(0);
+    
   elif command == 'list-drivers':
     do_list_drivers();
+    sys.exit(0);
+    
+  # --- Positional arguments that require a filterName
+  if args.filterName == None:
+    print_error('\033[31m[ERROR]\033[0m filterName required');
+    sys.exit(10);
+
+  if command == 'check-filter':
+    do_checkFilter(args.filterName);
 
   elif command == 'copy':
-    if args.filterName == None:
-      print_error('filterName required');
-      sys.exit(10);
-    do_copy_ROMs(args.filterName);
+    do_update(args.filterName);
 
   elif command == 'update':
-    if args.filterName == None:
-      print_error('filterName required');
-      sys.exit(10);
     __prog_option_sync = 1;
-    do_copy_ROMs(args.filterName);  
+    do_update(args.filterName);  
+
+  elif command == 'check-artwork':
+    do_checkArtwork(args.filterName);
+
+  elif command == 'copy-artwork':
+    do_update_artwork(args.filterName);
+
+  elif command == 'update-artwork':
+    __prog_option_sync = 1;
+    do_update_artwork(args.filterName);  
 
   else:
     print_error('Unrecognised command');
