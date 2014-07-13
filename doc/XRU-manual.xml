@@ -978,6 +978,24 @@ contents of sourceDir into destDir. This overwrites ROMs in destDir.</para>
 a lot of time, particularly if sourceDir and/or destDir are on a
 network-mounted filesystem).</para>
 </listitem>
+
+<listitem>
+<para><userinput>check-artwork &lt;filterName&gt;</userinput></para>
+<para>Reads the ROMs in destDir, checks if you have the corresponding artwork
+files, and prints a report.</para>
+</listitem>
+
+<listitem>
+<para><userinput>copy-artwork &lt;filterName&gt;</userinput></para>
+<para>Reads the ROMs in destDir and tries to copy the matching artwork to 
+the destination directory.</para>
+</listitem>
+
+<listitem>
+<para><userinput>update-artwork &lt;filterName&gt;</userinput></para>
+<para>Like copy-artwork, but only copies images if file sizes are different. 
+This may save a lot of time.</para>
+</listitem>
 </itemizedlist>
 
 <para>The following options are supported.</para>
@@ -1009,18 +1027,23 @@ network-mounted filesystem).</para>
 </listitem>
 
 <listitem>
+<para><userinput>--cleanROMs</userinput></para>
+<para>Deletes ROMs in destDir not present in the filtered ROM list.</para>
+</listitem>
+
+<listitem>
 <para><userinput>--generateNFO</userinput></para>
 <para>Generates NFO files with game information for the launchers.</para>
 </listitem>
 
 <listitem>
-<para><userinput>--withArtWork</userinput></para>
-<para>Copies/Updates art work: fanart and thumbs for the launchers.</para>
+<para><userinput>--cleanNFO</userinput></para>
+<para>Deletes unknown NFO files in the destination directory.</para>
 </listitem>
 
 <listitem>
-<para><userinput>--cleanROMs</userinput></para>
-<para>Deletes ROMs in destDir not present in the filtered ROM list.</para>
+<para><userinput>--cleanArtWork</userinput></para>
+<para>Deletes unknown ArtWork in destination directories.</para>
 </listitem>
 </itemizedlist>
 
@@ -1702,17 +1725,17 @@ unknown Artwork into the thumbs and fanart destination directories.</para>
 <sect1>
 <title><application>xru-launcher-AL</application></title>
 
-<para><application>xru-launcher-AL</application> reads XBMC's 
+<para><application>xru-launcher-AL</application> is a small utility that reads XBMC's 
 <ulink url="http://forum.xbmc.org/showthread.php?tid=85724">Advanced Launcher</ulink>
 configuration file and checks the launchers configured by the user. It reports 
-if there are missing/unknown ROMs in your launcher, missing/unknown artwork, 
-and tells what launchers need to be updated.</para>
+if there are missing/unknown ROMs in your launcher and tells what 
+launchers need to be updated.</para>
 
 <screen>
-$ xru-console.py [-options] command [filterName]
+$ xru-launcher-AL.py [-options] command
 </screen>
 
-<para>The following commands are supported,</para>
+<para>The following commands are supported.</para>
 
 <itemizedlist mark='bullet'>
 <listitem>
@@ -1758,15 +1781,131 @@ ROM launchers if outdated.</para>
 </itemizedlist>
 
 <sect2>
-<title>Configuration file</title>
+<title>Configuration</title>
 
-<para>test</para>
+<para><application>xru-launcher-AL</application> expects to be run on a different
+computer where your XBMC media center is. The user's directory is network-mounted
+in the computer you run <application>xru-launcher-AL</application> using FUSE 
+<application>sshfs</application>, <application>nfs</application>,
+<application>samba</application>, etc. However, it can also be run on the
+HTPC computer.</para>
+
+<para>To start using <application>xru-launcher-AL</application>, create a
+minimalistic configuration file named <filename>xru-launcher-AL-config.xml</filename>.</para>
+
+<programlisting>
+&lt;AdvancedLauncher>
+&lt;configFile>/home/wintermute/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml&lt;/configFile>
+&lt;/AdvancedLauncher>
+</programlisting>
+
+<para>The tag <userinput>configFile</userinput> configures the location of 
+Advanced Launcher's configuration file.</para>
+
+<para>Next, use the <userinput>list command</userinput> to read
+Advance Launcher's configuration file and list every launcher found
+there. You sould get something like this.</para>
+
+<programlisting>
+$ ./xru-launcher-AL.py list       
+XBMC ROM utilities - Advanced Launcher version 0.1.0
+[Parsing config file]
+[Listing Advanced Launcher launchers]
+Parsing Advanced Launcher configuration file... done
+&lt;Launcher>
+ lauch_name        = "Game Boy Advance (RetroArch VBA-Next)"
+ lauch_application = /home/wintermute/bin/bin-retroarch/retroarch
+ lauch_args        = -L /home/wintermute/bin/bin-libretro/vba_next_libretro.so "%rom%"
+ lauch_rompath     = /home/wintermute/ROMs/roms-nintendo-gbadvance-nointro/
+ lauch_thumbpath   = /home/wintermute/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/
+ lauch_fanartpath  = /home/wintermute/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/
+ lauch_romext      = zip
+...
+</programlisting>
+
+<para>For every launcher you want to check you need to create an entry
+in <application>xru-launcher-AL</application> configuration file. To
+check the launcher in the example, add this to the configuration
+file.</para>
+
+<programlisting>
+&lt;AdvancedLauncher>
+&lt;configFile>/home/wintermute/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml&lt;/configFile>
+
+&lt;launcher name="Game Boy Advance (RetroArch VBA-Next)">
+&lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-nintendo-gbadvance-nointro/&lt;/ROMsDest>
+&lt;FanartDest>/home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/&lt;/FanartDest>
+&lt;ThumbsDest>/home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/&lt;/ThumbsDest>
+&lt;/launcher>
+&lt;/AdvancedLauncher>
+</programlisting>
+
+<para>Because <application>xru-launcher-AL</application> runs on a different computer
+that Advanced Launcher, directory names will be different, so you have to tell
+<application>xru-launcher-AL</application> the directory location on the local computer
+of the remote (network mounted) directories. Only the launchers listed in
+<application>xru-launcher-AL</application>'s confiuration file will be checked.</para>
+
+<para>Once you have finished editing the configuration file, you can
+check the configured launchers with the <userinput>list-config</userinput> command.
+For example.</para>
+
+<programlisting>
+$ ./xru-launcher-AL.py list-config
+XBMC ROM utilities - Advanced Launcher version 0.1.0
+[Parsing config file]
+[Listing configuration]
+Advanced Launcher configuration file
+ /home/wintermute/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml
+&lt;Launcher>
+ name          = Game Boy Advance (RetroArch VBA-Next)
+ destDir       = /home/wintermute/NUC-remote/ROMs/roms-nintendo-gbadvance-nointro/
+ fanartDestDir = /home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/
+ thumbsDestDir = /home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/
+</programlisting>
 </sect2>
 
 <sect2>
 <title>Checking launchers</title>
 
-<para>test</para>
+<para>To check you launchers use the <userinput>check</userinput> command. You will
+see some information of the process and at the end a report of the launchers not
+checked, launcher checked and up to date, and laucnchers checked which needs
+and update.</para>
+
+<programlisting>
+$ ./xru-launcher-AL.py check
+XBMC ROM utilities - Advanced Launcher version 0.1.0
+[Parsing config file]
+[Checking Advanced Launcher launchers]
+Parsing Advanced Launcher configuration file... done
+&lt;Launcher> 'Game Boy Advance (RetroArch VBA-Next)'
+ Not found AL configuration file ROM path
+ Using configured ROM local path for this launcher
+ 0 not found ROMs in AL configuration file
+ 0 missing ROMs in AL configuration file
+...
+&lt;Launcher> 'SNES (Mednafen)'
+ Not found AL configuration file ROM path
+ Using configured ROM local path for this launcher
+ 0 not found ROMs in AL configuration file
+ 0 missing ROMs in AL configuration file
+[Report]
+The following launchers were not checked
+ Playstation (Mednafen)
+The following launchers were checked and are up to date
+ MAME
+ MAME CPS1
+ MAME CPS2
+ MAME CPS3
+ MAME Neo-Geo
+ SNES (Mednafen)
+Advanced Launcher needs an update for the following launchers
+ Game Boy Color (Mednafen)
+ Game Gear (Mednafen)
+ Mega Drive 32X (RetroArch Picodrive)
+</programlisting>
+
 </sect2>
 </sect1>
 
@@ -1826,14 +1965,6 @@ COMPLETE ME!
 
 </sect2>
 
-
-<sect2>
-<title>Filtering of a console ROM collection with available artwork</title>
-
-<para>You have a No-Intro ROM collection and artwork</para>
-
-</sect2>
-
 <sect2>
 <title>Simple filtering of <application>MAME</application> ROMs</title>
 
@@ -1842,12 +1973,8 @@ COMPLETE ME!
 </sect2>
 
 <sect2>
-<title>Splitting <application>MAME</application> ROMs into several launchers</title>
-
-</sect2>
-
-<sect2>
-<title>Checking <application>Advanced Launcher</application> configuration</title>
+<title>Splitting <application>MAME</application> ROMs into several launchers
+for each driver</title>
 
 </sect2>
 </sect1>
