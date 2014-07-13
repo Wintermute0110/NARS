@@ -25,7 +25,7 @@ import operator, argparse
 import xml.etree.ElementTree as ET
 
 # --- Global variables
-__software_version = '0.1.0';
+__software_version = '0.1.0 alpha 1';
 __config_configFileName = 'xru-console-config.xml';
 __config_logFileName = 'xru-console-log.txt';
 
@@ -779,7 +779,6 @@ def get_Filter_Config(filterName):
 # -----------------------------------------------------------------------------
 # Miscellaneous ArtWork functions
 # -----------------------------------------------------------------------------
-
 
 # -----------------------------------------------------------------------------
 # Miscellaneous ROM functions
@@ -1707,12 +1706,9 @@ def main(argv):
   global __prog_option_sync; # 1 update, 0 copies
 
   if args.verbose:
-    if args.verbose == 1:
-      change_log_level(Log.verb);
-    elif args.verbose == 2:
-      change_log_level(Log.vverb);
-    elif args.verbose >= 3:
-      change_log_level(Log.debug);
+    if args.verbose == 1:   change_log_level(Log.verb);
+    elif args.verbose == 2: change_log_level(Log.vverb);
+    elif args.verbose >= 3: change_log_level(Log.debug);
   if args.log:
     __prog_option_log = 1;
   if args.logto:
