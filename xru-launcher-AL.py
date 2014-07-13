@@ -307,16 +307,16 @@ def do_check():
   categories = root[0];
   launchers = root[1];
   update_launchers_list = [];
+  checked_launchers_list = [];
   not_checked_launchers_list = [];
   for child in launchers:
-    print_info('<Launcher>');
+    lauch_name = child.find('name');
+    print_info("<Launcher> '" + lauch_name.text + "'");
 
     # --- Launcher data
-    lauch_name = child.find('name');
     lauch_application = child.find('application');
     lauch_rompath = child.find('rompath');
 
-    pprint(Log.info, ' lauch_name = "' + lauch_name.text + '"');
     pprint(Log.verb, ' lauch_application = ' + lauch_application.text);
     pprint(Log.verb, ' lauch_rompath     = ' + lauch_rompath.text);
 
@@ -380,6 +380,8 @@ def do_check():
 
     if error_AL_not_found_rom or error_AL_missing_rom:
       update_launchers_list.append(launcher_name);
+    else:
+      checked_launchers_list.append(launcher_name);
 
   # --- Report if AL needs update or not
   pprint(Log.info,  '[Report]');
@@ -389,6 +391,13 @@ def do_check():
       pprint(Log.info,  ' ' + launcher);
   else:
     pprint(Log.info,  'All launchers were checked.');
+
+  if len(checked_launchers_list) > 0:
+    pprint(Log.info,  'The following launchers were checked and are up to date');
+    for launcher in checked_launchers_list:
+      pprint(Log.info,  ' ' + launcher);
+  else:
+    pprint(Log.info,  'No launchers were checked.');
 
   if len(update_launchers_list) > 0:
     pprint(Log.info,  'Advanced Launcher needs an update for the following launchers');
