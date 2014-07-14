@@ -23,11 +23,6 @@
   <ROMsSource>/home/xbmc/roms/roms-sega-genesis/</ROMsSource>
   <ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-sega-genesis/</ROMsDest>
 
-  <ThumbsSource>/home/xbmc/roms/ArtWork/sega-genesis-boxes/</ThumbsSource>
-  <FanartSource>/home/xbmc/roms/ArtWork/sega-genesis-snaps/</FanartSource>
-  <ThumbsDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/sega-genesis-thumbs/</ThumbsDest>
-  <FanartDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/sega-genesis-fanart/</FanartDest>
-
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto</filterDownTags>
   <includeTags>Europe, USA</includeTags>
