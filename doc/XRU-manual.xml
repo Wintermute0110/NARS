@@ -207,14 +207,14 @@ configuration filter looks like this.</para>
 
 &lt;!-- Nintendo ROMS -->
 &lt;collection name="SNES NoIntro" shortname="snes">
-  &lt;NoIntroDat>./DATs/Nintendo - SNES Parent-Clone (20140608-202038).dat&lt;/NoIntroDat>
+  &lt;NoIntroDat>/home/xbmc/roms/DATs/SNES Parent-Clone (20140608-202038).dat&lt;/NoIntroDat>
   &lt;ROMsSource>/home/xbmc/roms/roms-nintendo-snes/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/xbmc/NUC/ROMs/roms-nintendo-snes/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-nintendo-snes/&lt;/ROMsDest>
 
   &lt;ThumbsSource>/home/xbmc/roms/ArtWork/nintendo-snes-boxes/&lt;/ThumbsSource>
   &lt;FanartSource>/home/xbmc/roms/ArtWork/nintendo-snes-snaps/&lt;/FanartSource>
-  &lt;ThumbsDest  >/home/xbmc/NUC/ROMs/ArtWork/nintendo-snes-thumbs/&lt;/ThumbsDest>
-  &lt;FanartDest  >/home/xbmc/NUC/ROMs/ArtWork/nintendo-snes-fanart/&lt;/FanartDest>
+  &lt;ThumbsDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/&lt;/ThumbsDest>
+  &lt;FanartDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/&lt;/FanartDest>
 
   &lt;filterUpTags>Europe, World, Rev 1&lt;/filterUpTags>
   &lt;filterDownTags>Japan, Beta, Proto, France&lt;/filterDownTags>
@@ -225,14 +225,19 @@ configuration filter looks like this.</para>
 &lt;!-- Sega ROMS -->
 &lt;collection name="Sega Mega Drive NoIntro" shortname="genesis">
   &lt;ROMsSource>/home/xbmc/roms/roms-sega-genesis/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/xbmc/NUC/ROMs/roms-sega-genesis/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-sega-genesis/&lt;/ROMsDest>
+
+  &lt;ThumbsSource>/home/xbmc/roms/ArtWork/sega-genesis-boxes/&lt;/ThumbsSource>
+  &lt;FanartSource>/home/xbmc/roms/ArtWork/sega-genesis-snaps/&lt;/FanartSource>
+  &lt;ThumbsDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/sega-genesis-thumbs/&lt;/ThumbsDest>
+  &lt;FanartDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/sega-genesis-fanart/&lt;/FanartDest>
 
   &lt;filterUpTags>Europe, World, Rev 1&lt;/filterUpTags>
   &lt;filterDownTags>Japan, Beta, Proto&lt;/filterDownTags>
   &lt;includeTags>Europe, USA&lt;/includeTags>
   &lt;excludeTags>Japan&lt;/excludeTags>
 &lt;/collection>
-&lt;/ROMcollections>
+&lt;/ROMcollections> 
 </programlisting>
 
 <para>Every ROM collection filter requires a <userinput>&lt;collection&gt;</userinput> 
@@ -1059,38 +1064,53 @@ configuration filter looks like this.</para>
 &lt;!-- Example configuration file for XBMC ROM utilities -->
 &lt;MAMEConfig>
 &lt;General>
-  &lt;MAME_XML      >../XBMC-mame/mame-0153.xml&lt;/MAME_XML>
-  &lt;MAME_XML_redux>../XBMC-mame/mame-0153-reduced.xml&lt;/MAME_XML_redux>
-  &lt;Catver        >../XBMC-mame/Catver.ini&lt;/Catver>
-  &lt;MergedInfo    >../XBMC-mame/mame-0153-merged.xml&lt;/MergedInfo>
+  &lt;MAME_XML      >./DAT-mame/mame-0153.xml&lt;/MAME_XML>
+  &lt;MAME_XML_redux>./DAT-mame/mame-0153-reduced.xml&lt;/MAME_XML_redux>
+  &lt;Catver        >./DAT-mame/Catver.ini&lt;/Catver>
+  &lt;MergedInfo    >./DAT-mame/mame-0153-reduced.xml&lt;/MergedInfo>
 &lt;/General>
 
 &lt;MAMEFilter name="main">
-  &lt;source>/home/xbmc/roms/roms-mame/&lt;/source>
-  &lt;dest>/home/xbmc/NUC/ROMs/roms-mame-main/&lt;/dest>
+  &lt;ROMsSource>/home/xbmc/roms/roms-mame/&lt;/ROMsSource>
+  &lt;ROMsDest  >/home/xbmc/NUC/ROMs/roms-mame-main/&lt;/ROMsDest>
+
+  &lt;ThumbsSource>/home/xbmc/roms/ArtWork/nintendo-snes-boxes/&lt;/ThumbsSource>
+  &lt;FanartSource>/home/xbmc/roms/ArtWork/nintendo-snes-snaps/&lt;/FanartSource>
+  &lt;ThumbsDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/&lt;/ThumbsDest>
+  &lt;FanartDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/&lt;/FanartDest>
 
   &lt;!-- Main filter -->
-  &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
+  &lt;!-- Main filter options:
+       NoClones, NoSamples, NoMechanical, NoNonworking
+  -->
+  &lt;MainFilter>NoClones, NoSamples, NoMechanical, NoNonworking&lt;/MainFilter>
 
-  &lt;!-- MAME driver, important drivers
+  &lt;!-- MAME drivers -->
+  &lt;!-- Important drivers:
        neogeo    Neo-Geo
        cps1      Capcom CPS1
        cps2      Capcom CPS2
        cps3      Capcom CPS3
+       model1    Sega Model 1
+       namcos11  Namco System 11
   -->
+  &lt;!-- NOTE: this filter implies OR conditions between filtering options -->
+  &lt;!-- Example: [is] not cps1 OR [is] not cps2 -->
   &lt;Driver>not cps1&lt;/Driver>
 
   &lt;!-- Categories -->
-  &lt;!-- Some catoegories you probably don't want
-       PinMAME
-       Casino
+  &lt;!-- Some categories you probably don't want
+       Mature, Casino, PinMAME, Fruit Machines
   -->
-  &lt;Categories>no PinMAME, no Casino&lt;/Categories>
+  &lt;!-- NOTE: this filter implies OR conditions between filtering options -->
+  &lt;!-- Example: [is] not Mature OR [is] not Casino -->
+  &lt;Categories>Fighter, Puzzle&lt;/Categories>
 &lt;/MAMEFilter>
 
 &lt;MAMEFilter name="cps1">
-  &lt;source>/home/xbmc/roms/roms-mame/&lt;/source>
-  &lt;dest>/home/xbmc/NUC/ROMs/roms-mame-cps1/&lt;/dest>
+  &lt;ROMsSource>/home/xbmc/roms/roms-mame/&lt;/ROMsSource>
+  &lt;ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-mame-cps1/&lt;/ROMsDest>
+
   &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
   &lt;Driver>cps1&lt;/Driver>
 &lt;/MAMEFilter>
@@ -1098,7 +1118,7 @@ configuration filter looks like this.</para>
 </programlisting>
 </sect2>
 
-<sect2>
+<sect2 id="create_mame_database">
 <title>Creating the <application>MAME</application> ROM database</title>
 
 <para>The first step before games can be filtered is to create a 
@@ -1326,39 +1346,8 @@ your <filename>xru-mame-config.xml</filename> and add the following.</para>
   &lt;ROMsSource>/home/wintermute/mame-roms/&lt;/ROMsSource>
   &lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest>
   
-  &lt;!-- Main filter -->
-  &lt;!-- Main filter options:
-       NoClones
-       NoSamples
-       NoMechanical
-       NoNonworking
-  -->
   &lt;MainFilter>NoClones, NoSamples, NoMechanical, NoNonworking&lt;/MainFilter>
-
-  &lt;!-- MAME driver, important drivers
-       neogeo    Neo-Geo
-       cps1      Capcom CPS1
-       cps2      Capcom CPS2
-       cps3      Capcom CPS3
-       model1    Sega Model 1
-       model2    Sega Model 2
-       naomi     Sega Naomi (based on Dreamcast)
-       namcos11  Namco System 11
-       namcos12  Namco System 12
-  -->
-  &lt;!-- NOTE: this filter implies OR conditions between filtering options -->
-  &lt;!-- Example: [is] not cps1 OR [is] not cps2 -->
   &lt;Driver>not cps1, not cps2, not cps3, not neogeo&lt;/Driver>
-
-  &lt;!-- Categories -->
-  &lt;!-- Some catoegories you probably don't want
-       Mature
-       Casino
-       PinMAME
-       Fruit Machines
-  -->
-  &lt;!-- NOTE: this filter implies OR conditions between filtering options -->
-  &lt;!-- Example: [is] not Mature OR [is] not Casino -->
   &lt;Categories>not Mature, not Casino, not PinMAME, not Fruit Machines&lt;/Categories>
 &lt;/MAMEFilter>
 &lt;/MAMEConfig>
@@ -1719,6 +1708,20 @@ and <userinput>update-artwork &lt;filterName></userinput>. You can use the
 <userinput>--cleanArtWork</userinput> flag if you want to delete
 unknown Artwork into the thumbs and fanart destination directories.</para>
 </sect2>
+
+<sect2>
+<title>Some notes</title>
+
+<sect3>
+<title>QSound and CPS1 and CPS 2 ROMs</title>
+
+<para>Some CPS1 games and most (all?) CPS2 games require the 
+<filename>qsound</filename> ROM. This ROM is a <userinput>device</userinput>
+that is automatically removed. Until I find a better solution,
+<filename>qsound</filename> is always included no matter the filters
+configured by the user.</para>
+</sect3>
+</sect2>
 </sect1>
 
 <!-- ======================================================================= -->
@@ -1926,18 +1929,18 @@ the directory <filename>/home/wintermute/No-Intro/Sega Genesis/</filename>.
 </para></listitem>
 
 <listitem><para>
-XBMC is installed on a dedicated HTPC, whichi uses XBMCbuntu. XBMC runs 
+XBMC is installed on a dedicated HTPC, which uses XBMCbuntu. XBMC runs 
 with user xbmc.</para></listitem>
 
 <listitem><para>The xbmc user's home directory is network-mounted in the 
 desktop computer using FUSE's <application>sshfs</application> in 
-<filename>/home/wintermute/XBMC/</filename>.</para>
+<filename>/home/wintermute/XBMC-remote/</filename>.</para>
 </listitem>
 
 <listitem><para>You want to store your ROM collection in the HTPC computer in
 the directory <filename>/home/xbmc/ROMs/roms-sega-genesis/</filename>. Note 
 that in the desktop computer this directory is 
-<filename>/home/wintermute/XBMC/ROMs/roms-sega-genesis/</filename>.</para>
+<filename>/home/wintermute/XBMC-remote/ROMs/roms-sega-genesis/</filename>.</para>
 </listitem>
 
 <listitem><para>You prefer European/USA ROMs over Japanese ones. Also, you
@@ -1945,30 +1948,41 @@ want to remove all Japanese games.</para>
 </listitem>
 </itemizedlist>
 
-<para>First, create the configuration file.</para>
+<para>First, create the destination directories. Make sure your HTPC
+is network-mounted.</para>
 
 <screen>
-COMPLETE ME!
+$ mkdir XBMC-remote/ROMs/roms-sega-genesis
+</screen>
+
+<para>Then, create the configuration file
+<filename>xru-console-config.xml</filename>.</para>
+
+<screen>
+&lt;ROMcollections>
+&lt;collection name="Sega Mega Drive" shortname="genesis">
+  &lt;ROMsSource>/home/wintermute/No-Intro/Sega Genesis/&lt;/ROMsSource>
+  &lt;ROMsDest  >/home/wintermute/XBMC-remote/ROMs/roms-sega-genesis/&lt;/ROMsDest>
+
+  &lt;filterUpTags>Europe, World, Rev2, Rev 1, Rev A&lt;/filterUpTags>
+  &lt;filterDownTags>Japan, Beta, Proto&lt;/filterDownTags>
+  &lt;includeTags>Europe, USA&lt;/includeTags>
+  &lt;excludeTags>Japan&lt;/excludeTags>
+&lt;/collection>
+&lt;/ROMcollections> 
 </screen>
 
 <para>Next, check everything is all-right.</para>
 
 <screen>
-COMPLETE ME!
+$ ./xru-console.py check-filter genesis
 </screen>
 
 <para>Finally, copy the ROMs.</para>
 
 <screen>
-COMPLETE ME!
+$ ./xru-console.py update genesis
 </screen>
-
-</sect2>
-
-<sect2>
-<title>Simple filtering of <application>MAME</application> ROMs</title>
-
-<para>para</para>
 
 </sect2>
 
@@ -1976,6 +1990,83 @@ COMPLETE ME!
 <title>Splitting <application>MAME</application> ROMs into several launchers
 for each driver</title>
 
+<para>You have a <application>MAME</application> ROM collection
+and want to split it into 3 folders: First one will have most
+games, second folder will have only CPS1 games, and third folder
+will have only CPS2 games. The ROM collection is stored in your desktop 
+computer in the directory <filename>/home/wintermute/MAME/roms/</filename>.
+The xbmc user's home directory is network-mounted in the 
+desktop computer using FUSE's <application>sshfs</application> in 
+<filename>/home/wintermute/XBMC-remote/</filename>.</para>
+
+
+<para>First, create the destination directories. Make sure your HTPC
+is network-mounted.</para>
+
+<screen>
+$ mkdir DAT-mame
+$ mkdir XBMC-remote/ROMs/roms-mame-main
+$ mkdir XBMC-remote/ROMs/roms-mame-cps1
+$ mkdir XBMC-remote/ROMs/roms-mame-cps2
+</screen>
+
+<para>Create the <application>MAME</application> game databases as
+described <link linkend="create_mame_database">here</link>.</para>
+
+<para>Then, create the configuration file
+<filename>xru-mame-config.xml</filename>.</para>
+
+<screen>
+&lt;MAMEConfig>
+&lt;General>
+  &lt;MAME_XML      >./DAT-mame/mame-0153.xml&lt;/MAME_XML>
+  &lt;MAME_XML_redux>./DAT-mame/mame-0153-reduced.xml&lt;/MAME_XML_redux>
+  &lt;Catver        >./DAT-mame/Catver.ini&lt;/Catver>
+  &lt;MergedInfo    >./DAT-mame/mame-0153-reduced.xml&lt;/MergedInfo>
+&lt;/General>
+
+&lt;MAMEFilter name="main">
+  &lt;ROMsSource>/home/xbmc/MAME/roms-mame/&lt;/ROMsSource>
+  &lt;ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest>
+
+  &lt;MainFilter>NoClones, NoSamples, NoMechanical, NoNonworking&lt;/MainFilter>
+  &lt;Driver>not cps1, not cps2&lt;/Driver>
+  &lt;Categories>Fighter, Puzzle&lt;/Categories>
+&lt;/MAMEFilter>
+
+&lt;MAMEFilter name="cps1">
+  &lt;ROMsSource>/home/xbmc/MAME/roms-mame/&lt;/ROMsSource>
+  &lt;ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-mame-cps1/&lt;/ROMsDest>
+
+  &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
+  &lt;Driver>cps1&lt;/Driver>
+&lt;/MAMEFilter>
+
+&lt;MAMEFilter name="cps2">
+  &lt;ROMsSource>/home/xbmc/MAME/roms-mame/&lt;/ROMsSource>
+  &lt;ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-mame-cps2/&lt;/ROMsDest>
+
+  &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
+  &lt;Driver>cps2&lt;/Driver>
+&lt;/MAMEFilter>
+&lt;/MAMEConfig> 
+</screen>
+
+<para>Next, check everything is all-right.</para>
+
+<screen>
+$ ./xru-mame.py check-filter main
+$ ./xru-mame.py check-filter cps1
+$ ./xru-mame.py check-filter cps2
+</screen>
+
+<para>Finally, copy the ROMs.</para>
+
+<screen>
+$ ./xru-mame.py update main
+$ ./xru-mame.py update cps1
+$ ./xru-mame.py update cps2
+</screen>
 </sect2>
 </sect1>
 
