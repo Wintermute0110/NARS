@@ -1969,8 +1969,7 @@ if updated are needed.
     games use each driver).
 
  \033[31m check-filter <filterName>\033[0m
-    Reads merged XML database and prints a histogram of the drivers (how many
-    games use each driver).
+    Applies filters and checks you source directory for have and missing ROMs.
 
  \033[31m copy <filterName>\033[0m
     Applies ROM filters defined in the configuration file and copies the 
