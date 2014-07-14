@@ -1,11 +1,11 @@
 <!-- Example configuration file for XBMC ROM utilities -->
 <AdvancedLauncher>
-<configFile>/home/xbmc/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml</configFile>
+<configFile>/home/wintermute/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml</configFile>
 
 <!-- For every launcher you want to check configure ROMs and artwork directories -->
 <launcher name="Genesis (Mednafen)">
-  <ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-sega-genesis/</ROMsDest>
-  <FanartDest>/home/xbmc/NUC-remote/ROMs/artwork-AL/artwork-sega-genesis/fanart/</FanartDest>
-  <ThumbsDest>/home/xbmc/NUC-remote/ROMs/artwork-AL/artwork-sega-genesis/thumbs/</ThumbsDest>
+  <ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-sega-genesis/</ROMsDest>
+  <FanartDest>/home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-sega-genesis/fanart/</FanartDest>
+  <ThumbsDest>/home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-sega-genesis/thumbs/</ThumbsDest>
 </launcher>
 </AdvancedLauncher>
