@@ -595,7 +595,7 @@ def parse_File_Config():
         elif general_child.tag == 'MergedInfo':
           configFile.MergedInfo_XML = general_child.text;
         else:
-          print_error('Unrecognised tag inside <General>');
+          print_error('Unrecognised tag "' + general_child.tag + '" inside <General>');
           sys.exit(10);
   if not general_tag_found:
     print_error('Configuration error. <General> tag not found');
@@ -625,6 +625,8 @@ def parse_File_Config():
         destDirFound = 0;
         # - Initialise variables for the ConfigFileFilter object
         #   to avoid None objects later.
+        # NOTE: if we have the tag but no text is written, then 
+        #       filter_child.text will be None. Take this into account.
         for filter_child in root_child:
           if filter_child.tag == 'ROMsSource':
             print_debug(' ROMsSource = ' + filter_child.text);
@@ -677,20 +679,21 @@ def parse_File_Config():
             list = text_string.split(",");
             filter_class.driver = trim_list(list);
 
+          elif filter_child.tag == 'Categories':
+            text_string = filter_child.text;
+            if text_string != None:
+              print_debug(' Categories = ' + filter_child.text);
+              list = text_string.split(",");
+              filter_class.categories = trim_list(list);
+            else:
+              filter_class.categories = '';
+
           elif filter_child.tag == 'MachineType':
             print_debug(' MachineType = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.machineType = trim_list(list);
 
-          elif filter_child.tag == 'Categories':
-            print_debug(' Categories = ' + filter_child.text);
-            text_string = filter_child.text;
-            if text_string != None:
-              list = text_string.split(",");
-              filter_class.categories = trim_list(list);
-            else:
-              filter_class.categories = '';
           else:
             print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
             sys.exit(10);
@@ -934,7 +937,8 @@ def parse_MAME_merged_XML():
 
   return rom_raw_dict;
 
-# __debug_apply_MAME_filters
+# Filtering function
+#
 def apply_MAME_filters(mame_xml_dic, filter_config):
   "Apply filters to main parent/clone dictionary"
   print_info('[Applying MAME filters]');
@@ -1172,6 +1176,23 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info('>>> User wants all categories');
+
+  # --- Include games
+  # Some games require BIOS and devices in order to work. For example, some cps1
+  # and most cps2 games require the qsound ROM to be copied.
+  # Until I find a better solution, qsound is always copied whatever the
+  # filters.
+  
+  # If qsound ROM was removed, add them to the filtering list.
+  rom_name = 'qsound';
+  if rom_name not in mame_filtered_dic:
+    # Add qsound ROM object to filtered dictionary
+    if rom_name not in mame_xml_dic:
+      print_error('[ERROR] ROM name not found in mame_xml_dic');
+      sys.exit(10);
+    # Get ROM object from main, unfiltered dictionary
+    romObj = mame_xml_dic[rom_name];
+    mame_filtered_dic[rom_name] = romObj;
 
   return mame_filtered_dic;
 
