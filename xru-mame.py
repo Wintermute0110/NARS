@@ -1497,8 +1497,8 @@ def do_merge():
 
 def do_list_merged():
   "Short list of MAME XML file"
-  print_info('[Short listing of reduced MAME XML]');
 
+  print_info('[Short listing of reduced MAME XML]');
   filename = configuration.MergedInfo_XML;
   print "Parsing merged MAME XML file '" + filename + "'...",;
   try:
@@ -1561,6 +1561,7 @@ def do_list_merged():
 
 def do_list_categories():
   "Parses Catver.ini and prints the categories and how many games for each"
+
   __debug_do_list_categories = 0;
   print_info('[Listing categories from Catver.ini]');
 
@@ -1663,6 +1664,7 @@ def do_list_categories():
 
 def do_list_drivers():    
   "Parses merged XML database and makes driver histogram and statistics"
+
   print_info('[Listing MAME drivers]');
   print_info('NOTE: clones are not included');
 
@@ -1682,8 +1684,6 @@ def do_list_drivers():
   for game_EL in root:
     if game_EL.tag == 'game':
       game_attrib = game_EL.attrib;
-      game_name = game_attrib['name'];
-      game_attrib = game_EL.attrib;
       # If game is a clone don't include it in the histogram
       if 'cloneof' in game_attrib:
         continue;
@@ -1702,6 +1702,123 @@ def do_list_drivers():
   print_info('[Final (used) categories]');
   for key in sorted_histo:
     print_info('{:4d}'.format(key[1]) + '  ' + key[0]);
+
+# Unofficial command, not documented yet.
+__debug_do_list_controls = 0;
+def do_list_controls():
+  "Parses merged XML database and makes a controls histogram"
+
+  print_info('[Listing MAME controls]');
+  print_info('NOTE: clones are not included');
+
+  # filename = configuration.MergedInfo_XML;
+  filename = configuration.MAME_XML_redux;
+  print "Parsing merged MAME XML file '" + filename + "'... ",;
+  try:
+    tree = ET.parse(filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + filename);
+    sys.exit(10);
+  print ' done';
+
+  # --- Histogram data
+  input_control_type_dic = {};
+  input_control_ways_dic = {};
+
+  # --- Do histogram
+  root = tree.getroot();
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      game_attrib = game_EL.attrib;
+      
+      # - If game is a clone don't include it in the histogram
+      if 'cloneof' in game_attrib:
+        continue;
+      # - If game is mechanical don't include it
+      if 'ismechanical' in game_attrib:
+        continue;
+      # - If game is device don't include it
+      if 'isdevice' in game_attrib:
+        continue;
+
+      game_name = game_attrib['name']
+      if __debug_do_list_controls:
+        print('game = ' + game_name);
+
+      # --- Histogram of controls
+      for child_game_EL in game_EL:
+        # --- Input tag found
+        if child_game_EL.tag == 'input':
+          game_input_EL = child_game_EL;
+
+          # --- Input attributes
+          if 'buttons' in game_input_EL.attrib:
+            if __debug_do_list_controls:
+              print(' buttons = ' + game_input_EL.attrib['buttons']);
+
+          if 'coins' in game_input_EL.attrib:
+            if __debug_do_list_controls:
+              print(' coins = ' + game_input_EL.attrib['coins']);
+
+          if 'players' in game_input_EL.attrib:
+            if __debug_do_list_controls:
+              print(' players = ' + game_input_EL.attrib['players']);
+
+          if 'tilt' in game_input_EL.attrib:
+            if __debug_do_list_controls:
+              print(' tilt = ' + game_input_EL.attrib['tilt']);
+
+          # --- Iterate children
+          control_child_found = 0;
+          for child in game_input_EL:
+            control_child_found = 1;
+            if __debug_do_list_controls:
+              print ' Children = ' + child.tag;
+            if 'type' in child.attrib:
+              if __debug_do_list_controls:
+                print('  type = ' + child.attrib['type']);
+              if child.attrib['type'] in input_control_type_dic:
+                input_control_type_dic[child.attrib['type']] += 1;
+              else:                          
+                input_control_type_dic[child.attrib['type']] = 1;
+
+            if 'ways' in child.attrib:
+              if __debug_do_list_controls:
+                print('  ways = ' + child.attrib['ways']);
+              if child.attrib['ways'] in input_control_ways_dic:
+                input_control_ways_dic[child.attrib['ways']] += 1;
+              else:                          
+                input_control_ways_dic[child.attrib['ways']] = 1;
+
+            if 'ways2' in child.attrib:
+              if __debug_do_list_controls:
+                print('  ways2 = ' + child.attrib['ways2']);
+              
+            if 'ways3' in child.attrib:
+              if __debug_do_list_controls:
+                print('  ways = ' + child.attrib['ways3']);
+
+          # --- If no additional controls, only buttons???
+          text_not_found = 'Only buttons';
+          if not control_child_found:
+            if text_not_found in input_control_type_dic:
+              input_control_type_dic[text_not_found] += 1;
+            else:                          
+              input_control_type_dic[text_not_found] = 1;
+
+
+  print '\n';
+  print_info('[Input - control - ways histogram]');
+  sorted_histo = sorted(input_control_ways_dic.iteritems(), key=operator.itemgetter(1))
+  for key in sorted_histo:
+    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+
+  print '\n';
+  print_info('[Input - control - type histogram]');
+  sorted_histo = sorted(input_control_type_dic.iteritems(), key=operator.itemgetter(1))
+  for key in sorted_histo:
+    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
 
 # ----------------------------------------------------------------------------
 def do_checkFilter(filterName):
@@ -2074,23 +2191,28 @@ def main(argv):
   if command == 'reduce-XML':
     do_reduce_XML();
     sys.exit(0);
-    
+
   elif command == 'merge':
     do_merge();
     sys.exit(0);
-    
+
   elif command == 'list-merged':
     do_list_merged();
     sys.exit(0);
-    
+
   elif command == 'list-categories':
     do_list_categories();
     sys.exit(0);
-    
+
   elif command == 'list-drivers':
     do_list_drivers();
     sys.exit(0);
-    
+
+  # Unofficial development command
+  elif command == 'list-controls':
+    do_list_controls();
+    sys.exit(0);
+
   # --- Positional arguments that require a filterName
   if args.filterName == None:
     print_error('\033[31m[ERROR]\033[0m filterName required');
