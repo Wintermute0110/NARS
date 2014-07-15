@@ -1289,6 +1289,13 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # -----------------------------------------------------------------------------
 # Main body functions
 # -----------------------------------------------------------------------------
+# IMPLEMENT ME: SAX API can make the loading of XML much faster and MUCH LESS
+#               memory consuming.
+# IMPLEMENT ME: a new field with game dependencies must be implemented. Game
+#               dependencies may be BIOSes and game devices that have ROMs.
+#               Still is not clear how to do this in an efficient way...
+#               Maybe a good idea is to create an undocumented function to not
+#               to disturb this code until dependencies are working OK.
 def do_reduce_XML():
   "Short list of MAME XML file"
 
@@ -1703,13 +1710,25 @@ def do_list_drivers():
   for key in sorted_histo:
     print_info('{:4d}'.format(key[1]) + '  ' + key[0]);
 
-# Unofficial command, not documented yet.
+# --- Unofficial command, not documented yet.
+def add_to_histogram(key, hist_dic):
+  if key in hist_dic:
+    hist_dic[key] += 1;
+  else:
+    hist_dic[key] = 1;
+
+  return hist_dic;
+
+# See http://mamedev.org/source/src/emu/info.c.html, line 784
+#
 __debug_do_list_controls = 0;
 def do_list_controls():
   "Parses merged XML database and makes a controls histogram"
 
   print_info('[Listing MAME controls]');
   print_info('NOTE: clones are not included');
+  print_info('NOTE: mechanical are not included');
+  print_info('NOTE: devices are not included');
 
   # filename = configuration.MergedInfo_XML;
   filename = configuration.MAME_XML_redux;
@@ -1723,6 +1742,8 @@ def do_list_controls():
   print ' done';
 
   # --- Histogram data
+  input_buttons_dic = {};
+  input_players_dic = {};
   input_control_type_dic = {};
   input_control_ways_dic = {};
 
@@ -1733,14 +1754,16 @@ def do_list_controls():
       game_attrib = game_EL.attrib;
       
       # - If game is a clone don't include it in the histogram
-      if 'cloneof' in game_attrib:
+      if 'cloneof' not in game_attrib:
         continue;
-      # - If game is mechanical don't include it
-      if 'ismechanical' in game_attrib:
-        continue;
-      # - If game is device don't include it
-      if 'isdevice' in game_attrib:
-        continue;
+
+      if 0:
+        # - If game is mechanical don't include it
+        if 'ismechanical' in game_attrib:
+          continue;
+        # - If game is device don't include it
+        if 'isdevice' in game_attrib:
+          continue;
 
       game_name = game_attrib['name']
       if __debug_do_list_controls:
@@ -1756,6 +1779,7 @@ def do_list_controls():
           if 'buttons' in game_input_EL.attrib:
             if __debug_do_list_controls:
               print(' buttons = ' + game_input_EL.attrib['buttons']);
+            input_buttons_dic = add_to_histogram(game_input_EL.attrib['buttons'], input_buttons_dic);
 
           if 'coins' in game_input_EL.attrib:
             if __debug_do_list_controls:
@@ -1764,6 +1788,7 @@ def do_list_controls():
           if 'players' in game_input_EL.attrib:
             if __debug_do_list_controls:
               print(' players = ' + game_input_EL.attrib['players']);
+            input_players_dic = add_to_histogram(game_input_EL.attrib['players'], input_players_dic);
 
           if 'tilt' in game_input_EL.attrib:
             if __debug_do_list_controls:
@@ -1778,18 +1803,12 @@ def do_list_controls():
             if 'type' in child.attrib:
               if __debug_do_list_controls:
                 print('  type = ' + child.attrib['type']);
-              if child.attrib['type'] in input_control_type_dic:
-                input_control_type_dic[child.attrib['type']] += 1;
-              else:                          
-                input_control_type_dic[child.attrib['type']] = 1;
+              input_control_type_dic = add_to_histogram(child.attrib['type'], input_control_type_dic);
 
             if 'ways' in child.attrib:
               if __debug_do_list_controls:
                 print('  ways = ' + child.attrib['ways']);
-              if child.attrib['ways'] in input_control_ways_dic:
-                input_control_ways_dic[child.attrib['ways']] += 1;
-              else:                          
-                input_control_ways_dic[child.attrib['ways']] = 1;
+              input_control_ways_dic = add_to_histogram(child.attrib['ways'], input_control_ways_dic);
 
             if 'ways2' in child.attrib:
               if __debug_do_list_controls:
@@ -1797,24 +1816,34 @@ def do_list_controls():
               
             if 'ways3' in child.attrib:
               if __debug_do_list_controls:
-                print('  ways = ' + child.attrib['ways3']);
+                print('  ways3 = ' + child.attrib['ways3']);
 
           # --- If no additional controls, only buttons???
-          text_not_found = 'Only buttons';
+          text_not_found = 'buttonsOnly';
           if not control_child_found:
             if text_not_found in input_control_type_dic:
               input_control_type_dic[text_not_found] += 1;
             else:                          
               input_control_type_dic[text_not_found] = 1;
 
+  print_info('[Input - buttons histogram]');
+  sorted_histo = sorted(input_buttons_dic.iteritems(), key=operator.itemgetter(1))
+  for key in sorted_histo:
+    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  print ' ';
 
-  print '\n';
+  print_info('[Input - players histogram]');
+  sorted_histo = sorted(input_players_dic.iteritems(), key=operator.itemgetter(1))
+  for key in sorted_histo:
+    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  print ' ';
+
   print_info('[Input - control - ways histogram]');
   sorted_histo = sorted(input_control_ways_dic.iteritems(), key=operator.itemgetter(1))
   for key in sorted_histo:
     print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  print ' ';
 
-  print '\n';
   print_info('[Input - control - type histogram]');
   sorted_histo = sorted(input_control_type_dic.iteritems(), key=operator.itemgetter(1))
   for key in sorted_histo:
