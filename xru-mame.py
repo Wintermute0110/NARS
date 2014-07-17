@@ -1296,6 +1296,292 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #               Still is not clear how to do this in an efficient way...
 #               Maybe a good idea is to create an undocumented function to not
 #               to disturb this code until dependencies are working OK.
+# -------------------------------------
+# Dependency implementation: there are 2 types of dependencies: a) game that
+# depend and a device and the device has a ROM, b) game depends on a BIOS.
+#
+# Example of a device with a ROM:
+#  <game name="qsound" sourcefile="src/emu/sound/qsound.c" isdevice="yes" runnable="no">
+#    <description>Q-Sound</description>
+#    <rom name="qsound.bin" size="8192" crc="059c847d" sha1="2...e" status="baddump" region="qsound" offset="0"/>
+#    <chip type="cpu" tag=":qsound" name="DSP16" clock="4000000"/>
+#    <sound channels="0"/>
+#  </game>
+#
+# Example of a game that uses a device (with a ROM):
+#  <game name="dino" sourcefile="cps1.c">
+#    <description>Cadillacs and Dinosaurs (World 930201)</description>
+#    <year>1993</year>
+#    <manufacturer>Capcom</manufacturer>
+#    ...
+#    <device_ref name="qsound"/>
+#    <device_ref name="dsp16"/>
+#    ...
+#    <driver status="good" emulation="good" color="good" sound="good" graphic="good" savestate="supported"/>
+#  </game>
+#
+# Example of a game that uses a BIOS:
+#  <game name="mslug" sourcefile="neogeo.c" romof="neogeo">
+#    <description>Metal Slug - Super Vehicle-001</description>
+#    <year>1996</year>
+#    <manufacturer>Nazca</manufacturer>
+#    <biosset name="euro" description="Europe MVS (Ver. 2)" default="yes"/>
+#    <biosset name="euro-s1" description="Europe MVS (Ver. 1)"/>
+#    ...
+#    <rom name="sp-s2.sp1" merge="sp-s2.sp1" bios="euro" size="131072" crc="9036d879" sha1="4...3" region="mainbios" offset="0"/>
+#    <rom name="sp-s.sp1" merge="sp-s.sp1" bios="euro-s1" size="131072" crc="c7f2fa45" sha1="0...d" region="mainbios" offset="0"/>
+#    ...
+#  </game>
+#
+# Example of a BIOS game
+#  <game name="neogeo" sourcefile="neogeo.c" isbios="yes">
+#    <description>Neo-Geo</description>
+#    <year>1990</year>
+#    <manufacturer>SNK</manufacturer>
+#    <biosset name="euro" description="Europe MVS (Ver. 2)" default="yes"/>
+#    <biosset name="euro-s1" description="Europe MVS (Ver. 1)"/>
+#    ...
+#    <rom name="sp-s2.sp1" bios="euro" size="131072" crc="9036d879" sha1="4...3" region="mainbios" offset="0"/>
+#    <rom name="sp-s.sp1" bios="euro-s1" size="131072" crc="c7f2fa45" sha1="0...d" region="mainbios" offset="0"/>
+#    ...
+#  </game>
+#
+# To solve a) games that depend on a device that has a ROM:
+#   1) Traverse MAME XML and make a list of devices that have a ROM. A device has
+#      a ROM if there is a ROM tag inside the game object.
+#   2) Traverse MAME XML for games that are not devices. For every game, iterate
+#      over the <device_ref> list and check if "name" attribute is on the devices
+#      with ROM list. If found make a dependency (device_depends).
+#
+# To solve b) games that depend on a BIOS:
+#   Maybe the <game> attribute "romof" can be used to resolve BIOS dependencies!
+#
+#   However, "cloneof" games also have "romof" field, for example
+#    <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
+#
+#   What if a game is a clone and depends on a BIOS? For example
+#    <game name="mslug3" sourcefile="neogeo.c" romof="neogeo">
+#    <game name="mslug3b6" sourcefile="neogeo.c" cloneof="mslug3" romof="mslug3">
+#
+#   1) Traverse MAME XML and make a list of BIOSes.
+#   2) Traverse MAME XML for standard games (no bios, no device) and check:
+#      a) game has "romof" attribute and not "cloneof" attribute, add a
+#         bios_depends dependency.
+#      b) game has a "romof" attribute and a "cloneof" attribute. In this case,
+#         the parent game should be checked for a) case.
+#
+__debug_do_reduce_XML_dependencies = 0;
+def do_reduce_XML_experimental():
+  "Short list of MAME XML file (Experimental)"
+
+  print_info('[Reducing MAME XML game database (Experimental)]');
+  input_filename = configuration.MAME_XML;
+  output_filename = configuration.MAME_XML_redux;
+
+  # --- Build XML output file ---
+  tree_output = ET.ElementTree();
+  root_output = ET.Element('mame');
+  tree_output._setroot(root_output);
+
+  # --- Read MAME XML input file ---
+  print_info('Reading MAME XML game database...');
+  print_info('NOTE: this will take a looong time...');
+  print "Parsing MAME XML file " + input_filename + "... ",;
+  sys.stdout.flush();
+  try:
+    tree = ET.parse(input_filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + input_filename);
+    sys.exit(10);
+  print ' done';
+
+  # --- Dependencies variables
+  device_rom_list = [];
+  bios_list = [];
+
+  # --- Traverse MAME XML input file ---
+  # Root element:
+  #
+  # <mame build="0.153 (Apr  7 2014)" debug="no" mameconfig="10">
+  root = tree.getroot();
+  root_output.attrib = root.attrib; # Copy mame attributes in output XML
+
+  # Iterate through mame tag attributes (DEBUG)
+  # for key in root.attrib:
+  #   print ' game --', key, '->', root.attrib[key];
+  #
+  # Child elements:
+  #
+  # <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
+  #   <description>005</description>
+  #   <year>1981</year>
+  #   <manufacturer>Sega</manufacturer>
+  # ...
+  #   <input players="2" buttons="1" coins="2" service="yes">
+  #     <control type="joy" ways="4"/>
+  #   </input>
+  # ...
+  #   <driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
+  # </game>
+  # </mame>
+  print_info('[Reducing MAME XML database]');
+  for game_EL in root:
+    isdevice_flag = 0;
+    if game_EL.tag == 'game':
+      game_output = ET.SubElement(root_output, 'game');
+      game_output.attrib = game_EL.attrib; # Copy game attributes in output XML
+
+      # Put BIOSes in the list
+      if 'isbios' in game_output.attrib:
+        bios_list.append(game_output.attrib['name']);
+
+      if 'isdevice' in game_output.attrib:
+        isdevice_flag = 1;
+
+      # Iterate through game tag attributes (DEBUG)
+      print_verb('[Game]');
+      # for key in game_EL.attrib:
+      #   print ' game --', key, '->', game_EL.attrib[key];
+
+      # Iterate through the children of a game
+      for game_child in game_EL:
+        if game_child.tag == 'description':
+          print_verb(' description = ' + game_child.text);
+          description_output = ET.SubElement(game_output, 'description');
+          description_output.text = game_child.text;
+
+        if game_child.tag == 'year':
+          print_verb(' year = ' + game_child.text);
+          year_output = ET.SubElement(game_output, 'year');
+          year_output.text = game_child.text;
+
+        if game_child.tag == 'manufacturer':
+          print_verb(' manufacturer = ' + game_child.text);
+          manufacturer_output = ET.SubElement(game_output, 'manufacturer');
+          manufacturer_output.text = game_child.text;
+
+        if game_child.tag == 'input':
+          input_output = ET.SubElement(game_output, 'input');
+          input_output.attrib = game_child.attrib; # Copy game attributes in output XML
+
+          # Traverse children
+          for input_child in game_child:
+            if input_child.tag == 'control':
+              control_output = ET.SubElement(input_output, 'control');
+              control_output.attrib = input_child.attrib;
+
+        if game_child.tag == 'driver':
+          driver_output = ET.SubElement(game_output, 'driver');
+          driver_output.attrib = game_child.attrib; # Copy game attributes in output XML
+
+        # --- List of devices with ROMs
+        if isdevice_flag:
+          if game_child.tag == 'rom':
+            device_rom_list.append(game_output.attrib['name']);
+
+  if __debug_do_reduce_XML_dependencies:
+    # --- Print list of BIOSes
+    print '[List of BIOSes]';
+    for biosName in bios_list:
+      print biosName;
+
+    # --- Print list of devices with ROM
+    print '[List of devices with ROMs]';
+    for deviceName in device_rom_list:
+      print deviceName;
+
+  # --- Make list of dependencies
+  device_depends_dic = {};
+  parent_bios_depends_dic = {};
+  print_info('[Checking ROM dependencies (1st pass)]');
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      if 'romof' in game_EL.attrib:
+        # --- Case a)
+        if 'cloneof' not in game_EL.attrib:
+          parent_bios_depends_dic[game_EL.attrib['name']] = game_EL.attrib['romof'];
+          if __debug_do_reduce_XML_dependencies:
+            print 'game = ' + game_EL.attrib['name'] + ' BIOS depends on ' + game_EL.attrib['romof'];
+        # --- Case b) Parent should be checked
+        else:
+          # print 'game = ' + game_EL.attrib['name'] + ' is a clone a parent must be checked for BIOS dependencies';
+          pass
+
+      # --- Check for device dependencies
+      device_depends = [];
+      for game_child in game_EL:
+        if game_child.tag == 'device_ref':
+          if 'name' in game_child.attrib:
+            # --- Check if this is in the list of devices with ROMs
+            if game_child.attrib['name'] in device_rom_list:
+              if __debug_do_reduce_XML_dependencies:
+                print 'game = ' + game_EL.attrib['name'] + ' device depends on ' + game_child.attrib['name'];
+              # --- Insert a device dependency in a list
+              device_depends.append(game_child.attrib['name']);
+          else:
+            print_error('device_ref has no name attribute!');
+            sys.exit(10);
+
+      # --- If device dependency list is not empty, insert a <device_depends>
+      #     tag.
+      if len(device_depends) > 0:
+        device_depends_dic[game_EL.attrib['name']] = device_depends;
+
+  bios_depends_dic = {};
+  print '[Checking ROM dependencies (2nd pass)]';
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      if 'romof' in game_EL.attrib:
+        # --- Case a)
+        if 'cloneof' not in game_EL.attrib:
+          bios_depends_dic[game_EL.attrib['name']] = game_EL.attrib['romof'];
+          if __debug_do_reduce_XML_dependencies:
+            print 'game = ' + game_EL.attrib['name'] + ' BIOS depends on ' + game_EL.attrib['romof'];
+        # --- Case b) Parent should be checked
+        else:
+          # If parent is in this list then clone has a BIOS dependence
+          if game_EL.attrib['cloneof'] in parent_bios_depends_dic:
+            bios_depends_dic[game_EL.attrib['name']] = parent_bios_depends_dic[game_EL.attrib['cloneof']];
+            if __debug_do_reduce_XML_dependencies:
+              print 'game = ' + game_EL.attrib['name'] + ' is a clone that BIOS depends on ' + parent_bios_depends_dic[game_EL.attrib['cloneof']];
+
+
+  # --- To save memory destroy variables now
+  del tree;
+  del root;
+
+  # --- Incorporate dependencies into output XML
+  print '[Merging ROM dependencies in output XML]';
+  for game_EL in root_output:
+    if game_EL.tag == 'game':
+      game_name = game_EL.attrib['name'];
+      if game_name in bios_depends_dic:
+        # values of bios_depends_dic are strings
+        bios_depends_tag = ET.SubElement(game_EL, 'bios_depends');
+        bios_depends_tag.text = bios_depends_dic[game_name];
+
+      if game_name in device_depends_dic:
+        # values of device_depends_dic are lists
+        # There may be duplicate devices in the list (game has two devices of
+        # the same kind). Remove duplicates to improve later processing.
+        # http://stackoverflow.com/questions/7961363/python-removing-duplicates-in-lists
+        device_depends_tag = ET.SubElement(game_EL, 'device_depends');
+        device_depends_tag.text = ",".join(set(device_depends_dic[game_name]));
+
+  # --- Pretty print XML output using miniDOM
+  # See http://broadcast.oreilly.com/2010/03/pymotw-creating-xml-documents.html
+  print_info('[Building reduced output XML file]');
+  rough_string = ET.tostring(root_output, 'utf-8');
+  reparsed = minidom.parseString(rough_string);
+  del root_output; # Reduce memory consumption
+
+  print_info('Writing reduced XML file ' + output_filename);
+  f = open(output_filename, "w")
+  f.write(reparsed.toprettyxml(indent=" "))
+  f.close()
+
+# Current function
 def do_reduce_XML():
   "Short list of MAME XML file"
 
@@ -1331,7 +1617,7 @@ def do_reduce_XML():
   # Iterate through mame tag attributes (DEBUG)
   # for key in root.attrib:
   #   print ' game --', key, '->', root.attrib[key];
-
+  #
   # Child elements:
   #
   # <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
@@ -1477,6 +1763,15 @@ def do_merge():
           driver_attrib = {};
           driver_attrib['status'] = game_child.attrib['status'];
           driver_output.attrib = driver_attrib;
+
+        # --- Dependencies
+        if game_child.tag == 'device_depends':
+          device_depends_output = ET.SubElement(game_output, 'device_depends');
+          device_depends_output.text = game_child.text;
+
+        if game_child.tag == 'bios_depends':
+          bios_depends_output = ET.SubElement(game_output, 'bios_depends');
+          bios_depends_output.text = game_child.text;
 
       # --- Add category element
       game_name = game_EL.attrib['name'];
@@ -2219,6 +2514,11 @@ def main(argv):
   # --- Positional arguments that don't require a filterName
   if command == 'reduce-XML':
     do_reduce_XML();
+    sys.exit(0);
+
+  # Unofficial development command (for game dependencies)
+  elif command == 'reduce-XML-experimental':
+    do_reduce_XML_experimental();
     sys.exit(0);
 
   elif command == 'merge':
