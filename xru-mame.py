@@ -2144,6 +2144,102 @@ def do_list_controls():
   for key in sorted_histo:
     print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
 
+def do_list_years():
+  "Parses merged XML database and makes a controls histogram"
+
+  print_info('[Listing MAME controls]');
+  print_info('NOTE: clones are not included');
+  print_info('NOTE: mechanical are not included');
+  print_info('NOTE: devices are not included');
+
+  # filename = configuration.MergedInfo_XML;
+  filename = configuration.MAME_XML_redux;
+  print "Parsing merged MAME XML file '" + filename + "'... ",;
+  try:
+    tree = ET.parse(filename);
+  except IOError:
+    print '\n';
+    print_error('[ERROR] cannot find file ' + filename);
+    sys.exit(10);
+  print ' done';
+
+  # --- Histogram data
+  years_dic = {};
+  raw_years_dic = {};
+
+  # Wildcard expansion range
+  min_year = 1970;
+  max_year = 2012;
+
+  # --- Do histogram
+  root = tree.getroot();
+  for game_EL in root:
+    if game_EL.tag == 'game':
+      game_attrib = game_EL.attrib;
+
+      # - Remove crap
+      if 'cloneof' in game_attrib:
+        continue;
+      if 'isdevice' in game_attrib:
+        continue;
+      if 'ismechanical' in game_attrib:
+        continue;
+
+      # - Game name
+      game_name = game_attrib['name']
+
+      # --- Histogram of years
+      has_year = 0;
+      for child_game_EL in game_EL:
+        if child_game_EL.tag == 'year':
+          has_year = 1;
+          game_year_EL = child_game_EL;
+          year_text = game_year_EL.text;
+          raw_year_text = game_year_EL.text;
+          # --- Remove quotation marks from some years
+          if len(year_text) == 5 and year_text[4] == '?':
+            # About slicing, see this page. Does not work like C!
+            # http://stackoverflow.com/questions/509211/pythons-slice-notation
+            year_text = year_text[0:4];
+          # --- Expand wildcards to numerical lists. Currently there are 6 cases
+          # ????, 19??, 197?, 198?, 199?, 200?
+          wildcard_expanded = 1;
+          if year_text == '197?':
+            year_list = [str(x) for x in range(1970, 1979)];
+          elif year_text == '198?':
+            year_list = [str(x) for x in range(1980, 1989)];
+          elif year_text == '199?':
+            year_list = [str(x) for x in range(1990, 1999)];
+          elif year_text == '200?':
+            year_list = [str(x) for x in range(2000, 2009)];
+          elif year_text == '19??' or year_text == '????':
+            year_list = [str(x) for x in range(min_year, max_year)];
+          else:
+            wildcard_expanded = 0;
+
+          # --- Make histogram
+          if wildcard_expanded:
+            for number in year_list:
+              years_dic = add_to_histogram(number, years_dic);
+          else:
+            years_dic = add_to_histogram(year_text, years_dic);
+          raw_years_dic = add_to_histogram(raw_year_text, raw_years_dic);
+
+      if not has_year:
+        years_dic = add_to_histogram('no year', years_dic);
+        raw_years_dic = add_to_histogram('no year', raw_years_dic);
+
+  print_info('[Release year histogram (raw)]');
+  sorted_histo = sorted(raw_years_dic.iteritems(), key=operator.itemgetter(1))
+  for key in sorted_histo:
+    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  print ' ';
+
+  print_info('[Release year histogram (trimmed)]');
+  sorted_histo = sorted(years_dic.iteritems(), key=operator.itemgetter(1))
+  for key in sorted_histo:
+    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+
 # ----------------------------------------------------------------------------
 def do_checkFilter(filterName):
   "Applies filter and copies ROMs into destination directory"
@@ -2540,6 +2636,11 @@ def main(argv):
   # Unofficial development command
   elif command == 'list-controls':
     do_list_controls();
+    sys.exit(0);
+
+  # Unofficial development command
+  elif command == 'list-years':
+    do_list_years();
     sys.exit(0);
 
   # --- Positional arguments that require a filterName
