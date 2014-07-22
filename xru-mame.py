@@ -621,6 +621,7 @@ def parse_File_Config():
         filter_class.driver = None;
         filter_class.machineType = None;
         filter_class.categories = None;
+        filter_class.year_exp = None;
         sourceDirFound = 0;
         destDirFound = 0;
         # - Initialise variables for the ConfigFileFilter object
@@ -688,6 +689,14 @@ def parse_File_Config():
             else:
               filter_class.categories = '';
 
+          elif filter_child.tag == 'Years':
+            text_string = filter_child.text;
+            if text_string != None:
+              print_debug(' Years = ' + filter_child.text);
+              filter_class.year_exp = text_string;
+            else:
+              filter_class.year_exp = '';
+
           elif filter_child.tag == 'MachineType':
             print_debug(' MachineType = ' + filter_child.text);
             text_string = filter_child.text;
@@ -739,6 +748,36 @@ def trim_list(input_list):
     input_list[index] = item.strip();
 
   return input_list;
+
+# Wildcard expansion range
+min_year = 1970;
+max_year = 2012;
+def trim_year_string(raw_year_text):
+  year_text = raw_year_text;
+
+  # --- Remove quotation marks from some years
+  if len(year_text) == 5 and year_text[4] == '?':
+    # About slicing, see this page. Does not work like C!
+    # http://stackoverflow.com/questions/509211/pythons-slice-notation
+    year_text = year_text[0:4];
+
+  # --- Expand wildcards to numerical lists. Currently there are 6 cases
+  # ????, 19??, 197?, 198?, 199?, 200?
+  if year_text == '197?':
+    year_list = [str(x) for x in range(1970, 1979)];
+  elif year_text == '198?':
+    year_list = [str(x) for x in range(1980, 1989)];
+  elif year_text == '199?':
+    year_list = [str(x) for x in range(1990, 1999)];
+  elif year_text == '200?':
+    year_list = [str(x) for x in range(2000, 2009)];
+  elif year_text == '19??' or year_text == '????':
+    year_list = [str(x) for x in range(min_year, max_year)];
+  else:
+    year_list = [];
+    year_list.append(year_text);
+  
+  return year_list;
 
 def parse_catver_ini():
   "Parses Catver.ini and returns a ..."
@@ -855,7 +894,7 @@ def parse_MAME_merged_XML():
           romObject.runnable = 1;
       else:
         romObject.runnable = 1; # Runnable defaults to 1
-        
+
       # Are all devices non runnable?
       # In MAME 0.153b, when there is the attribute 'isdevice' there is also
       # 'runnable'. Also, if isdevice = yes => runnable = no
@@ -903,7 +942,7 @@ def parse_MAME_merged_XML():
         # - Driver status
         if child_game.tag == 'driver':
           driver_attrib = child_game.attrib;
-          
+
           # Driver status is good, imperfect, preliminary
           # prelimiray games don't work or have major emulation problems
           # imperfect games are emulated with some minor issues
@@ -1188,6 +1227,63 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   else:
     print_info('User wants all categories');
 
+  # --- Apply Years filter
+  print_info('[Year filter]');
+  __debug_apply_MAME_filters_years_tag = 0;
+
+  # Do filtering
+  if hasattr(filter_config, 'year_exp') and \
+             filter_config.year_exp is not None and \
+             filter_config.year_exp is not '':
+    print_info('Filtering years');
+    mame_filtered_dic_temp = {};
+    filtered_out_games = 0;
+    year_filter_expression = filter_config.year_exp;
+    for key in mame_filtered_dic:
+      romObject = mame_filtered_dic[key];
+      # year is a string, convert to int
+      year_srt = romObject.year;
+      # Remove quotation marks from some years
+      # Expand wildcards to numerical lists. Currently there are 6 cases
+      year_list = trim_year_string(year_srt);
+      if len(year_list) == 1:
+        year = int(year_list[0]);
+        if __debug_apply_MAME_filters_years_tag:
+          print '[DEBUG] Game ' + key + ' year value = ' + str(year);
+          print '[DEBUG] Years ' + key + ' filter expression = "' + year_filter_expression + '"';
+        boolean_result = eval(year_filter_expression, globals(), locals());
+        # If not all items are true, the game is NOT copied (filtered)
+        if not boolean_result:
+          filtered_out_games += 1;
+          print_vverb('FILTERED ' + key + ' year ' + str(year));
+        else:
+          mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+          print_debug('Included ' + key + ' year ' + str(year));
+      else:
+        boolean_list = [];
+        for year_str in year_list:
+          year = int(year_str);
+          if __debug_apply_MAME_filters_years_tag:
+            print '[DEBUG] Game ' + key + ' year value = ' + str(year);
+            print '[DEBUG] Years ' + key + ' filter expression = "' + year_filter_expression + '"';
+          boolean_result = eval(year_filter_expression, globals(), locals());
+          boolean_list.append(boolean_result);
+        # Knowing the boolean results for the wildcard expansion, check if game
+        # should be included or not.
+        if any(boolean_list):
+          mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+          print_debug('Included ' + key + ' year ' + str(year));
+        else:
+          filtered_out_games += 1;
+          print_vverb('FILTERED ' + key + ' year ' + str(year));
+
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+  else:
+    print_info('User wants all years');
+
   # --- ROM dependencies
   # Add ROMs (devices and BIOS) needed for other ROM to work.
   # Traverse the list of filtered games, and check if they have dependencies. If
@@ -1211,7 +1307,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
           print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
                      BIOS_depend.ljust(11) + ' - Adding  to list');
         else:
-          print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
+          print_verb('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
                      BIOS_depend.ljust(11) + ' - Already on list');
 
     # - Device dependencies
@@ -1228,7 +1324,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
           print_info('Game ' + key.ljust(8) + ' depends on device ' + \
                      device_depend.ljust(11) + ' - Adding  to list');
         else:
-          print_info('Game ' + key.ljust(8) + ' depends on device ' + \
+          print_verb('Game ' + key.ljust(8) + ' depends on device ' + \
                      device_depend.ljust(11) + ' - Already on list');
 
   for key in dependencies_ROM_list:
@@ -2208,10 +2304,6 @@ def do_list_years():
   years_dic = {};
   raw_years_dic = {};
 
-  # Wildcard expansion range
-  min_year = 1970;
-  max_year = 2012;
-
   # --- Do histogram
   root = tree.getroot();
   for game_EL in root:
@@ -2235,35 +2327,14 @@ def do_list_years():
         if child_game_EL.tag == 'year':
           has_year = 1;
           game_year_EL = child_game_EL;
-          year_text = game_year_EL.text;
           raw_year_text = game_year_EL.text;
-          # --- Remove quotation marks from some years
-          if len(year_text) == 5 and year_text[4] == '?':
-            # About slicing, see this page. Does not work like C!
-            # http://stackoverflow.com/questions/509211/pythons-slice-notation
-            year_text = year_text[0:4];
-          # --- Expand wildcards to numerical lists. Currently there are 6 cases
-          # ????, 19??, 197?, 198?, 199?, 200?
-          wildcard_expanded = 1;
-          if year_text == '197?':
-            year_list = [str(x) for x in range(1970, 1979)];
-          elif year_text == '198?':
-            year_list = [str(x) for x in range(1980, 1989)];
-          elif year_text == '199?':
-            year_list = [str(x) for x in range(1990, 1999)];
-          elif year_text == '200?':
-            year_list = [str(x) for x in range(2000, 2009)];
-          elif year_text == '19??' or year_text == '????':
-            year_list = [str(x) for x in range(min_year, max_year)];
-          else:
-            wildcard_expanded = 0;
+          # Remove quotation marks from some years
+          # Expand wildcards to numerical lists. Currently there are 6 cases
+          year_list = trim_year_string(raw_year_text);
 
           # --- Make histogram
-          if wildcard_expanded:
-            for number in year_list:
-              years_dic = add_to_histogram(number, years_dic);
-          else:
-            years_dic = add_to_histogram(year_text, years_dic);
+          for number in year_list:
+            years_dic = add_to_histogram(number, years_dic);
           raw_years_dic = add_to_histogram(raw_year_text, raw_years_dic);
 
       if not has_year:
