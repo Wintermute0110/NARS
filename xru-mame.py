@@ -839,7 +839,7 @@ def parse_MAME_merged_XML():
         num_parents += 1;
         romObject.isclone = 0;
 
-      # Device and Runnable
+      # --- Device and Runnable
       if 'isdevice' in game_attrib:
         if game_attrib['isdevice'] == 'yes':
           romObject.isdevice = 1;
@@ -897,7 +897,10 @@ def parse_MAME_merged_XML():
         romObject.sourcefile = 'unknown';
 
       # --- Parse child tags
+      romObject.device_depends = [];
+      romObject.BIOS_depends = [];
       for child_game in game_EL:
+        # - Driver status
         if child_game.tag == 'driver':
           driver_attrib = child_game.attrib;
           
@@ -911,19 +914,27 @@ def parse_MAME_merged_XML():
           else:
             romObject.driver_status = 'unknown';
 
+        # - Category
         elif child_game.tag == 'category':
           romObject.category = child_game.text;
-        
-        # --- Copy information to generate NFO files
+
+        # - Dependencies
+        elif child_game.tag == 'device_depends':
+          romObject.device_depends = child_game.text.split(",");
+        elif child_game.tag == 'bios_depends':
+          romObject.BIOS_depends = child_game.text.split(",");
+
+        # - Copy information to generate NFO files
         elif child_game.tag == 'description':
           romObject.description = child_game.text;
         elif child_game.tag == 'year':
           romObject.year = child_game.text;
         elif child_game.tag == 'manufacturer':
           romObject.manufacturer = child_game.text;
-        
+
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
+
   del tree;
   print_info('Total number of games = ' + str(num_games));
   print_info('Number of parents = ' + str(num_parents));
@@ -950,7 +961,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # a) devices <game isdevice="yes" runnable="no"> 
   #    Question: isdevice = yes implies runnable = no? In MAME 0.153b XML yes!
   mame_filtered_dic = {};
-  print_info('>>> Default filter, removing devices');
+  print_info('Default filter, removing devices');
   filtered_out_games = 0;
   for key in mame_xml_dic:
     romObject = mame_xml_dic[key];
@@ -967,7 +978,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # This is a special filter, and MUST be done first.
   # Also, remove crap like chips, etc.
   if 'NoClones' in filter_config.mainFilter:
-    print_info('>>> Filtering out clones');
+    print_info('Filtering out clones');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -983,7 +994,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('>>> NOT filtering clones');
+    print_info('NOT filtering clones');
 
   # --- Apply MainFilter: NoSamples
   if 'NoSamples' in filter_config.mainFilter:
@@ -1060,7 +1071,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   print_info('[Driver filter]');
   __debug_apply_MAME_filters_Driver_tag = 0;
   if filter_config.driver is not None and filter_config.driver is not '':
-    print_info('>>> Filtering Drivers');
+    print_info('Filtering Drivers');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1113,15 +1124,15 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('>>> User wants all drivers');
+    print_info('User wants all drivers');
 
   # --- Apply Categories filter
-  print_info('[Categories filter]');  
+  print_info('[Categories filter]');
   __debug_apply_MAME_filters_Category_tag = 0;
   if hasattr(filter_config, 'categories') and \
              filter_config.categories is not None and \
              filter_config.categories is not '':
-    print_info('>>> Filtering Categories');
+    print_info('Filtering Categories');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1175,24 +1186,54 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('>>> User wants all categories');
+    print_info('User wants all categories');
 
-  # --- Include games
-  # Some games require BIOS and devices in order to work. For example, some cps1
-  # and most cps2 games require the qsound ROM to be copied.
-  # Until I find a better solution, qsound is always copied whatever the
-  # filters.
-  
-  # If qsound ROM was removed, add them to the filtering list.
-  rom_name = 'qsound';
-  if rom_name not in mame_filtered_dic:
-    # Add qsound ROM object to filtered dictionary
-    if rom_name not in mame_xml_dic:
-      print_error('[ERROR] ROM name not found in mame_xml_dic');
-      sys.exit(10);
-    # Get ROM object from main, unfiltered dictionary
-    romObj = mame_xml_dic[rom_name];
-    mame_filtered_dic[rom_name] = romObj;
+  # --- ROM dependencies
+  # Add ROMs (devices and BIOS) needed for other ROM to work.
+  # Traverse the list of filtered games, and check if they have dependencies. If
+  # so, add the dependencies to the filtered list.
+  print_info('[Adding ROM dependencies]');
+  # NOTE: dictionaries cannot change size during iteration. Create auxiliary list.
+  dependencies_ROM_list = {};
+  for key in mame_filtered_dic:
+    romObject = mame_filtered_dic[key];
+    # - BIOS dependencies
+    if len(romObject.BIOS_depends):
+      for BIOS_depend in romObject.BIOS_depends:
+        if BIOS_depend not in mame_xml_dic:
+          print_error('[ERROR] ROM name not found in mame_xml_dic');
+          sys.exit(10);
+        # Get ROM object from main, unfiltered dictionary
+        BIOS_romObj = mame_xml_dic[BIOS_depend];
+        # Only add dependency if not already in filtered list
+        if BIOS_depend not in dependencies_ROM_list:
+          dependencies_ROM_list[BIOS_depend] = BIOS_romObj;
+          print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
+                     BIOS_depend.ljust(11) + ' - Adding  to list');
+        else:
+          print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
+                     BIOS_depend.ljust(11) + ' - Already on list');
+
+    # - Device dependencies
+    if len(romObject.device_depends):
+      for device_depend in romObject.device_depends:
+        if device_depend not in mame_xml_dic:
+          print_error('[ERROR] ROM name not found in mame_xml_dic');
+          sys.exit(10);
+        # Get ROM object from main, unfiltered dictionary
+        device_romObj = mame_xml_dic[device_depend];
+        # Only add dependency if not already in filtered list
+        if device_depend not in dependencies_ROM_list:
+          dependencies_ROM_list[device_depend] = device_romObj;
+          print_info('Game ' + key.ljust(8) + ' depends on device ' + \
+                     device_depend.ljust(11) + ' - Adding  to list');
+        else:
+          print_info('Game ' + key.ljust(8) + ' depends on device ' + \
+                     device_depend.ljust(11) + ' - Already on list');
+
+  for key in dependencies_ROM_list:
+    romObject = dependencies_ROM_list[key];
+    mame_filtered_dic[key] = romObject;
 
   return mame_filtered_dic;
 
