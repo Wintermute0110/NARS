@@ -818,7 +818,7 @@ def parse_catver_ini():
         sub_categories = category.split("/");
         main_category = sub_categories[0].strip();
         second_category = sub_categories[0].strip();
-          
+
         # NOTE: Only use the main category for filtering.
         # -Rename some categories
         final_category = main_category;
@@ -828,12 +828,12 @@ def parse_catver_ini():
           final_category = 'PinMAME';
         elif main_category == 'Ball & Paddle':
           final_category = 'Ball and Paddle';
-        
+
         # - If there is *Mature* in any category or subcategory, then
         #   the game belongs to the Mature category
         if category.find('*Mature*') >= 0:
           final_category = 'Mature';
-        
+
         # - Create final categories dictionary
         final_categories_dic[game_name] = final_category;
     elif read_status == 2:
@@ -1546,7 +1546,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #         the parent game should be checked for a) case.
 #
 __debug_do_reduce_XML_dependencies = 0;
-def do_reduce_XML_experimental():
+def do_reduce_XML():
   "Short list of MAME XML file (Experimental)"
 
   print_info('[Reducing MAME XML game database (Experimental)]');
@@ -1756,117 +1756,6 @@ def do_reduce_XML_experimental():
   f.write(reparsed.toprettyxml(indent=" "))
   f.close()
 
-# Current function
-def do_reduce_XML():
-  "Short list of MAME XML file"
-
-  print_info('[Reducing MAME XML game database]');
-  input_filename = configuration.MAME_XML;
-  output_filename = configuration.MAME_XML_redux;
-
-  # --- Build XML output file ---
-  tree_output = ET.ElementTree();
-  root_output = ET.Element('mame');
-  tree_output._setroot(root_output);
-
-  # --- Read MAME XML input file ---
-  print_info('Reading MAME XML game database...');
-  print_info('NOTE: this will take a looong time...');
-  print "Parsing MAME XML file " + input_filename + "... ",;
-  sys.stdout.flush();
-  try:
-    tree = ET.parse(input_filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + input_filename);
-    sys.exit(10);
-  print ' done';
-
-  # --- Traverse MAME XML input file ---
-  # Root element:
-  #
-  # <mame build="0.153 (Apr  7 2014)" debug="no" mameconfig="10">
-  root = tree.getroot();
-  root_output.attrib = root.attrib; # Copy mame attributes in output XML
-
-  # Iterate through mame tag attributes (DEBUG)
-  # for key in root.attrib:
-  #   print ' game --', key, '->', root.attrib[key];
-  #
-  # Child elements:
-  #
-  # <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
-  #   <description>005</description>
-  #   <year>1981</year>
-  #   <manufacturer>Sega</manufacturer>
-  # ...
-  #   <input players="2" buttons="1" coins="2" service="yes">
-  #     <control type="joy" ways="4"/>
-  #   </input>
-  # ...
-  #   <driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
-  # </game>
-  # </mame>
-  print_info('Reducing MAME XML database...');
-  for game_EL in root:
-    if game_EL.tag == 'game':
-      game_output = ET.SubElement(root_output, 'game');
-      game_output.attrib = game_EL.attrib; # Copy game attributes in output XML
-
-      # Iterate through game tag attributes (DEBUG)
-      print_verb('[Game]');
-      # for key in game_EL.attrib:
-      #   print ' game --', key, '->', game_EL.attrib[key];
-
-      # Iterate through the children of a game
-      for game_child in game_EL:
-        if game_child.tag == 'description':
-          print_verb(' description = ' + game_child.text);
-          description_output = ET.SubElement(game_output, 'description');
-          description_output.text = game_child.text;
-
-        if game_child.tag == 'year':
-          print_verb(' year = ' + game_child.text);
-          year_output = ET.SubElement(game_output, 'year');
-          year_output.text = game_child.text;
-
-        if game_child.tag == 'manufacturer':
-          print_verb(' manufacturer = ' + game_child.text);
-          manufacturer_output = ET.SubElement(game_output, 'manufacturer');
-          manufacturer_output.text = game_child.text;
-
-        if game_child.tag == 'input':
-          input_output = ET.SubElement(game_output, 'input');
-          input_output.attrib = game_child.attrib; # Copy game attributes in output XML
-
-          # Traverse children
-          for input_child in game_child:
-            if input_child.tag == 'control':
-              control_output = ET.SubElement(input_output, 'control');
-              control_output.attrib = input_child.attrib;
-
-        if game_child.tag == 'driver':
-          driver_output = ET.SubElement(game_output, 'driver');
-          driver_output.attrib = game_child.attrib; # Copy game attributes in output XML
-
-  # --- Write reduced output XML file
-  # tree_output.write(output_filename);
-  
-  # --- To save memory destroy variables now
-  del tree;
-  
-  # --- Pretty print XML output using miniDOM
-  # See http://broadcast.oreilly.com/2010/03/pymotw-creating-xml-documents.html
-  print_info('Building reduced output XML file...');
-  rough_string = ET.tostring(root_output, 'utf-8');
-  reparsed = minidom.parseString(rough_string);
-  del root_output; # Reduce memory consumption
-
-  print_info('Writing reduced XML file ' + output_filename);
-  f = open(output_filename, "w")
-  f.write(reparsed.toprettyxml(indent=" "))
-  f.close()
-
 def do_merge():
   "Merges main MAME database ready for filtering"
 
@@ -1920,17 +1809,16 @@ def do_merge():
         if game_child.tag == 'input':
           # --- This information is not used yet. Don't add to the output
           #     file to save some space.
-          # input_output = ET.SubElement(game_output, 'input');
-          # input_output.attrib = game_child.attrib; # Copy game attributes in output XML
+          input_output = ET.SubElement(game_output, 'input');
+          input_output.attrib = game_child.attrib; # Copy game attributes in output XML
 
           # Traverse children
           for input_child in game_child:
             if input_child.tag == 'control':
               # --- This information is not used yet. Don't add to the output
               #     file to save some space.
-              # control_output = ET.SubElement(input_output, 'control');
-              # control_output.attrib = input_child.attrib;
-              pass
+              control_output = ET.SubElement(input_output, 'control');
+              control_output.attrib = input_child.attrib;
 
         if game_child.tag == 'driver':
           driver_output = ET.SubElement(game_output, 'driver');
