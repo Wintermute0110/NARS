@@ -919,11 +919,20 @@ def parse_MAME_merged_XML():
       # Mechanical
       if 'ismechanical' in game_attrib:
         if game_attrib['ismechanical'] == 'yes':
-          romObject.mechanical = 1;
+          romObject.isMechanical = 1;
         else:
-          romObject.mechanical = 0;
+          romObject.isMechanical = 0;
       else:
-        romObject.mechanical = 0; # ismechanical defaults to 0
+        romObject.isMechanical = 0; # isMechanical defaults to 0
+
+      # BIOS
+      if 'isbios' in game_attrib:
+        if game_attrib['isbios'] == 'yes':
+          romObject.isBIOS = 1;
+        else:
+          romObject.isBIOS = 0;
+      else:
+        romObject.isBIOS = 0;
 
       # Game driver
       if 'sourcefile' in game_attrib:
@@ -995,7 +1004,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   print_info('NOTE: -vv if you want to see filters in action');
   
   # --- Default filters: remove crap
-  print_info('[Main filter]');
+  print_info('<Main filter>');
   # What is "crap"?
   # a) devices <game isdevice="yes" runnable="no"> 
   #    Question: isdevice = yes implies runnable = no? In MAME 0.153b XML yes!
@@ -1062,7 +1071,27 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     filtered_out_games = 0;
     for key in mame_filtered_dic:
       romObject = mame_filtered_dic[key];
-      if romObject.mechanical:
+      if romObject.isMechanical:
+        filtered_out_games += 1;
+        print_vverb('FILTERED ' + key);
+      else:
+        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug('Included ' + key);
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+  else:
+    print_info('User wants mechanical games');
+
+  # --- Apply MainFilter: NoBIOS
+  if 'NoBIOS' in filter_config.mainFilter:
+    print_info('Filtering out BIOS');
+    mame_filtered_dic_temp = {};
+    filtered_out_games = 0;
+    for key in mame_filtered_dic:
+      romObject = mame_filtered_dic[key];
+      if romObject.isBIOS:
         filtered_out_games += 1;
         print_vverb('FILTERED ' + key);
       else:
@@ -1107,10 +1136,9 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     print_info('User wants Non-Working games');
 
   # --- Apply Driver filter
-  print_info('[Driver filter]');
+  print_info('<Driver filter>');
   __debug_apply_MAME_filters_Driver_tag = 0;
   if filter_config.driver is not None and filter_config.driver is not '':
-    print_info('Filtering Drivers');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1166,12 +1194,11 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     print_info('User wants all drivers');
 
   # --- Apply Categories filter
-  print_info('[Categories filter]');
+  print_info('<Categories filter>');
   __debug_apply_MAME_filters_Category_tag = 0;
   if hasattr(filter_config, 'categories') and \
              filter_config.categories is not None and \
              filter_config.categories is not '':
-    print_info('Filtering Categories');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1228,14 +1255,11 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     print_info('User wants all categories');
 
   # --- Apply Years filter
-  print_info('[Year filter]');
+  print_info('<Year filter>');
   __debug_apply_MAME_filters_years_tag = 0;
-
-  # Do filtering
   if hasattr(filter_config, 'year_exp') and \
              filter_config.year_exp is not None and \
              filter_config.year_exp is not '':
-    print_info('Filtering years');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     year_filter_expression = filter_config.year_exp;
