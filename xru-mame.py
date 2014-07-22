@@ -622,6 +622,8 @@ def parse_File_Config():
         filter_class.machineType = None;
         filter_class.categories = None;
         filter_class.year_exp = None;
+        filter_class.buttons = None;
+        filter_class.players = None;
         sourceDirFound = 0;
         destDirFound = 0;
         # - Initialise variables for the ConfigFileFilter object
@@ -697,11 +699,21 @@ def parse_File_Config():
             else:
               filter_class.year_exp = '';
 
-          elif filter_child.tag == 'MachineType':
-            print_debug(' MachineType = ' + filter_child.text);
+          elif filter_child.tag == 'Buttons':
             text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.machineType = trim_list(list);
+            if text_string != None:
+              print_debug(' Buttons = ' + filter_child.text);
+              filter_class.buttons = text_string;
+            else:
+              filter_class.buttons = '';
+
+          elif filter_child.tag == 'Players':
+            text_string = filter_child.text;
+            if text_string != None:
+              print_debug(' Players = ' + filter_child.text);
+              filter_class.players = text_string;
+            else:
+              filter_class.players = '';
 
           else:
             print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
@@ -979,6 +991,28 @@ def parse_MAME_merged_XML():
           romObject.device_depends = child_game.text.split(",");
         elif child_game.tag == 'bios_depends':
           romObject.BIOS_depends = child_game.text.split(",");
+
+        # - Controls
+        elif child_game.tag == 'input':
+          control_attrib = child_game.attrib;
+          if 'buttons' in control_attrib:
+            romObject.buttons = control_attrib['buttons'];
+          else:
+            # There are some games with no buttons attribute
+            romObject.buttons = '0';
+
+          if 'players' in control_attrib:
+            romObject.players = control_attrib['players'];
+          else:
+            romObject.players = None;
+
+          # - Traverse input node for control child nodes
+          # NOTE: a game may have more than one control (joystick, dial, ...)
+          romObject.control_type = [];
+          for control in child_game:
+            if control.tag == 'input':
+              if 'type' in control.attrib:
+                romObject.control_type.append(control.attrib['type']);
 
         # - Copy information to generate NFO files
         elif child_game.tag == 'description':
@@ -1316,6 +1350,70 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   else:
     print_info('User wants all years');
 
+  # --- Apply Buttons filter
+  print_info('<Buttons filter>');
+  __debug_apply_MAME_filters_Buttons_tag = 0;
+  if hasattr(filter_config, 'buttons') and \
+             filter_config.buttons is not None and \
+             filter_config.buttons is not '':
+    mame_filtered_dic_temp = {};
+    filtered_out_games = 0;
+    for key in mame_filtered_dic:
+      romObject = mame_filtered_dic[key];
+      button_filter_expression = filter_config.buttons;
+      buttons_str = romObject.buttons;
+      buttons = int(buttons_str);
+      if __debug_apply_MAME_filters_Buttons_tag:
+        print '[DEBUG] Buttons number = ' + buttons_str;
+        print '[DEBUG] Buttons filter = "' + button_filter_expression + '"';
+      boolean_result = eval(button_filter_expression, globals(), locals());
+
+      # If not all items are true, the game is NOT copied (filtered)
+      if not boolean_result:
+        filtered_out_games += 1;
+        print_vverb('FILTERED ' + key + ' buttons ' + buttons_str);
+      else:
+        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug('Included ' + key + ' buttons ' + buttons_str);
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+  else:
+    print_info('User wants all buttons');
+
+  # --- Apply Players filter
+  print_info('<Players filter>');
+  __debug_apply_MAME_filters_Players_tag = 0;
+  if hasattr(filter_config, 'players') and \
+             filter_config.players is not None and \
+             filter_config.players is not '':
+    mame_filtered_dic_temp = {};
+    filtered_out_games = 0;
+    for key in mame_filtered_dic:
+      romObject = mame_filtered_dic[key];
+      players_filter_expression = filter_config.players;
+      players_str = romObject.players;
+      players = int(players_str);
+      if __debug_apply_MAME_filters_Players_tag:
+        print '[DEBUG] Players number = ' + players_str;
+        print '[DEBUG] Players filter = "' + players_filter_expression + '"';
+      boolean_result = eval(players_filter_expression, globals(), locals());
+
+      # If not all items are true, the game is NOT copied (filtered)
+      if not boolean_result:
+        filtered_out_games += 1;
+        print_vverb('FILTERED ' + key + ' players ' + players_str);
+      else:
+        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug('Included ' + key + ' players ' + players_str);
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+  else:
+    print_info('User wants all players');
+
   # --- ROM dependencies
   # Add ROMs (devices and BIOS) needed for other ROM to work.
   # Traverse the list of filtered games, and check if they have dependencies. If
@@ -1577,17 +1675,11 @@ def do_reduce_XML():
 
   # --- Traverse MAME XML input file ---
   # Root element:
-  #
   # <mame build="0.153 (Apr  7 2014)" debug="no" mameconfig="10">
   root = tree.getroot();
   root_output.attrib = root.attrib; # Copy mame attributes in output XML
 
-  # Iterate through mame tag attributes (DEBUG)
-  # for key in root.attrib:
-  #   print ' game --', key, '->', root.attrib[key];
-  #
   # Child elements:
-  #
   # <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
   #   <description>005</description>
   #   <year>1981</year>
@@ -1604,6 +1696,7 @@ def do_reduce_XML():
   for game_EL in root:
     isdevice_flag = 0;
     if game_EL.tag == 'game':
+      print_verb('[Game]');
       game_output = ET.SubElement(root_output, 'game');
       game_output.attrib = game_EL.attrib; # Copy game attributes in output XML
 
@@ -1614,12 +1707,11 @@ def do_reduce_XML():
       if 'isdevice' in game_output.attrib:
         isdevice_flag = 1;
 
-      # Iterate through game tag attributes (DEBUG)
-      print_verb('[Game]');
+      # --- Iterate through game tag attributes (DEBUG)
       # for key in game_EL.attrib:
       #   print ' game --', key, '->', game_EL.attrib[key];
 
-      # Iterate through the children of a game
+      # --- Iterate through the children of a game
       for game_child in game_EL:
         if game_child.tag == 'description':
           print_verb(' description = ' + game_child.text);
@@ -1720,7 +1812,6 @@ def do_reduce_XML():
             bios_depends_dic[game_EL.attrib['name']] = parent_bios_depends_dic[game_EL.attrib['cloneof']];
             if __debug_do_reduce_XML_dependencies:
               print 'game = ' + game_EL.attrib['name'] + ' is a clone that BIOS depends on ' + parent_bios_depends_dic[game_EL.attrib['cloneof']];
-
 
   # --- To save memory destroy variables now
   del tree;
@@ -2127,6 +2218,10 @@ def do_list_controls():
             if __debug_do_list_controls:
               print(' buttons = ' + game_input_EL.attrib['buttons']);
             input_buttons_dic = add_to_histogram(game_input_EL.attrib['buttons'], input_buttons_dic);
+          else:
+            if __debug_do_list_controls:
+              print(' no buttons');
+            input_buttons_dic = add_to_histogram('0', input_buttons_dic);
 
           if 'coins' in game_input_EL.attrib:
             if __debug_do_list_controls:
@@ -2136,6 +2231,10 @@ def do_list_controls():
             if __debug_do_list_controls:
               print(' players = ' + game_input_EL.attrib['players']);
             input_players_dic = add_to_histogram(game_input_EL.attrib['players'], input_players_dic);
+          else:
+            if __debug_do_list_controls:
+              print(' no players');
+            input_buttons_dic = add_to_histogram('no players tag', input_buttons_dic);
 
           if 'tilt' in game_input_EL.attrib:
             if __debug_do_list_controls:
@@ -2293,19 +2392,29 @@ def do_checkFilter(filterName):
   mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
 
   # --- Print list in alphabetical order
+  print_info('[Filtered game list]');
+  missing_roms = 0;
+  have_roms = 0;
   for key_main in sorted(mame_filtered_dic):
     romObject = mame_filtered_dic[key_main];
-    print_info("<Game> " + romObject.name);
-    
+
     # --- Check if file exists (maybe it does not exist for No-Intro lists)
     sourceFullFilename = sourceDir + romObject.name + '.zip';
     haveFlag = 'Have ROM';
     if not os.path.isfile(sourceFullFilename):
-      haveFlag = 'Missing ROM ' + romObject.name;
+      missing_roms += 1;
+      haveFlag = 'Missing ROM';
+    else:
+      have_roms += 1;
 
     # --- Print
-    print_info(' ' + haveFlag + '\n' + 
-               ' Description = ' + romObject.description);
+    print_info("<Game> " + romObject.name.ljust(8) + ' - ' + \
+               haveFlag.ljust(11) + ' - ' + romObject.description + ' ');
+
+  print_info('[Report]');
+  print_info('Number of filtered ROMs = ' + str(len(mame_filtered_dic)));
+  print_info('Number of have ROMs = ' + str(have_roms));
+  print_info('Number of missing ROMs = ' + str(missing_roms));
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
