@@ -1006,10 +1006,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     romObject = mame_xml_dic[key];
     if romObject.isdevice:
       filtered_out_games += 1;
-      print_vverb(' FILTERED ' + key);
+      print_vverb('FILTERED ' + key);
       continue;
     mame_filtered_dic[key] = mame_xml_dic[key];
-    print_debug(' Included ' + key);
+    print_debug('Included ' + key);
   print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
              ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
 
@@ -1024,10 +1024,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if not romObject.isclone:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug(' Included ' + key);
+        print_debug('Included ' + key);
       else:
         filtered_out_games += 1;
-        print_vverb(' FILTERED ' + key);
+        print_vverb('FILTERED ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
@@ -1037,43 +1037,43 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
 
   # --- Apply MainFilter: NoSamples
   if 'NoSamples' in filter_config.mainFilter:
-    print_info('>>> Filtering out games with samples');
+    print_info('Filtering out games with samples');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
       romObject = mame_filtered_dic[key];
       if romObject.hasSamples:
         filtered_out_games += 1;
-        print_vverb(' FILTERED ' + key);
+        print_vverb('FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug(' Included ' + key);
+        print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('>>> NOT filtering samples');
+    print_info('NOT filtering samples');
 
   # --- Apply MainFilter: NoMechanical
   if 'NoMechanical' in filter_config.mainFilter:
-    print_info('>>> Filtering out mechanical games');
+    print_info('Filtering out mechanical games');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
       romObject = mame_filtered_dic[key];
       if romObject.mechanical:
         filtered_out_games += 1;
-        print_vverb(' FILTERED ' + key);
+        print_vverb('FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug(' Included ' + key);
+        print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('>>> User wants mechanical games');
+    print_info('User wants mechanical games');
 
   # --- Apply MainFilter: NoNonworking
   # http://www.mamedev.org/source/src/emu/info.c.html
@@ -1088,23 +1088,23 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # /* some minor issues, games marked as status=preliminary */
   # /* don't work or have major emulation problems. */
   if 'NoNonworking' in filter_config.mainFilter:
-    print_info('>>> Filtering out Non-Working games');
+    print_info('Filtering out Non-Working games');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
       romObject = mame_filtered_dic[key];
       if romObject.driver_status == 'preliminary':
         filtered_out_games += 1;
-        print_vverb(' FILTERED ' + key);
+        print_vverb('FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug(' Included ' + key);
+        print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info(' >> User wants Non-Working games');
+    print_info('User wants Non-Working games');
 
   # --- Apply Driver filter
   print_info('[Driver filter]');
@@ -1154,10 +1154,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # If not all items are true, the game is NOT copied (filtered)
       if not all(boolean_list):
         filtered_out_games += 1;
-        print_vverb(' FILTERED ' + key + ' driver ' + driverName);
+        print_vverb('FILTERED ' + key + ' driver ' + driverName);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug(' Included ' + key + ' driver ' + driverName);
+        print_debug('Included ' + key + ' driver ' + driverName);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
@@ -1216,10 +1216,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # If not all items are true, the game is NOT copied (filtered)
       if not all(boolean_list):
         filtered_out_games += 1;
-        print_vverb(' FILTERED ' + key + ' category ' + category_name);
+        print_vverb('FILTERED ' + key + ' category ' + category_name);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug(' Included ' + key + ' category ' + category_name);
+        print_debug('Included ' + key + ' category ' + category_name);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
@@ -1340,13 +1340,19 @@ def create_copy_list(mame_filtered_dic, rom_main_list):
   print_info('[Creating list of ROMs to be copied/updated]');
   copy_list = [];
   num_added_roms = 0;
-  for key_rom_main in rom_main_list:
-    rom_name = key_rom_main;
-    # If the ROM is in the mame filtered list, then add to the copy list
-    if rom_name in mame_filtered_dic:
-      copy_list.append(rom_name);
-      num_added_roms += 1;
-      print_verb(' Added ROM ' + rom_name);
+  if len(rom_main_list) == 0:
+    print_info('WARNING: Not found ANY ROM in sourceDir');
+    print_info('Check your configuration file');
+  else:
+    for key_rom_main in rom_main_list:
+      rom_name = key_rom_main;
+      # If the ROM is in the mame filtered list, then add to the copy list
+      if rom_name in mame_filtered_dic:
+        copy_list.append(rom_name);
+        num_added_roms += 1;
+        print_verb('Added ROM ' + rom_name);
+      else:
+        print_info('Missing ROM ' + rom_name);
   print_info('Added ' + str(num_added_roms) + ' ROMs');
 
   return copy_list;
