@@ -749,6 +749,14 @@ def trim_list(input_list):
 
   return input_list;
 
+def add_to_histogram(key, hist_dic):
+  if key in hist_dic:
+    hist_dic[key] += 1;
+  else:
+    hist_dic[key] = 1;
+
+  return hist_dic;
+
 # Wildcard expansion range
 min_year = 1970;
 max_year = 2012;
@@ -2172,15 +2180,6 @@ def do_list_drivers():
   for key in sorted_histo:
     print_info('{:4d}'.format(key[1]) + '  ' + key[0]);
 
-# --- Unofficial command, not documented yet.
-def add_to_histogram(key, hist_dic):
-  if key in hist_dic:
-    hist_dic[key] += 1;
-  else:
-    hist_dic[key] = 1;
-
-  return hist_dic;
-
 # See http://mamedev.org/source/src/emu/info.c.html, line 784
 #
 __debug_do_list_controls = 0;
@@ -2216,16 +2215,14 @@ def do_list_controls():
       game_attrib = game_EL.attrib;
       
       # - If game is a clone don't include it in the histogram
-      if 'cloneof' not in game_attrib:
+      if 'cloneof' in game_attrib:
         continue;
-
-      if 0:
-        # - If game is mechanical don't include it
-        if 'ismechanical' in game_attrib:
-          continue;
-        # - If game is device don't include it
-        if 'isdevice' in game_attrib:
-          continue;
+      # - If game is mechanical don't include it
+      if 'ismechanical' in game_attrib:
+        continue;
+      # - If game is device don't include it
+      if 'isdevice' in game_attrib:
+        continue;
 
       game_name = game_attrib['name']
       if __debug_do_list_controls:
@@ -2300,11 +2297,11 @@ def do_list_controls():
     print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
   print ' ';
 
-  print_info('[Input - control - ways histogram]');
-  sorted_histo = sorted(input_control_ways_dic.iteritems(), key=operator.itemgetter(1))
-  for key in sorted_histo:
-    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
-  print ' ';
+  # print_info('[Input - control - ways histogram]');
+  # sorted_histo = sorted(input_control_ways_dic.iteritems(), key=operator.itemgetter(1))
+  # for key in sorted_histo:
+  #   print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  # print ' ';
 
   print_info('[Input - control - type histogram]');
   sorted_histo = sorted(input_control_type_dic.iteritems(), key=operator.itemgetter(1))
@@ -2647,6 +2644,14 @@ if updated are needed.
     Reads merged XML database and prints a histogram of the drivers (how many
     games use each driver).
 
+ \033[31m list-controls\033[0m
+    Reads merged XML database and prints a histogram of the game controls:
+    buttons, players and input devices.
+
+ \033[31m list-years\033[0m
+    Reads merged XML database and prints a histogram of the game release year
+   (how many games were released on each year).
+
  \033[31m check-filter <filterName>\033[0m
     Applies filters and checks you source directory for have and missing ROMs.
 
@@ -2709,7 +2714,7 @@ def main(argv):
      action="store_true")
   parser.add_argument("command", \
      help="usage, reduce-XML, merge, list-merged, \
-           list-categories, list-drivers, \
+           list-categories, list-drivers, list-controls, list-years,\
            check-filter, copy, update \
            check-artwork, copy-artwork, update-artwork", nargs = 1)
   parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
@@ -2775,12 +2780,10 @@ def main(argv):
     do_list_drivers();
     sys.exit(0);
 
-  # Unofficial development command
   elif command == 'list-controls':
     do_list_controls();
     sys.exit(0);
 
-  # Unofficial development command
   elif command == 'list-years':
     do_list_years();
     sys.exit(0);
