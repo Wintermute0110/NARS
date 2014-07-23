@@ -1047,11 +1047,11 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   
   # --- Default filters: remove crap
   print_info('<Main filter>');
+  mainF_str_offset = 32;
   # What is "crap"?
   # a) devices <game isdevice="yes" runnable="no"> 
   #    Question: isdevice = yes implies runnable = no? In MAME 0.153b XML yes!
   mame_filtered_dic = {};
-  print_info('Default filter, removing devices');
   filtered_out_games = 0;
   for key in mame_xml_dic:
     romObject = mame_xml_dic[key];
@@ -1061,14 +1061,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       continue;
     mame_filtered_dic[key] = mame_xml_dic[key];
     print_debug('Included ' + key);
-  print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+  print_info('Default filter, removing devices'.ljust(mainF_str_offset) + \
+             ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
              ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
 
   # --- Apply MainFilter: NoClones
   # This is a special filter, and MUST be done first.
   # Also, remove crap like chips, etc.
   if 'NoClones' in filter_config.mainFilter:
-    print_info('Filtering out clones');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1081,14 +1081,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_vverb('FILTERED ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+    print_info('Filtering out clones'.ljust(mainF_str_offset) + \
+               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info('NOT filtering clones');
 
   # --- Apply MainFilter: NoSamples
   if 'NoSamples' in filter_config.mainFilter:
-    print_info('Filtering out games with samples');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1101,14 +1101,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+    print_info('Filtering out samples'.ljust(mainF_str_offset) + \
+               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info('NOT filtering samples');
 
   # --- Apply MainFilter: NoMechanical
   if 'NoMechanical' in filter_config.mainFilter:
-    print_info('Filtering out mechanical games');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1121,14 +1121,14 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+    print_info('Filtering out mechanical games'.ljust(mainF_str_offset) + \
+               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info('User wants mechanical games');
 
   # --- Apply MainFilter: NoBIOS
   if 'NoBIOS' in filter_config.mainFilter:
-    print_info('Filtering out BIOS');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1141,7 +1141,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+    print_info('Filtering out BIOS'.ljust(mainF_str_offset) + \
+               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info('User wants mechanical games');
@@ -1159,7 +1160,6 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # /* some minor issues, games marked as status=preliminary */
   # /* don't work or have major emulation problems. */
   if 'NoNonworking' in filter_config.mainFilter:
-    print_info('Filtering out Non-Working games');
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
@@ -1172,7 +1172,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+    print_info('Filtering out Non-Working games'.ljust(mainF_str_offset) + \
+               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info('User wants Non-Working games');
@@ -1474,15 +1475,14 @@ def create_copy_list(mame_filtered_dic, rom_main_list):
     print_info('WARNING: Not found ANY ROM in sourceDir');
     print_info('Check your configuration file');
   else:
-    for key_rom_main in rom_main_list:
-      rom_name = key_rom_main;
+    for key_rom_name in mame_filtered_dic:
       # If the ROM is in the mame filtered list, then add to the copy list
-      if rom_name in mame_filtered_dic:
-        copy_list.append(rom_name);
+      if key_rom_name in rom_main_list:
+        copy_list.append(key_rom_name);
         num_added_roms += 1;
-        print_verb('Added ROM ' + rom_name);
+        print_verb('Added ROM ' + key_rom_name);
       else:
-        print_info('Missing ROM ' + rom_name);
+        print_info('Missing ROM ' + key_rom_name);
   print_info('Added ' + str(num_added_roms) + ' ROMs');
 
   return copy_list;
@@ -1512,8 +1512,10 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 
   print_info('[Generating NFO files]');
   num_NFO_files = 0;
-  for rom_name in rom_copy_dic:
+  for rom_name in sorted(rom_copy_dic):
     romObj = mame_filtered_dic[rom_name];
+    # DEBUG: dump romObj
+    # print dir(romObj)
     NFO_filename = rom_name + '.nfo';
     NFO_full_filename =  destDir + NFO_filename;
 
@@ -1531,16 +1533,30 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     sub_element.text = 'MAME';
     
     # <year>2000</year>
+    # NOTE: some devices which are included as dependencies do not have
+    # some fields. Write defaults.
     sub_element = ET.SubElement(root_output, 'year');
-    sub_element.text = romObj.year;
+    if hasattr(romObj, 'year'):
+      sub_element.text = romObj.year;
+    else:
+      print 'ROM has no year tag ' + rom_name;
+      sub_element.text = '????';
 
     # <publisher></publisher>
     sub_element = ET.SubElement(root_output, 'publisher');
-    sub_element.text = romObj.manufacturer;
+    if hasattr(romObj, 'manufacturer'):
+      sub_element.text = romObj.manufacturer;
+    else:
+      print 'ROM has no publisher tag ' + rom_name;
+      sub_element.text = 'Unknown';
     
     # <genre>Shooter / Flying Vertical</genre>
     sub_element = ET.SubElement(root_output, 'genre');
-    sub_element.text = romObj.category;
+    if hasattr(romObj, 'category'):
+      sub_element.text = romObj.category;
+    else:
+      print 'ROM has no genre tag ' + rom_name;
+      sub_element.text = 'Unknown';
 
     # <plot></plot>
     # Probably need to merge information from history.dat or mameinfo.dat
@@ -1550,7 +1566,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     # --- Write output file
     rough_string = ET.tostring(root_output, 'utf-8');
     reparsed = minidom.parseString(rough_string);
-    print_verb(' Writing ' + NFO_full_filename);
+    print_verb('Writing ' + NFO_full_filename);
     f = open(NFO_full_filename, "w")
     f.write(reparsed.toprettyxml(indent="  "))
     f.close()
@@ -2720,7 +2736,7 @@ def main(argv):
   # --- Optional arguments
   global __prog_option_log, __prog_option_log_filename;
   global __prog_option_dry_run;
-  global __prog_option_cleanROMs;
+  global __prog_option_clean_ROMs;
   global __prog_option_generate_NFO;
   global __prog_option_clean_NFO;
   global __prog_option_clean_ArtWork;
@@ -2736,7 +2752,7 @@ def main(argv):
     __prog_option_log = 1;
     __prog_option_log_filename = args.logto[0];
   if args.dryRun:      __prog_option_dry_run = 1;
-  if args.cleanROMs:   __prog_option_cleanROMs = 1;
+  if args.cleanROMs:   __prog_option_clean_ROMs = 1;
   if args.generateNFO: __prog_option_generate_NFO = 1;
   if args.cleanNFO:     __prog_option_clean_NFO = 1;
   if args.cleanArtWork: __prog_option_clean_ArtWork = 1;
