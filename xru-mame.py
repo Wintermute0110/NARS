@@ -621,9 +621,11 @@ def parse_File_Config():
         filter_class.driver = None;
         filter_class.machineType = None;
         filter_class.categories = None;
+        filter_class.controls = None;
+        filter_class.buttons_exp = None;
+        filter_class.players_exp = None;
         filter_class.year_exp = None;
-        filter_class.buttons = None;
-        filter_class.players = None;
+        filter_class.year_YearExpansion = 0;
         sourceDirFound = 0;
         destDirFound = 0;
         # - Initialise variables for the ConfigFileFilter object
@@ -669,7 +671,7 @@ def parse_File_Config():
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsDestDir = tempDir;
-            
+
           elif filter_child.tag == 'MainFilter':
             print_debug(' MainFilter = ' + filter_child.text);
             text_string = filter_child.text;
@@ -691,6 +693,31 @@ def parse_File_Config():
             else:
               filter_class.categories = '';
 
+          elif filter_child.tag == 'Controls':
+            text_string = filter_child.text;
+            if text_string != None:
+              print_debug(' Controls = ' + filter_child.text);
+              list = text_string.split(",");
+              filter_class.controls = trim_list(list);
+            else:
+              filter_class.controls = '';
+
+          elif filter_child.tag == 'Buttons':
+            text_string = filter_child.text;
+            if text_string != None:
+              print_debug(' Buttons = ' + filter_child.text);
+              filter_class.buttons_exp = text_string;
+            else:
+              filter_class.buttons_exp = '';
+
+          elif filter_child.tag == 'Players':
+            text_string = filter_child.text;
+            if text_string != None:
+              print_debug(' Players = ' + filter_child.text);
+              filter_class.players_exp = text_string;
+            else:
+              filter_class.players_exp = '';
+
           elif filter_child.tag == 'Years':
             text_string = filter_child.text;
             if text_string != None:
@@ -699,21 +726,18 @@ def parse_File_Config():
             else:
               filter_class.year_exp = '';
 
-          elif filter_child.tag == 'Buttons':
+          elif filter_child.tag == 'YearsOpts':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Buttons = ' + filter_child.text);
-              filter_class.buttons = text_string;
-            else:
-              filter_class.buttons = '';
-
-          elif filter_child.tag == 'Players':
-            text_string = filter_child.text;
-            if text_string != None:
-              print_debug(' Players = ' + filter_child.text);
-              filter_class.players = text_string;
-            else:
-              filter_class.players = '';
+              print_debug(' YearsOpts = ' + filter_child.text);
+              yearOpts_list = trim_list(text_string.split(","));
+              for option in yearOpts_list:
+                # Only one option supported at the moment
+                if option == 'YearExpansion':
+                  filter_class.year_YearExpansion = 1;
+                else:
+                  print_error('Unknown option ' + option + 'inside <YearsOpts>');
+                  sys.exit(10);
 
           else:
             print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
@@ -775,14 +799,14 @@ max_year = 2012;
 def trim_year_string(raw_year_text):
   year_text = raw_year_text;
 
-  # --- Remove quotation marks from some years
+  # --- Remove quotation marks at the end for some games
   if len(year_text) == 5 and year_text[4] == '?':
-    # About slicing, see this page. Does not work like C!
+    # About array slicing, see this page. Does not work like C!
     # http://stackoverflow.com/questions/509211/pythons-slice-notation
     year_text = year_text[0:4];
 
   # --- Expand wildcards to numerical lists. Currently there are 6 cases
-  # ????, 19??, 197?, 198?, 199?, 200?
+  # Basic expansion: 197?, 198?, 199?, 200?
   if year_text == '197?':
     year_list = [str(x) for x in range(1970, 1979)];
   elif year_text == '198?':
@@ -791,13 +815,38 @@ def trim_year_string(raw_year_text):
     year_list = [str(x) for x in range(1990, 1999)];
   elif year_text == '200?':
     year_list = [str(x) for x in range(2000, 2009)];
+  # Full expansion: ????, 19??
   elif year_text == '19??' or year_text == '????':
     year_list = [str(x) for x in range(min_year, max_year)];
+  # No expansion
   else:
     year_list = [];
     year_list.append(year_text);
   
   return year_list;
+
+# Game year information:
+#  Accepts a string as input
+#  Returns:
+#   1 standard game or game with not-verified year (example 1998?)
+#   2 game that needs decade expansion (examples 198?, 199?) or
+#     full expansion (examples 19??, ????)
+def get_game_year_information(year_srt):
+  # --- Remove quotation marks at the end for some games
+  if len(year_srt) == 5 and year_srt[4] == '?':
+    year_srt = year_srt[0:4];
+
+  # --- Get game information
+  game_info = 1;
+  if year_srt == '197?' or year_srt == '198?' or \
+     year_srt == '199?' or year_srt == '200?' or \
+     year_srt == '19??' or year_srt == '????':
+    game_info = 2;
+  elif not year_srt.isdigit():
+    print_error('Unknown MAME year string "' + year_srt + '"');
+    sys.exit(10);
+
+  return game_info;
 
 def parse_catver_ini():
   "Parses Catver.ini and returns a ..."
@@ -973,7 +1022,7 @@ def parse_MAME_merged_XML():
           driver_attrib = child_game.attrib;
 
           # Driver status is good, imperfect, preliminary
-          # prelimiray games don't work or have major emulation problems
+          # preliminary games don't work or have major emulation problems
           # imperfect games are emulated with some minor issues
           # good games are perfectly emulated
           if 'status' in driver_attrib:
@@ -1010,7 +1059,7 @@ def parse_MAME_merged_XML():
           # NOTE: a game may have more than one control (joystick, dial, ...)
           romObject.control_type = [];
           for control in child_game:
-            if control.tag == 'input':
+            if control.tag == 'control':
               if 'type' in control.attrib:
                 romObject.control_type.append(control.attrib['type']);
 
@@ -1190,7 +1239,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       if __debug_apply_MAME_filters_Driver_tag:
         print 'Driver name = ' + driverName;
         print 'Filter list = ', filter_config.driver;
-      # - Iterate thorugh the list of expressions of the filter
+      # - Iterate through the list of expressions of the filter
       # - Example: filter_config.driver = ['not cps1', 'not cps2', 'not cps3']
       boolean_list = [];
       for filter_str in filter_config.driver:
@@ -1250,7 +1299,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       if __debug_apply_MAME_filters_Category_tag:
         print '[DEBUG] Category name = ' + category_name;
         print '[DEBUG] Filter list = ', filter_config.categories;
-      # - Iterate thorugh the list of expressions of the filter
+      # - Iterate through the list of expressions of the filter
       boolean_list = [];
       for filter_str in filter_config.categories:
         fsub_list = filter_str.split(" ");
@@ -1297,6 +1346,38 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   else:
     print_info('User wants all categories');
 
+  # --- Apply Controls filter
+  print_info('<Controls filter>');
+  __debug_apply_MAME_filters_Controls_tag = 0;
+  if hasattr(filter_config, 'controls') and \
+             filter_config.controls is not None and \
+             filter_config.controls is not '':
+    controls_type_filter_list = filter_config.controls;
+    filtered_out_games = 0;
+    mame_filtered_dic_temp = {};
+    for key in sorted(mame_filtered_dic):
+      # --- Some games may have two controls, so controls_type_list is a list
+      romObject = mame_filtered_dic[key];
+      controls_type_list = romObject.control_type;
+      if __debug_apply_MAME_filters_Controls_tag:
+        print '[DEBUG] Game = ' + key;
+        print '[DEBUG] Control type = ' + ", ".join(sorted(controls_type_list));
+        print '[DEBUG] Filter = ', ", ".join(controls_type_filter_list);
+      boolean_list = [1];
+      if not all(boolean_list):
+        filtered_out_games += 1;
+        print_vverb('FILTERED ' + key + ' category ' + ','.join(controls_type_list));
+      else:
+        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug('Included ' + key + ' category ' + '.'.join(controls_type_list));
+    # --- Update game list
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+  else:
+    print_info('User wants all controls');
+
   # --- Apply Years filter
   print_info('<Year filter>');
   __debug_apply_MAME_filters_years_tag = 0;
@@ -1306,18 +1387,33 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     year_filter_expression = filter_config.year_exp;
-    for key in mame_filtered_dic:
+    year_YearExpansion = filter_config.year_YearExpansion;
+    if year_YearExpansion:
+      print_info('Year expansion activated')
+    else:
+      print_info('Year expansion deactivated')
+    for key in sorted(mame_filtered_dic):
       romObject = mame_filtered_dic[key];
       # year is a string, convert to int
       year_srt = romObject.year;
-      # Remove quotation marks from some years
-      # Expand wildcards to numerical lists. Currently there are 6 cases
-      year_list = trim_year_string(year_srt);
-      if len(year_list) == 1:
+      
+      # Game year information:
+      #  1 standard game or game with not-verified year (example 1998?)
+      #  2 game that needs decade expansion (examples 198?, 199?) or
+      #    full expansion (examples 19??, ????)
+      game_info = get_game_year_information(year_srt);
+
+      # Game is standard: do filtering
+      if game_info == 1:
+        # Convert number string to int (supports games like 1997?)
+        year_list = trim_year_string(year_srt);
+        if len(year_list) != 1:
+          print_error('Logical error filtering year (standard year)');
+          sys.exit(10);
         year = int(year_list[0]);
         if __debug_apply_MAME_filters_years_tag:
-          print '[DEBUG] Game ' + key + ' year value = ' + str(year);
-          print '[DEBUG] Years ' + key + ' filter expression = "' + year_filter_expression + '"';
+          print '[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
+                ' / Filter = "' + year_filter_expression + '"';
         boolean_result = eval(year_filter_expression, globals(), locals());
         # If not all items are true, the game is NOT copied (filtered)
         if not boolean_result:
@@ -1326,24 +1422,38 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         else:
           mame_filtered_dic_temp[key] = mame_filtered_dic[key];
           print_debug('Included ' + key + ' year ' + str(year));
-      else:
-        boolean_list = [];
-        for year_str in year_list:
-          year = int(year_str);
-          if __debug_apply_MAME_filters_years_tag:
-            print '[DEBUG] Game ' + key + ' year value = ' + str(year);
-            print '[DEBUG] Years ' + key + ' filter expression = "' + year_filter_expression + '"';
-          boolean_result = eval(year_filter_expression, globals(), locals());
-          boolean_list.append(boolean_result);
-        # Knowing the boolean results for the wildcard expansion, check if game
-        # should be included or not.
-        if any(boolean_list):
-          mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-          print_debug('Included ' + key + ' year ' + str(year));
+        
+      # Game needs expansion. If user activated this option expand wildcars and
+      # then do filtering. If option not activated, discard game
+      elif game_info == 2:
+        if year_YearExpansion:
+          year_list = trim_year_string(year_srt);
+          if len(year_list) < 2:
+            print_error('Logical error filtering year (expanded year)');
+            sys.exit(10);
+          boolean_list = [];
+          for year_str in year_list:
+            year = int(year_str);
+            if __debug_apply_MAME_filters_years_tag:
+              print '[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
+                    ' / Filter = "' + year_filter_expression + '"';
+            boolean_result = eval(year_filter_expression, globals(), locals());
+            boolean_list.append(boolean_result);
+          # Knowing the boolean results for the wildcard expansion, check if game
+          # should be included or not.
+          if any(boolean_list):
+            mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+            print_debug('Included ' + key + ' year ' + str(year));
+          else:
+            filtered_out_games += 1;
+            print_vverb('FILTERED ' + key + ' year ' + str(year));
         else:
           filtered_out_games += 1;
           print_vverb('FILTERED ' + key + ' year ' + str(year));
-
+      else:
+        print_error('Wrong result returned by get_game_year_information() = ' + str(game_info));
+        sys.exit(10);
+    # --- Update list of filtered games
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
@@ -1355,13 +1465,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   print_info('<Buttons filter>');
   __debug_apply_MAME_filters_Buttons_tag = 0;
   if hasattr(filter_config, 'buttons') and \
-             filter_config.buttons is not None and \
-             filter_config.buttons is not '':
+             filter_config.buttons_exp is not None and \
+             filter_config.buttons_exp is not '':
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
       romObject = mame_filtered_dic[key];
-      button_filter_expression = filter_config.buttons;
+      button_filter_expression = filter_config.buttons_exp;
       buttons_str = romObject.buttons;
       buttons = int(buttons_str);
       if __debug_apply_MAME_filters_Buttons_tag:
@@ -1387,13 +1497,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   print_info('<Players filter>');
   __debug_apply_MAME_filters_Players_tag = 0;
   if hasattr(filter_config, 'players') and \
-             filter_config.players is not None and \
-             filter_config.players is not '':
+             filter_config.players_exp is not None and \
+             filter_config.players_exp is not '':
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     for key in mame_filtered_dic:
       romObject = mame_filtered_dic[key];
-      players_filter_expression = filter_config.players;
+      players_filter_expression = filter_config.players_exp;
       players_str = romObject.players;
       players = int(players_str);
       if __debug_apply_MAME_filters_Players_tag:
@@ -2139,6 +2249,8 @@ def do_list_drivers():
 
   print_info('[Listing MAME drivers]');
   print_info('NOTE: clones are not included');
+  print_info('NOTE: mechanical are not included');
+  print_info('NOTE: devices are not included');
 
   filename = configuration.MergedInfo_XML;
   print "Parsing merged MAME XML file '" + filename + "'... ",;
@@ -2159,6 +2271,13 @@ def do_list_drivers():
       # If game is a clone don't include it in the histogram
       if 'cloneof' in game_attrib:
         continue;
+      # - If game is mechanical don't include it
+      if 'ismechanical' in game_attrib:
+        continue;
+      # - If game is device don't include it
+      if 'isdevice' in game_attrib:
+        continue;
+
       # --- Histogram
       if 'sourcefile' in game_attrib:
         driver_name = game_attrib['sourcefile'];
@@ -2201,6 +2320,7 @@ def do_list_controls():
   input_buttons_dic = {};
   input_players_dic = {};
   input_control_type_dic = {};
+  input_control_type_join_dic = {};
   input_control_ways_dic = {};
 
   # --- Do histogram
@@ -2258,14 +2378,17 @@ def do_list_controls():
 
           # --- Iterate children
           control_child_found = 0;
+          control_type_list = [];
           for child in game_input_EL:
             control_child_found = 1;
             if __debug_do_list_controls:
               print ' Children = ' + child.tag;
+
             if 'type' in child.attrib:
               if __debug_do_list_controls:
                 print('  type = ' + child.attrib['type']);
               input_control_type_dic = add_to_histogram(child.attrib['type'], input_control_type_dic);
+              control_type_list.append(child.attrib['type']);
 
             if 'ways' in child.attrib:
               if __debug_do_list_controls:
@@ -2280,13 +2403,23 @@ def do_list_controls():
               if __debug_do_list_controls:
                 print('  ways3 = ' + child.attrib['ways3']);
 
+          text_not_found = 'ButtonsOnly';
+          if len(control_type_list) < 1:
+            control_type_list.append(text_not_found);
+          input_control_type_join_dic = add_to_histogram(', '.join(sorted(control_type_list)), input_control_type_join_dic);
+
           # --- If no additional controls, only buttons???
-          text_not_found = 'buttonsOnly';
           if not control_child_found:
             if text_not_found in input_control_type_dic:
               input_control_type_dic[text_not_found] += 1;
             else:                          
               input_control_type_dic[text_not_found] = 1;
+
+  print_info('[Input - control - type histogram (per game)]');
+  sorted_histo = sorted(input_control_type_join_dic.iteritems(), key=operator.itemgetter(1))
+  for key in sorted_histo:
+    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  print ' ';
 
   print_info('[Input - buttons histogram]');
   sorted_histo = sorted(input_buttons_dic.iteritems(), key=operator.itemgetter(1))
