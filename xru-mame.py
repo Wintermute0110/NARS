@@ -609,8 +609,11 @@ def parse_File_Config():
         filter_class = ConfigFileFilter();
         filter_class.name = root_child.attrib['name'];
         print_debug(' name = ' + filter_class.name);
+
         # --- By default things are None, which means user didn't
         #     wrote them in config file.
+        # NOTE: if we have the tag but no text is written, then 
+        #       filter_child.text will be None. Take this into account.
         filter_class.sourceDir = None;
         filter_class.destDir = None;
         filter_class.fanartSourceDir = None;
@@ -628,10 +631,6 @@ def parse_File_Config():
         filter_class.year_YearExpansion = 0;
         sourceDirFound = 0;
         destDirFound = 0;
-        # - Initialise variables for the ConfigFileFilter object
-        #   to avoid None objects later.
-        # NOTE: if we have the tag but no text is written, then 
-        #       filter_child.text will be None. Take this into account.
         for filter_child in root_child:
           if filter_child.tag == 'ROMsSource':
             print_debug(' ROMsSource = ' + filter_child.text);
@@ -673,30 +672,33 @@ def parse_File_Config():
             filter_class.thumbsDestDir = tempDir;
 
           elif filter_child.tag == 'MainFilter':
-            print_debug(' MainFilter = ' + filter_child.text);
             text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.mainFilter = trim_list(list);
+            if text_string != None:
+              print_debug(' MainFilter = ' + text_string);
+              filter_class.mainFilter = trim_list(text_string.split(","));
+            else:
+              filter_class.mainFilter = '';
 
           elif filter_child.tag == 'Driver':
-            print_debug(' Driver = ' + filter_child.text);
             text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.driver = trim_list(list);
+            if text_string != None:
+              print_debug(' Driver = ' + text_string);
+              filter_class.driver = trim_list(text_string.split(","));
+            else:
+              filter_class.driver = '';
 
           elif filter_child.tag == 'Categories':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Categories = ' + filter_child.text);
-              list = text_string.split(",");
-              filter_class.categories = trim_list(list);
+              print_debug(' Categories = ' + text_string);
+              filter_class.categories = trim_list(text_string.split(","));
             else:
               filter_class.categories = '';
 
           elif filter_child.tag == 'Controls':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Controls = ' + filter_child.text);
+              print_debug(' Controls = ' + text_string);
               filter_class.controls = text_string;
             else:
               filter_class.controls = '';
@@ -704,7 +706,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Buttons':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Buttons = ' + filter_child.text);
+              print_debug(' Buttons = ' + text_string);
               filter_class.buttons_exp = text_string;
             else:
               filter_class.buttons_exp = '';
@@ -712,7 +714,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Players':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Players = ' + filter_child.text);
+              print_debug(' Players = ' + text_string);
               filter_class.players_exp = text_string;
             else:
               filter_class.players_exp = '';
@@ -720,7 +722,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Years':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Years = ' + filter_child.text);
+              print_debug(' Years = ' + text_string);
               filter_class.year_exp = text_string;
             else:
               filter_class.year_exp = '';
@@ -728,7 +730,7 @@ def parse_File_Config():
           elif filter_child.tag == 'YearsOpts':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' YearsOpts = ' + filter_child.text);
+              print_debug(' YearsOpts = ' + text_string);
               yearOpts_list = trim_list(text_string.split(","));
               for option in yearOpts_list:
                 # Only one option supported at the moment
@@ -1057,7 +1059,7 @@ def parse_MAME_merged_XML():
     tree = ET.parse(filename);
   except IOError:
     print '\n';
-    print_error('[ERROR] cannot find file ' + input_filename);
+    print_error('[ERROR] cannot find file ' + filename);
     sys.exit(10);
   print ' done';
 
@@ -1278,7 +1280,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
                ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('NOT filtering clones');
+    print_info('User wants clone ROMs');
 
   # --- Apply MainFilter: NoSamples
   if 'NoSamples' in filter_config.mainFilter:
@@ -1298,7 +1300,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
                ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('NOT filtering samples');
+    print_info('User wants games with samples');
 
   # --- Apply MainFilter: NoMechanical
   if 'NoMechanical' in filter_config.mainFilter:
@@ -1338,7 +1340,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
                ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants mechanical games');
+    print_info('User wants BIOS ROMs');
 
   # --- Apply MainFilter: NoNonworking
   # http://www.mamedev.org/source/src/emu/info.c.html
