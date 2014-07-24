@@ -30,7 +30,7 @@
        cps3      Capcom CPS3
     -->
   <!-- NOTE: this filter implies OR conditions between filtering options -->
-  <!-- Example: [is] not cps1 OR [is] not cps2 -->
+  <!-- Example: not cps1, not cps2 -->
   <Driver>not cps1</Driver>
 
   <!-- Categories -->
@@ -38,26 +38,36 @@
        Mature, Casino, PinMAME, Fruit Machines
     -->
   <!-- NOTE: this filter implies OR conditions between filtering options -->
-  <!-- Example: [is] not Mature OR [is] not Casino -->
+  <!-- Example: not Mature, not Casino -->
   <Categories>not Mature, not Casino, not PinMAME, not Fruit Machines</Categories>
 
   <!-- Controls -->
-  <!-- This is a Python expression. < must be converted in &lt; -->
+  <!-- Examples: 
+        Joy or OnlyButtons           - Include if Joy or OnlyButtons and
+                                       maybe other controls.
+        Joy and not Mahjong          - Include if Joy and maybe other controls, 
+                                       but not Mahjong.
+        not Mahjong and not Hanafuda - Exclude if Mahjong or Hanafuda.
+        not (Mahjong or Hanafuda)    - Same as above
+    -->
+  <Controls>not Mahjong or not Gambling or not Hanafuda</Controls>
+
+  <!-- Buttons is a Python expression. < must be converted in &lt; -->
   <!-- Examples: 
         buttons == 1 and buttons == 2   - Only 1 or 2 buttons
         buttons &lt;= 4                 - 4 buttons or less
     -->
-  <Buttons>buttons &lt;= 4</Buttons>
+  <Buttons>buttons == 1 or buttons == 2</Buttons>
   
-  <!-- This is a Python expression. < must be converted in &lt; -->
+  <!-- Players is a Python expression. < must be converted in &lt; -->
   <!-- Examples: 
         players == 1      - Only 1 player
         players &lt;= 2   - 2 players or less
     -->
-  <Players>players &lt;= 2</Players>
-  
+  <Players>players == 1 or players == 2</Players>
+
   <!-- Years -->
-  <!-- This is a Python expression. < must be converted in &lt; -->
+  <!-- Years is a Python expression. < must be converted in &lt; -->
   <!-- Examples: 
         year == 1991                      - Only games release on 1991
         year >= 1980 and year &lt; 1990   - All games released in the 1980's
@@ -67,7 +77,7 @@
   <!-- By default years like 19?? or 198? WILL NOT be expanded. Most games with 
        such partially known dates are bootlegs or low quality games. Specify 
        this option to expand game dates and not filter out games with invalid 
-       dates (you probably do not want this, so comment it out).
+       dates (you probably do not want this, so comment it in).
     -->
   <YearsOpts>YearExpansion</YearsOpts>
 </MAMEFilter>
