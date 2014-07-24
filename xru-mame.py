@@ -697,8 +697,7 @@ def parse_File_Config():
             text_string = filter_child.text;
             if text_string != None:
               print_debug(' Controls = ' + filter_child.text);
-              list = text_string.split(",");
-              filter_class.controls = trim_list(list);
+              filter_class.controls = text_string;
             else:
               filter_class.controls = '';
 
@@ -767,6 +766,148 @@ def get_Filter_Config(filterName):
   
   print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
   sys.exit(20);
+
+# ----------------------------------------------------------------------------
+# Token objects
+# ----------------------------------------------------------------------------
+class literal_token:
+  def __init__(self, value):
+    self.value = value
+    self.id = "STRING"
+  def nud(self):
+    return self
+  # --- Actual implementation
+  def exec_token(self):
+    global parser_search_list;
+
+    return self.value in parser_search_list;
+
+def advance(id = None):
+  global token
+  if id and token.id != id:
+    raise SyntaxError("Expected %r" % id)
+  token = next()
+
+class operator_open_par_token:
+  lbp = 0
+  def __init__(self):
+    self.id = "OP ("
+  def nud(self):
+    expr = expression()
+    advance("OP )")
+    return expr
+
+class operator_close_par_token:
+  lbp = 0
+  def __init__(self):
+    self.id = "OP )"
+
+class operator_not_token:
+  lbp = 50
+  def __init__(self):
+    self.id = "OP NOT";
+  def nud(self):
+    self.first = expression(50)
+    return self
+  # --- Actual implementation
+  def exec_token(self):
+    return not self.first.exec_token();
+
+class operator_and_token:
+  lbp = 10
+  def __init__(self):
+    self.id = "OP AND";
+  def led(self, left):
+    self.first = left
+    self.second = expression(10)
+    return self
+  # --- Actual implementation
+  def exec_token(self):
+    return self.first.exec_token() and self.second.exec_token();
+
+class operator_or_token:
+  lbp = 10
+  def __init__(self):
+    self.id = "OP OR";
+  def led(self, left):
+    self.first = left
+    self.second = expression(10)
+    return self
+  # --- Actual implementation
+  def exec_token(self):
+    return self.first.exec_token() or self.second.exec_token();
+
+class end_token:
+  lbp = 0
+  def __init__(self):
+    self.id = "END TOKEN";
+
+# ----------------------------------------------------------------------------
+# Tokenizer
+# ----------------------------------------------------------------------------
+# jeffknupp.com/blog/2013/04/07/improve-your-python-yield-and-generators-explained/
+#
+# - If the body of the function contains a 'yield', then the function becames
+#   a generator function. Generator functions create generator iterators, also
+#   named "generators". Just remember that a generator is a special type of 
+#   iterator.
+#   To be considered an iterator, generators must define a few methods, one of 
+#   which is __next__(). To get the next value from a generator, we use the 
+#   same built-in function as for iterators: next().
+def tokenize(program):
+  # \s* -> Matches any number of blanks [ \t\n\r\f\v].
+  # (?:...) -> A non-capturing version of regular parentheses.
+  # \b -> Matches the empty string, but only at the beginning or end of a word.
+  for operator, string in re.findall("\s*(?:(and|or|not|\(|\))|(\w+))", program):
+    # print 'Tokenize >> Program -> "' + program + \
+    #       '", String -> "' + string + '", Operator -> "' + operator + '"\n';
+    if string:
+      yield literal_token(string)
+    elif operator == "and":
+      yield operator_and_token()
+    elif operator == "or":
+      yield operator_or_token()
+    elif operator == "not":
+      yield operator_not_token()
+    elif operator == "(":
+      yield operator_open_par_token()
+    elif operator == ")":
+      yield operator_close_par_token()
+    else:
+      raise SyntaxError("Unknown operator: %r" % operator)
+  yield end_token()
+
+# ----------------------------------------------------------------------------
+# Parser
+# Inspired by http://effbot.org/zone/simple-top-down-parsing.htm
+# ----------------------------------------------------------------------------
+def expression(rbp = 0):
+  global token
+  t = token
+  token = next()
+  left = t.nud()
+  while rbp < token.lbp:
+    t = token
+    token = next()
+    left = t.led(left)
+  return left
+
+def expression_exec(rbp = 0):
+  global token
+  t = token
+  token = next()
+  left = t.nud()
+  while rbp < token.lbp:
+    t = token
+    token = next()
+    left = t.led(left)
+  return left.exec_token()
+
+def parse_exec(program):
+  global token, next
+  next = tokenize(program).next
+  token = next()
+  return expression_exec()
 
 # -----------------------------------------------------------------------------
 # Misc functions
@@ -1061,7 +1202,10 @@ def parse_MAME_merged_XML():
           for control in child_game:
             if control.tag == 'control':
               if 'type' in control.attrib:
-                romObject.control_type.append(control.attrib['type']);
+                romObject.control_type.append(control.attrib['type'].title());
+
+          if len(romObject.control_type) < 1:
+            romObject.control_type.append('ButtonsOnly');
 
         # - Copy information to generate NFO files
         elif child_game.tag == 'description':
@@ -1274,10 +1418,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # If not all items are true, the game is NOT copied (filtered)
       if not all(boolean_list):
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key + ' driver ' + driverName);
+        print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + driverName);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key + ' driver ' + driverName);
+        print_debug('Included ' + key.ljust(8) + ' driver ' + driverName);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
@@ -1335,10 +1479,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # If not all items are true, the game is NOT copied (filtered)
       if not all(boolean_list):
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key + ' category ' + category_name);
+        print_vverb('FILTERED ' + key.ljust(8) + ' category ' + category_name);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key + ' category ' + category_name);
+        print_debug('Included ' + key.ljust(8) + ' category ' + category_name);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
@@ -1352,24 +1496,33 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   if hasattr(filter_config, 'controls') and \
              filter_config.controls is not None and \
              filter_config.controls is not '':
-    controls_type_filter_list = filter_config.controls;
+    controls_type_filter_expression = filter_config.controls;
     filtered_out_games = 0;
     mame_filtered_dic_temp = {};
+    global parser_search_list; # Parser search list
     for key in sorted(mame_filtered_dic):
       # --- Some games may have two controls, so controls_type_list is a list
       romObject = mame_filtered_dic[key];
       controls_type_list = romObject.control_type;
       if __debug_apply_MAME_filters_Controls_tag:
-        print '[DEBUG] Game = ' + key;
-        print '[DEBUG] Control type = ' + ", ".join(sorted(controls_type_list));
-        print '[DEBUG] Filter = ', ", ".join(controls_type_filter_list);
-      boolean_list = [1];
-      if not all(boolean_list):
+        print '[DEBUG] ----- Game = ' + key + ' -----';
+        print '[DEBUG] Control type = ', sorted(controls_type_list);
+        print '[DEBUG] Filter = "' + controls_type_filter_expression + '"';
+
+      # --- Update search variable
+      parser_search_list = controls_type_list;
+
+      # --- Call parser to evaluate expression
+      boolean_result = parse_exec(controls_type_filter_expression);
+
+      # --- Filter ROM or not
+      if not boolean_result:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key + ' category ' + ','.join(controls_type_list));
+        print_vverb('FILTERED ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key + ' category ' + '.'.join(controls_type_list));
+        print_debug('Included ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
+
     # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
@@ -1418,10 +1571,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         # If not all items are true, the game is NOT copied (filtered)
         if not boolean_result:
           filtered_out_games += 1;
-          print_vverb('FILTERED ' + key + ' year ' + str(year));
+          print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
         else:
           mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-          print_debug('Included ' + key + ' year ' + str(year));
+          print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
         
       # Game needs expansion. If user activated this option expand wildcars and
       # then do filtering. If option not activated, discard game
@@ -1443,13 +1596,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
           # should be included or not.
           if any(boolean_list):
             mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-            print_debug('Included ' + key + ' year ' + str(year));
+            print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
           else:
             filtered_out_games += 1;
-            print_vverb('FILTERED ' + key + ' year ' + str(year));
+            print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
         else:
           filtered_out_games += 1;
-          print_vverb('FILTERED ' + key + ' year ' + str(year));
+          print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
       else:
         print_error('Wrong result returned by get_game_year_information() = ' + str(game_info));
         sys.exit(10);
@@ -2387,7 +2540,7 @@ def do_list_controls():
             if 'type' in child.attrib:
               if __debug_do_list_controls:
                 print('  type = ' + child.attrib['type']);
-              input_control_type_dic = add_to_histogram(child.attrib['type'], input_control_type_dic);
+              input_control_type_dic = add_to_histogram(child.attrib['type'].title(), input_control_type_dic);
               control_type_list.append(child.attrib['type']);
 
             if 'ways' in child.attrib:
