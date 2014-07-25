@@ -2263,19 +2263,16 @@ def do_list_merged():
 
       # Game attributes
       if 'sourcefile' in game_attrib:
-        print_info('|-  driver = ' + game_attrib['sourcefile']);
-
+        print_info('|-- driver = ' + game_attrib['sourcefile']);
       if 'sampleof' in game_attrib:
         num_samples += 1;
-        print_info('|-  sampleof = ' + game_attrib['sampleof']);
-
+        print_info('|-- sampleof = ' + game_attrib['sampleof']);
       if 'cloneof' in game_attrib:
         num_clones += 1;
-        print_info('|-  cloneof = ' + game_attrib['cloneof']);
-
+        print_info('|-- cloneof = ' + game_attrib['cloneof']);
       if 'isdevice' in game_attrib:
         num_devices += 1;
-        print_info('|-  isdevice = ' + game_attrib['isdevice']);
+        print_info('|-- isdevice = ' + game_attrib['isdevice']);
 
       # Iterate through the children of a game
       for game_child in game_EL:
