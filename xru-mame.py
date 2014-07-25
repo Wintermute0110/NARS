@@ -683,7 +683,7 @@ def parse_File_Config():
             text_string = filter_child.text;
             if text_string != None:
               print_debug(' Driver = ' + text_string);
-              filter_class.driver = trim_list(text_string.split(","));
+              filter_class.driver = text_string;
             else:
               filter_class.driver = '';
 
@@ -691,7 +691,7 @@ def parse_File_Config():
             text_string = filter_child.text;
             if text_string != None:
               print_debug(' Categories = ' + text_string);
-              filter_class.categories = trim_list(text_string.split(","));
+              filter_class.categories = text_string;
             else:
               filter_class.categories = '';
 
@@ -860,7 +860,7 @@ def tokenize(program):
   # \s* -> Matches any number of blanks [ \t\n\r\f\v].
   # (?:...) -> A non-capturing version of regular parentheses.
   # \b -> Matches the empty string, but only at the beginning or end of a word.
-  for operator, string in re.findall("\s*(?:(and|or|not|\(|\))|(\w+))", program):
+  for operator, string in re.findall("\s*(?:(and|or|not|\(|\))|([\w_]+))", program):
     # print 'Tokenize >> Program -> "' + program + \
     #       '", String -> "' + string + '", Operator -> "' + operator + '"\n';
     if string:
@@ -965,7 +965,7 @@ def trim_year_string(raw_year_text):
   else:
     year_list = [];
     year_list.append(year_text);
-  
+
   return year_list;
 
 # Game year information:
@@ -991,9 +991,41 @@ def get_game_year_information(year_srt):
 
   return game_info;
 
+def fix_category_name(main_category, category):
+  # -Rename some categories
+  final_category = main_category;
+  if category == 'System / BIOS':
+    final_category = 'BIOS';
+  elif main_category == 'Electromechanical - PinMAME':
+    final_category = 'PinMAME';
+  elif main_category == 'Ball & Paddle':
+    final_category = 'Ball_and_Paddle';
+  elif main_category == 'Misc.':
+    final_category = 'Misc';
+  elif main_category == 'Mini-Games':
+    final_category = 'Mini_Games';
+  elif main_category == 'Fruit Machines':
+    final_category = 'Fruit_Machines';
+  elif main_category == 'Not Classified':
+    final_category = 'Not_Classified';
+
+  # - If there is *Mature* in any category or subcategory, then
+  #   the game belongs to the Mature category
+  if category.find('*Mature*') >= 0:
+    final_category = 'Mature';
+
+  # Regular expression to catch ilegal characters in categories
+  # that may make the categories filter parser fail.
+  result = re.search('[^\w_]+', final_category);
+  if result is not None:
+    print_error('Ilegal character found in category "' + final_category + '"');
+    sys.exit(10);
+
+  return final_category
+
 def parse_catver_ini():
   "Parses Catver.ini and returns a ..."
-  
+
   # --- Parse Catver.ini
   # --- Create a histogram with the categories
   print_info('[Parsing Catver.ini]');
@@ -1024,19 +1056,7 @@ def parse_catver_ini():
         second_category = sub_categories[0].strip();
 
         # NOTE: Only use the main category for filtering.
-        # -Rename some categories
-        final_category = main_category;
-        if category == 'System / BIOS':
-          final_category = 'BIOS';
-        elif main_category == 'Electromechanical - PinMAME':
-          final_category = 'PinMAME';
-        elif main_category == 'Ball & Paddle':
-          final_category = 'Ball and Paddle';
-
-        # - If there is *Mature* in any category or subcategory, then
-        #   the game belongs to the Mature category
-        if category.find('*Mature*') >= 0:
-          final_category = 'Mature';
+        final_category = fix_category_name(main_category, category);
 
         # - Create final categories dictionary
         final_categories_dic[game_name] = final_category;
@@ -1239,7 +1259,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   "Apply filters to main parent/clone dictionary"
   print_info('[Applying MAME filters]');
   print_info('NOTE: -vv if you want to see filters in action');
-  
+
+  # Global variable for parser
+  global parser_search_list; # Parser search list
+
   # --- Default filters: remove crap
   print_info('<Main filter>');
   mainF_str_offset = 32;
@@ -1376,54 +1399,34 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # --- Apply Driver filter
   print_info('<Driver filter>');
   __debug_apply_MAME_filters_Driver_tag = 0;
-  if filter_config.driver is not None and filter_config.driver is not '':
-    mame_filtered_dic_temp = {};
+  if filter_config.driver is not None and \
+     filter_config.driver is not '':
+    driver_filter_expression = filter_config.driver;
     filtered_out_games = 0;
-    for key in mame_filtered_dic:
+    mame_filtered_dic_temp = {};
+    print_info('Filter = "' + driver_filter_expression + '"');
+    for key in sorted(mame_filtered_dic):
       romObject = mame_filtered_dic[key];
-      driverName = romObject.sourcefile;
-      if __debug_apply_MAME_filters_Driver_tag:
-        print 'Driver name = ' + driverName;
-        print 'Filter list = ', filter_config.driver;
-      # - Iterate through the list of expressions of the filter
-      # - Example: filter_config.driver = ['not cps1', 'not cps2', 'not cps3']
-      boolean_list = [];
-      for filter_str in filter_config.driver:
-        fsub_list = filter_str.split(" ");
-        if __debug_apply_MAME_filters_Driver_tag:
-          print 'Filter sublist = ', fsub_list;
-        if len(fsub_list) == 2:
-          if fsub_list[0] == 'not':
-            not_operator = 1;
-            f_string = fsub_list[1];
-          else:
-            print_error('Logical operator is not "not"');
-            sys.exit(10);
-        elif len(fsub_list) == 1:
-          not_operator = 0;
-          f_string = fsub_list[0];
-        else:
-          print_error('Wrong number of tokens in Driver filter string');
-          sys.exit(10);
-
-        # Do filter
-        if not_operator:
-          boolResult = driverName != f_string;
-        else:
-          boolResult = driverName == f_string;
-        boolean_list.append(boolResult);
-      if __debug_apply_MAME_filters_Driver_tag:
-        print 'Boolean array =', boolean_list
-      # Check built in all and any functions
-      # Check https://docs.python.org/2/library/functions.html#all
-      # If all items in boolean_list are true the game is copied (not filtered)
-      # If not all items are true, the game is NOT copied (filtered)
-      if not all(boolean_list):
+      driver_name_list = [];
+      driver_name_list.append(romObject.sourcefile);
+      # --- Update search variable
+      parser_search_list = driver_name_list;
+      # --- Call parser to evaluate expression
+      boolean_result = parse_exec(driver_filter_expression);
+      # --- Filter ROM or not
+      if not boolean_result:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + driverName);
+        print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key.ljust(8) + ' driver ' + driverName);
+        print_debug('Included ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
+      # --- DEBUG info
+      if __debug_apply_MAME_filters_Driver_tag:
+        print '[DEBUG] ----- Game = ' + key + ' -----';
+        print '[DEBUG] Driver list = ', sorted(driver_name_list);
+        print '[DEBUG] Filter = "' + driver_filter_expression + '"';
+        print '[DEBUG] boolean_result = ' + str(boolean_result);
+    # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
@@ -1437,54 +1440,31 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   if hasattr(filter_config, 'categories') and \
              filter_config.categories is not None and \
              filter_config.categories is not '':
+    categories_filter_expression = filter_config.categories;
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
-    for key in mame_filtered_dic:
+    print_info('Filter = "' + categories_filter_expression + '"');
+    for key in sorted(mame_filtered_dic):
       romObject = mame_filtered_dic[key];
-      category_name = romObject.category;
-      if __debug_apply_MAME_filters_Category_tag:
-        print '[DEBUG] Category name = ' + category_name;
-        print '[DEBUG] Filter list = ', filter_config.categories;
-      # - Iterate through the list of expressions of the filter
-      boolean_list = [];
-      for filter_str in filter_config.categories:
-        fsub_list = filter_str.split(" ");
-        # Filter name has spaces. Merge list elements 2 to end into
-        # element 2
-        if len(fsub_list) > 2:
-          list_temp = list(fsub_list);
-          fsub_list = [];
-          fsub_list.append(list_temp[0]);
-          fsub_list.append(' '.join(list_temp[1:]));
-        if __debug_apply_MAME_filters_Category_tag:
-          print '[DEBUG] Filter sublist = ', fsub_list;
-        if len(fsub_list) == 2:
-          if fsub_list[0] == 'not':
-            not_operator = 1;
-            f_string = fsub_list[1];
-          else:
-            print_error('Logical operator is not "not"');
-            sys.exit(10);
-        elif len(fsub_list) == 1:
-          not_operator = 0;
-          f_string = fsub_list[0];
-        else:
-          print_error('Logical error');
-          sys.exit(10);
-
-        # Do filter
-        if not_operator: boolResult = category_name != f_string;
-        else:            boolResult = category_name == f_string;
-        boolean_list.append(boolResult);
-      if __debug_apply_MAME_filters_Category_tag:
-        print '[DEBUG] Boolean array =', boolean_list
-      # If not all items are true, the game is NOT copied (filtered)
-      if not all(boolean_list):
+      categories_type_list = [];
+      categories_type_list.append(romObject.category);
+      # --- Update search variable
+      parser_search_list = categories_type_list;
+      # --- Call parser to evaluate expression
+      boolean_result = parse_exec(categories_filter_expression);
+      # --- Filter ROM or not
+      if not boolean_result:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key.ljust(8) + ' category ' + category_name);
+        print_vverb('FILTERED ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key.ljust(8) + ' category ' + category_name);
+        print_debug('Included ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
+      # --- DEBUG info
+      if __debug_apply_MAME_filters_Category_tag:
+        print '[DEBUG] Category list = ', sorted(categories_type_list);
+        print '[DEBUG] Filter = "' + categories_filter_expression + '"';
+        print '[DEBUG] boolean_result = ' + str(boolean_result);
+    # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
     print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
@@ -1501,22 +1481,15 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     controls_type_filter_expression = filter_config.controls;
     filtered_out_games = 0;
     mame_filtered_dic_temp = {};
-    global parser_search_list; # Parser search list
+    print_info('Filter = "' + controls_type_filter_expression + '"');
     for key in sorted(mame_filtered_dic):
       # --- Some games may have two controls, so controls_type_list is a list
       romObject = mame_filtered_dic[key];
       controls_type_list = romObject.control_type;
-      if __debug_apply_MAME_filters_Controls_tag:
-        print '[DEBUG] ----- Game = ' + key + ' -----';
-        print '[DEBUG] Control type = ', sorted(controls_type_list);
-        print '[DEBUG] Filter = "' + controls_type_filter_expression + '"';
-
       # --- Update search variable
       parser_search_list = controls_type_list;
-
       # --- Call parser to evaluate expression
       boolean_result = parse_exec(controls_type_filter_expression);
-
       # --- Filter ROM or not
       if not boolean_result:
         filtered_out_games += 1;
@@ -1524,7 +1497,12 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
         print_debug('Included ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
-
+      # --- DEBUG info
+      if __debug_apply_MAME_filters_Controls_tag:
+        print '[DEBUG] ----- Game = ' + key + ' -----';
+        print '[DEBUG] Control list = ', sorted(controls_type_list);
+        print '[DEBUG] Filter = "' + controls_type_filter_expression + '"';
+        print '[DEBUG] boolean_result = ' + str(boolean_result);
     # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
@@ -1532,6 +1510,72 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info('User wants all controls');
+
+  # --- Apply Buttons filter
+  print_info('<Buttons filter>');
+  __debug_apply_MAME_filters_Buttons_tag = 0;
+  if hasattr(filter_config, 'buttons_exp') and \
+             filter_config.buttons_exp is not None and \
+             filter_config.buttons_exp is not '':
+    button_filter_expression = filter_config.buttons_exp;
+    mame_filtered_dic_temp = {};
+    filtered_out_games = 0;
+    print_info('Filter = "' + button_filter_expression + '"');
+    for key in mame_filtered_dic:
+      romObject = mame_filtered_dic[key];
+      buttons_str = romObject.buttons;
+      buttons = int(buttons_str);
+      if __debug_apply_MAME_filters_Buttons_tag:
+        print '[DEBUG] Buttons number = ' + buttons_str;
+        print '[DEBUG] Buttons filter = "' + button_filter_expression + '"';
+      boolean_result = eval(button_filter_expression, globals(), locals());
+
+      # If not all items are true, the game is NOT copied (filtered)
+      if not boolean_result:
+        filtered_out_games += 1;
+        print_vverb('FILTERED ' + key + ' buttons ' + buttons_str);
+      else:
+        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug('Included ' + key + ' buttons ' + buttons_str);
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+  else:
+    print_info('User wants all buttons');
+
+  # --- Apply Players filter
+  print_info('<Players filter>');
+  __debug_apply_MAME_filters_Players_tag = 0;
+  if hasattr(filter_config, 'players_exp') and \
+             filter_config.players_exp is not None and \
+             filter_config.players_exp is not '':
+    players_filter_expression = filter_config.players_exp;
+    mame_filtered_dic_temp = {};
+    filtered_out_games = 0;
+    print_info('Filter = "' + players_filter_expression + '"');
+    for key in mame_filtered_dic:
+      romObject = mame_filtered_dic[key];
+      players_str = romObject.players;
+      players = int(players_str);
+      if __debug_apply_MAME_filters_Players_tag:
+        print '[DEBUG] Players number = ' + players_str;
+        print '[DEBUG] Players filter = "' + players_filter_expression + '"';
+      boolean_result = eval(players_filter_expression, globals(), locals());
+
+      # If not all items are true, the game is NOT copied (filtered)
+      if not boolean_result:
+        filtered_out_games += 1;
+        print_vverb('FILTERED ' + key + ' players ' + players_str);
+      else:
+        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        print_debug('Included ' + key + ' players ' + players_str);
+    mame_filtered_dic = mame_filtered_dic_temp;
+    del mame_filtered_dic_temp;
+    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+  else:
+    print_info('User wants all players');
 
   # --- Apply Years filter
   print_info('<Year filter>');
@@ -1543,6 +1587,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     filtered_out_games = 0;
     year_filter_expression = filter_config.year_exp;
     year_YearExpansion = filter_config.year_YearExpansion;
+    print_info('Filter = "' + year_filter_expression + '"');
     if year_YearExpansion:
       print_info('Year expansion activated')
     else:
@@ -1551,7 +1596,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       # year is a string, convert to int
       year_srt = romObject.year;
-      
+
       # Game year information:
       #  1 standard game or game with not-verified year (example 1998?)
       #  2 game that needs decade expansion (examples 198?, 199?) or
@@ -1577,7 +1622,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         else:
           mame_filtered_dic_temp[key] = mame_filtered_dic[key];
           print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
-        
+
       # Game needs expansion. If user activated this option expand wildcars and
       # then do filtering. If option not activated, discard game
       elif game_info == 2:
@@ -1615,70 +1660,6 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     print_info('User wants all years');
-
-  # --- Apply Buttons filter
-  print_info('<Buttons filter>');
-  __debug_apply_MAME_filters_Buttons_tag = 0;
-  if hasattr(filter_config, 'buttons') and \
-             filter_config.buttons_exp is not None and \
-             filter_config.buttons_exp is not '':
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      button_filter_expression = filter_config.buttons_exp;
-      buttons_str = romObject.buttons;
-      buttons = int(buttons_str);
-      if __debug_apply_MAME_filters_Buttons_tag:
-        print '[DEBUG] Buttons number = ' + buttons_str;
-        print '[DEBUG] Buttons filter = "' + button_filter_expression + '"';
-      boolean_result = eval(button_filter_expression, globals(), locals());
-
-      # If not all items are true, the game is NOT copied (filtered)
-      if not boolean_result:
-        filtered_out_games += 1;
-        print_vverb('FILTERED ' + key + ' buttons ' + buttons_str);
-      else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key + ' buttons ' + buttons_str);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
-  else:
-    print_info('User wants all buttons');
-
-  # --- Apply Players filter
-  print_info('<Players filter>');
-  __debug_apply_MAME_filters_Players_tag = 0;
-  if hasattr(filter_config, 'players') and \
-             filter_config.players_exp is not None and \
-             filter_config.players_exp is not '':
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      players_filter_expression = filter_config.players_exp;
-      players_str = romObject.players;
-      players = int(players_str);
-      if __debug_apply_MAME_filters_Players_tag:
-        print '[DEBUG] Players number = ' + players_str;
-        print '[DEBUG] Players filter = "' + players_filter_expression + '"';
-      boolean_result = eval(players_filter_expression, globals(), locals());
-
-      # If not all items are true, the game is NOT copied (filtered)
-      if not boolean_result:
-        filtered_out_games += 1;
-        print_vverb('FILTERED ' + key + ' players ' + players_str);
-      else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key + ' players ' + players_str);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
-  else:
-    print_info('User wants all players');
 
   # --- ROM dependencies
   # Add ROMs (devices and BIOS) needed for other ROM to work.
@@ -2134,7 +2115,7 @@ def do_merge():
   print_info('[Building merged MAME filter database]');
   mame_redux_filename = configuration.MAME_XML_redux;
   merged_filename = configuration.MergedInfo_XML;
-  
+
   # --- Get categories from Catver.ini
   categories_dic = parse_catver_ini();
 
@@ -2341,28 +2322,16 @@ def do_list_categories():
         second_category = sub_categories[0].strip();
         if main_category in main_categories_dic: 
           main_categories_dic[main_category] += 1;
-        else:                          
+        else:
           main_categories_dic[main_category] = 1;
 
         # NOTE: Only use the main category for filtering.
-        # -Rename some categories
-        final_category = main_category;
-        if category == 'System / BIOS':
-          final_category = 'BIOS';
-        elif main_category == 'Electromechanical - PinMAME':
-          final_category = 'PinMAME';
-        elif main_category == 'Ball & Paddle':
-          final_category = 'Ball and Paddle';
-        
-        # - If there is *Mature* in any category or subcategory, then
-        #   the game belongs to the Mature category
-        if category.find('*Mature*') >= 0:
-          final_category = 'Mature';
-        
+        final_category = fix_category_name(main_category, category);
+
         # - Create final categories dictionary
         if final_category in final_categories_dic: 
           final_categories_dic[final_category] += 1;
-        else:                          
+        else:
           final_categories_dic[final_category] = 1;
     elif read_status == 2:
       break;
@@ -2437,7 +2406,7 @@ def do_list_drivers():
         driver_name = '__unknown__';
       if driver_name in drivers_histo_dic: 
         drivers_histo_dic[driver_name] += 1;
-      else:                          
+      else:
         drivers_histo_dic[driver_name] = 1;
 
   # - Print histogram
@@ -2480,7 +2449,7 @@ def do_list_controls():
   for game_EL in root:
     if game_EL.tag == 'game':
       game_attrib = game_EL.attrib;
-      
+
       # - If game is a clone don't include it in the histogram
       if 'cloneof' in game_attrib:
         continue;
@@ -2550,7 +2519,7 @@ def do_list_controls():
             if 'ways2' in child.attrib:
               if __debug_do_list_controls:
                 print('  ways2 = ' + child.attrib['ways2']);
-              
+
             if 'ways3' in child.attrib:
               if __debug_do_list_controls:
                 print('  ways3 = ' + child.attrib['ways3']);
