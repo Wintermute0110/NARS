@@ -31,7 +31,7 @@ from xml.dom import minidom
 #   http://www.mamedev.org/source/src/emu/info.c.html
 
 # --- Global variables
-__software_version = '0.1.0 alpha 1';
+__software_version = '0.1.0';
 __config_configFileName = 'xru-mame-config.xml';
 __config_logFileName = 'xru-mame-log.txt';
 

@@ -25,7 +25,7 @@ import operator, argparse
 import xml.etree.ElementTree as ET
 
 # --- Global variables
-__software_version = '0.1.0 alpha 1';
+__software_version = '0.1.0';
 __config_configFileName = 'xru-console-config.xml';
 __config_logFileName = 'xru-console-log.txt';
 
