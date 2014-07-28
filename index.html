@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>XBMC ROM utilities</title><link rel="stylesheet" type="text/css" href="default.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.77.1" /><link rel="home" href="#XRU-manual" title="XBMC ROM utilities" /><link rel="next" href="#idp440119072" title="Introduction" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="XRU-manual"></a>XBMC ROM utilities</h2></div><div><div class="author"><h3 class="author"><span class="surname">Wintermute0110</span></h3><div class="affiliation">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>XBMC ROM utilities</title><link rel="stylesheet" type="text/css" href="default.css" /><meta name="generator" content="DocBook XSL Stylesheets V1.78.1" /><link rel="home" href="#XRU-manual" title="XBMC ROM utilities" /><link rel="next" href="#idp62103664" title="Introduction" /></head><body><div xml:lang="en" class="article" lang="en"><div class="titlepage"><div><div><h2 class="title"><a id="XRU-manual"></a>XBMC ROM utilities</h2></div><div><div class="author"><h3 class="author"><span class="surname">Wintermute0110</span></h3><div class="affiliation">
       <div class="address"><p><code class="email">&lt;<a class="email" href="mailto:wintermute0110@gmail.com">wintermute0110@gmail.com</a>&gt;</code></p></div>
-    </div></div></div><div><p class="releaseinfo">XBMC ROM utilities 0.1</p></div><div><p class="copyright">Copyright © 2014 Wintermute0110</p></div></div><hr /></div><div class="toc"><p><strong>Table of Contents</strong></p><dl><dt><span class="sect1"><a href="#idp440119072">Introduction</a></span></dt><dt><span class="sect1"><a href="#idp440126192"><span class="application">xru-console</span></a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp440157632">Configuration file</a></span></dt><dt><span class="sect2"><a href="#idp440164496">Understanding ROM filters</a></span></dt><dt><span class="sect2"><a href="#idp440164752">No-Intro One ROM-One Game (1R1G) DATs</a></span></dt><dt><span class="sect2"><a href="#idp440194464">Updating/Copying filtered ROMs</a></span></dt><dt><span class="sect2"><a href="#idp440217008">Art Work</a></span></dt></dl></dd><dt><span class="sect1"><a href="#idp440248816"><span class="application">xru-mame</span></a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp440285856">Configuration file</a></span></dt><dt><span class="sect2"><a href="#create_mame_database">Creating the <span class="application">MAME</span> ROM database</a></span></dt><dt><span class="sect2"><a href="#idp440291200">Understanding <span class="application">MAME</span> filters</a></span></dt><dt><span class="sect2"><a href="#idp440322736">Updating/Copying <span class="application">MAME</span> ROMs</a></span></dt><dt><span class="sect2"><a href="#idp440360176">NFO files and Artwork</a></span></dt><dt><span class="sect2"><a href="#idp440377888">Some notes</a></span></dt></dl></dd><dt><span class="sect1"><a href="#idp440382208"><span class="application">xru-launcher-AL</span></a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp440398880">Configuration</a></span></dt><dt><span class="sect2"><a href="#idp440399136">Checking launchers</a></span></dt></dl></dd><dt><span class="sect1"><a href="#idp440417504">Examples</a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp440418176">Simple filtering of a console ROM collection</a></span></dt><dt><span class="sect2"><a href="#idp440418608">Splitting <span class="application">MAME</span> ROMs into several launchers
-for each driver</a></span></dt></dl></dd><dt><span class="sect1"><a href="#idp440443264">Changelog</a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp440444224">Version 0.1</a></span></dt></dl></dd></dl></div>
+    </div></div></div><div><p class="releaseinfo">XBMC ROM utilities 0.1</p></div><div><p class="copyright">Copyright © 2014 Wintermute0110</p></div></div><hr /></div><div class="toc"><p><strong>Table of Contents</strong></p><dl class="toc"><dt><span class="sect1"><a href="#idp62103664">Introduction</a></span></dt><dt><span class="sect1"><a href="#idp62322176"><span class="application">xru-console</span></a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp62358512">Configuration file</a></span></dt><dt><span class="sect2"><a href="#idp62365984">Understanding ROM filters</a></span></dt><dt><span class="sect2"><a href="#idp62366240">No-Intro One ROM-One Game (1R1G) DATs</a></span></dt><dt><span class="sect2"><a href="#idp62398720">Updating/Copying filtered ROMs</a></span></dt><dt><span class="sect2"><a href="#idp62398976">Art Work</a></span></dt></dl></dd><dt><span class="sect1"><a href="#idp62457504"><span class="application">xru-mame</span></a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp62502736">Configuration file</a></span></dt><dt><span class="sect2"><a href="#create_mame_database">Creating the <span class="application">MAME</span> ROM database</a></span></dt><dt><span class="sect2"><a href="#idp62507488">Understanding <span class="application">MAME</span> filters</a></span></dt><dt><span class="sect2"><a href="#idp62528592">Updating/Copying <span class="application">MAME</span> ROMs</a></span></dt><dt><span class="sect2"><a href="#idp62610784">NFO files</a></span></dt><dt><span class="sect2"><a href="#idp62618368">Artwork files</a></span></dt></dl></dd><dt><span class="sect1"><a href="#idp62629520"><span class="application">xru-launcher-AL</span></a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp62645872">Configuration</a></span></dt><dt><span class="sect2"><a href="#idp62646000">Checking launchers</a></span></dt></dl></dd><dt><span class="sect1"><a href="#idp62664192">Examples</a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp62665056">Simple filtering of a console ROM collection</a></span></dt><dt><span class="sect2"><a href="#idp62665344">Splitting <span class="application">MAME</span> ROMs into several launchers
+for each driver</a></span></dt></dl></dd><dt><span class="sect1"><a href="#idp62689712">Changelog</a></span></dt><dd><dl><dt><span class="sect2"><a href="#idp62690576">Version 0.1</a></span></dt></dl></dd></dl></div>
 
 
 
 
 
 
-<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp440119072"></a>Introduction</h2></div></div></div>
+<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp62103664"></a>Introduction</h2></div></div></div>
 
 
 <p>
@@ -44,7 +44,7 @@ ROM launchers for missing ROMs. It prints a report with the launchers you have t
 </div>
 
 
-<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp440126192"></a><span class="application">xru-console</span></h2></div></div></div>
+<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp62322176"></a><span class="application">xru-console</span></h2></div></div></div>
 
 
 <p><span class="application">xru-console</span> requires a mandatory command to 
@@ -143,7 +143,7 @@ files).</p>
 present in the artwork list (unknown Artwork).</p>
 </li></ul></div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440157632"></a>Configuration file</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62358512"></a>Configuration file</h3></div></div></div>
 
 
 <p><span class="application">xru-console</span> requires a configuration file,
@@ -198,7 +198,7 @@ where you filtered ROMs will be copied. Both tags are mandatory for every
 ROM collection filter.</p>
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440164496"></a>Understanding ROM filters</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62365984"></a>Understanding ROM filters</h3></div></div></div>
 
 
 <p>To use <span class="application">xru-console</span>, your ROM collection needs 
@@ -438,7 +438,7 @@ the flags and numbers in this listing.</p>
 
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440164752"></a>No-Intro One ROM-One Game (1R1G) DATs</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62366240"></a>No-Intro One ROM-One Game (1R1G) DATs</h3></div></div></div>
 
 
 <p>The first pass of the filtering process groups different versions of
@@ -626,7 +626,7 @@ ROMs. However, if you don not use the DAT, then <span class="emphasis"><em>you w
 all the ROMs</em></span> in this list.</p>
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440194464"></a>Updating/Copying filtered ROMs</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62398720"></a>Updating/Copying filtered ROMs</h3></div></div></div>
 
 
 <p>Once you have setup your configuration file and checked the filter
@@ -735,7 +735,7 @@ NFO files, in a similar way to the <strong class="userinput"><code>--cleanROMs</
 list of deleted NFO files in destDir is always printed.</p>
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440217008"></a>Art Work</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62398976"></a>Art Work</h3></div></div></div>
 
 
 <p>Both <a class="ulink" href="http://forum.xbmc.org/showthread.php?tid=85724" target="_top">Advanced Launcher</a> 
@@ -869,8 +869,19 @@ Deleted 0 redundant fanart
 </div>
 
 
-<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp440248816"></a><span class="application">xru-mame</span></h2></div></div></div>
+<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp62457504"></a><span class="application">xru-mame</span></h2></div></div></div>
 
+
+<p><span class="application">xru-mame</span> is able to filter a 
+<span class="application">MAME</span> ROM collection. This tool is somewhat more
+sofisticated than <span class="application">xru-console</span> because 
+<span class="application">MAME</span> keeps a full database with a lot of 
+information. This database can be used with a lot of filtering options to fully
+customize the list of games in your front-end.</p>
+
+<p><span class="application">xru-mame</span> requires a command that defines the
+main action to do. Also, many commands require the name of the filter
+to use.</p>
 
 <pre class="screen">
 $ xru-mame.py [options] &lt;command&gt; [filterName]
@@ -904,6 +915,14 @@ Use <strong class="userinput"><code>--verbose</code></strong> to get more inform
 <p><strong class="userinput"><code>list-drivers</code></strong></p>
 <p>Reads merged XML database and prints a histogram of the drivers (how many
 games use each driver).</p>
+</li><li class="listitem" style="list-style-type: disc">
+<p><strong class="userinput"><code>list-controls</code></strong></p>
+<p>Reads merged XML database and prints a histogram of the game controls:
+buttons, players and input devices.</p>
+</li><li class="listitem" style="list-style-type: disc">
+<p><strong class="userinput"><code>list-years</code></strong></p>
+<p>Reads merged XML database and prints a histogram of the game release year
+(how many games were released on each year).</p>
 </li><li class="listitem" style="list-style-type: disc">
 <p><strong class="userinput"><code>check-filter &lt;filterName&gt;</code></strong></p>
 <p>Applies filters and checks you source directory for have and missing 
@@ -962,7 +981,7 @@ This may save a lot of time.</p>
 <p>Deletes unknown ArtWork in destination directories.</p>
 </li></ul></div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440285856"></a>Configuration file</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62502736"></a>Configuration file</h3></div></div></div>
 
 
 <p><span class="application">xru-mame</span> requires a configuration file,
@@ -974,10 +993,10 @@ configuration filter looks like this.</p>
 &lt;!-- Example configuration file for XBMC ROM utilities --&gt;
 &lt;MAMEConfig&gt;
 &lt;General&gt;
-  &lt;MAME_XML      &gt;./DAT-mame/mame-0153.xml&lt;/MAME_XML&gt;
-  &lt;MAME_XML_redux&gt;./DAT-mame/mame-0153-reduced.xml&lt;/MAME_XML_redux&gt;
+  &lt;MAME_XML      &gt;./DAT-mame/mame-0154.xml&lt;/MAME_XML&gt;
+  &lt;MAME_XML_redux&gt;./DAT-mame/mame-0154-reduced.xml&lt;/MAME_XML_redux&gt;
   &lt;Catver        &gt;./DAT-mame/Catver.ini&lt;/Catver&gt;
-  &lt;MergedInfo    &gt;./DAT-mame/mame-0153-reduced.xml&lt;/MergedInfo&gt;
+  &lt;MergedInfo    &gt;./DAT-mame/mame-0154-merged.xml&lt;/MergedInfo&gt;
 &lt;/General&gt;
 
 &lt;MAMEFilter name="main"&gt;
@@ -989,32 +1008,14 @@ configuration filter looks like this.</p>
   &lt;ThumbsDest  &gt;/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/&lt;/ThumbsDest&gt;
   &lt;FanartDest  &gt;/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/&lt;/FanartDest&gt;
 
-  &lt;!-- Main filter --&gt;
-  &lt;!-- Main filter options:
-       NoClones, NoSamples, NoMechanical, NoNonworking
-  --&gt;
-  &lt;MainFilter&gt;NoClones, NoSamples, NoMechanical, NoNonworking&lt;/MainFilter&gt;
-
-  &lt;!-- MAME drivers --&gt;
-  &lt;!-- Important drivers:
-       neogeo    Neo-Geo
-       cps1      Capcom CPS1
-       cps2      Capcom CPS2
-       cps3      Capcom CPS3
-       model1    Sega Model 1
-       namcos11  Namco System 11
-  --&gt;
-  &lt;!-- NOTE: this filter implies OR conditions between filtering options --&gt;
-  &lt;!-- Example: [is] not cps1 OR [is] not cps2 --&gt;
+  &lt;MainFilter&gt;NoClones, NoSamples, NoMechanical, NoBIOS, NoNonworking&lt;/MainFilter&gt;
   &lt;Driver&gt;not cps1&lt;/Driver&gt;
-
-  &lt;!-- Categories --&gt;
-  &lt;!-- Some categories you probably don't want
-       Mature, Casino, PinMAME, Fruit Machines
-  --&gt;
-  &lt;!-- NOTE: this filter implies OR conditions between filtering options --&gt;
-  &lt;!-- Example: [is] not Mature OR [is] not Casino --&gt;
-  &lt;Categories&gt;not Mature, not Casino, not PinMAME, not Fruit Machines&lt;/Categories&gt;
+  &lt;Categories&gt;not Mature and not Casino and not PinMAME and not Fruit_Machines&lt;/Categories&gt;
+  &lt;Controls&gt;not Mahjong and not Gambling and not Hanafuda&lt;/Controls&gt;
+  &lt;Buttons&gt;buttons == 1 or buttons == 2&lt;/Buttons&gt;
+  &lt;Players&gt;players == 1 or players == 2&lt;/Players&gt;
+  &lt;Years&gt;year &gt;= 1990 and year &amp;lt; 2000&lt;/Years&gt;
+  &lt;!-- &lt;YearsOpts&gt;YearExpansion&lt;/YearsOpts&gt; --&gt;
 &lt;/MAMEFilter&gt;
 
 &lt;MAMEFilter name="cps1"&gt;
@@ -1024,7 +1025,7 @@ configuration filter looks like this.</p>
   &lt;MainFilter&gt;NoClones, NoSamples, NoMechanical&lt;/MainFilter&gt;
   &lt;Driver&gt;cps1&lt;/Driver&gt;
 &lt;/MAMEFilter&gt;
-&lt;/MAMEConfig&gt; 
+&lt;/MAMEConfig&gt;
 </pre>
 </div>
 
@@ -1038,25 +1039,23 @@ configuration filter looks like this.</p>
 
 <pre class="screen">
 $ mame -?
-M.A.M.E. v0.153 (Apr  7 2014) - Multiple Arcade Machine Emulator
+M.A.M.E. v0.154 (Jul 23 2014) - Multiple Arcade Machine Emulator
 Copyright Nicola Salmoria and the MAME team
 
 MAME is an emulator: it reproduces, more or less faithfully, the behaviour of
 ...
-
-For usage instructions, please consult the files config.txt and windows.txt.
 </pre>
 
 <p>In this example <span class="application">MAME</span> has the version number
-0.153. This number will be used in the configuration files so when you get
+0.154. This number will be used in the configuration files so when you get
 a new version of <span class="application">MAME</span> you won't mess up game
 databases.</p>
 
 <p>Next, create the <span class="application">MAME</span> XML game database. Execute
-the following command to place the XML database into <code class="filename">mame-0153.xml</code>:</p>
+the following command to place the XML database into <code class="filename">mame-0154.xml</code>:</p>
 
 <pre class="screen">
-$ mame -listxml &gt; mame-0153.xml
+$ mame -listxml &gt; mame-0154.xml
 </pre>
 
 <p>Now, create a basic <code class="filename">xru-mame-config.xml</code> configuration 
@@ -1068,10 +1067,10 @@ convenience.</p>
 <pre class="programlisting">
 &lt;MAMEConfig&gt;
 &lt;General&gt;
-  &lt;MAME_XML      &gt;./DAT-mame/mame-0153.xml&lt;/MAME_XML&gt;
-  &lt;MAME_XML_redux&gt;./DAT-mame/mame-0153-reduced.xml&lt;/MAME_XML_redux&gt;
+  &lt;MAME_XML      &gt;./DAT-mame/mame-0154.xml&lt;/MAME_XML&gt;
+  &lt;MAME_XML_redux&gt;./DAT-mame/mame-0154-reduced.xml&lt;/MAME_XML_redux&gt;
   &lt;Catver        &gt;./DAT-mame/Catver.ini&lt;/Catver&gt;
-  &lt;MergedInfo    &gt;./DAT-mame/mame-0153-reduced-merged.xml&lt;/MergedInfo&gt;
+  &lt;MergedInfo    &gt;./DAT-mame/mame-0154-merged.xml&lt;/MergedInfo&gt;
 &lt;/General&gt;
 &lt;/MAMEConfig&gt;
 </pre>
@@ -1079,7 +1078,7 @@ convenience.</p>
 <p><span class="application">MAME</span> XML game database is huge and has much more
 information than needed for game filtering. Next, the game database will be "reduced",
 that is, non-relevant information will be stripped off and a shorted game database
-will be created (named <code class="filename">mame-0153-reduced.xml</code> in the above 
+will be created (named <code class="filename">mame-0154-reduced.xml</code> in the above 
 configuration file example. Execute:</p>
 
 <pre class="screen">
@@ -1097,33 +1096,31 @@ Writing reduced XML file ./DAT-mame/mame-0153-reduced.xml
 
 <p>Please be patient! This reduction process will take several minutes and
 about 2 GB of RAM will be used. However, all subsequent commands will be much
-faster. The reduction will shrink <code class="filename">mame-0153.xml</code> to 
-<code class="filename">mame-0153-reduce.xml</code> from 147 MB to 12 MB.</p>
+faster. The reduction will shrink <code class="filename">mame-0154.xml</code> to 
+<code class="filename">mame-0154-reduced.xml</code> from about 150 MB to about 15 MB.</p>
 
 <p>Next, download the file <code class="filename">Catver.ini</code> from 
 <a class="ulink" href="http://www.progettoemma.net/?catlist" target="_top">Progetto EMMA</a>
 (make sure you get the English version) and place it in the 
 <code class="filename">DAT-mame</code> directory. The following command 
-will merge <code class="filename">mame-0153-reduce.xml</code> with 
+will merge <code class="filename">mame-0154-reduced.xml</code> with 
 <code class="filename">Catver.ini</code> to create 
-<code class="filename">mame-0153-reduced-merged.xml</code> and then your are done.
-Execute:
-</p>
+<code class="filename">mame-0154-merged.xml</code> and then your are done.
+Execute:</p>
 
 <pre class="screen">
-$ ./xru-mame.py merge
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
+XBMC ROM utilities - MAME edition version 0.1.0
 [Parsing config file]
 [Building merged MAME filter database]
 [Parsing Catver.ini]
 [Parsing (reduced) MAME XML file]
-Parsing MAME XML file ./DAT-mame/mame-0153-reduced.xml...   done
+Parsing MAME XML file ./../DAT-mame/mame-0154-reduced.xml...   done
 [Merging MAME XML and categories]
 [WARNING] Category not found for game 18wheelu
 ...
-[WARNING] Category not found for game avg_tomcat
+[WARNING] Category not found for game r4700le
 [Writing output file]
-Output file ./DAT-mame/mame-0153-reduced-merged.xml
+Output file ./../DAT-mame/mame-0154-merged.xml
 </pre>
 
 <p>If you get some some warnings about non-found categories for some games
@@ -1131,10 +1128,10 @@ just ignore them. You can now list the games in your merged XML database.</p>
 
 <pre class="screen">
 $ ./xru-mame.py list-merged
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
+XBMC ROM utilities - MAME edition version 0.1.0
 [Parsing config file]
 [Short listing of reduced MAME XML]
-Parsing merged MAME XML file './DAT-mame/mame-0153-reduced-merged.xml'...  done
+Parsing merged MAME XML file './DAT-mame/mame-0154-reduced-merged.xml'...  done
 005
 |-- driver = segag80r.c
 |-- sampleof = 005
@@ -1150,18 +1147,180 @@ keycus_c430
 |-- description = KEYCUS C430
 +-- category = System
 [Report]
-Number of games = 30043
-Number of clones = 20210
-Number of games with samples = 550
-Number of devices = 794
+Number of games = 30551
+Number of clones = 20513
+Number of games with samples = 573
+Number of devices = 907
 </pre>
 
-<p>You can print a list of the categories and how many games on each
-category with the <strong class="userinput"><code>list-categories</code></strong> command.</p>
+<p>You are now ready to start filtering your <span class="application">MAME</span> ROMs.</p>
+</div>
+
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62507488"></a>Understanding <span class="application">MAME</span> filters</h3></div></div></div>
+
+
+<p>In order to understand how the <span class="application">MAME</span> filters
+work, let's try a basic filter named <span class="emphasis"><em>main</em></span>. Edit
+your <code class="filename">xru-mame-config.xml</code> and add the following.</p>
+
+<pre class="programlisting">
+&lt;MAMEConfig&gt;
+&lt;General&gt;
+  &lt;MAME_XML      &gt;./DAT-mame/mame-0154.xml&lt;/MAME_XML&gt;
+  &lt;MAME_XML_redux&gt;./DAT-mame/mame-0154-reduced.xml&lt;/MAME_XML_redux&gt;
+  &lt;Catver        &gt;./DAT-mame/Catver.ini&lt;/Catver&gt;
+  &lt;MergedInfo    &gt;./DAT-mame/mame-0154-merged.xml&lt;/MergedInfo&gt;
+&lt;/General&gt;
+
+&lt;MAMEFilter name="main"&gt;
+  &lt;ROMsSource&gt;/home/wintermute/mame-roms/&lt;/ROMsSource&gt;
+  &lt;ROMsDest  &gt;/home/wintermute/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest&gt;
+
+  &lt;MainFilter&gt;NoClones, NoSamples, NoMechanical, NoBIOS, NoNonworking&lt;/MainFilter&gt;
+  &lt;Driver&gt;not cps1 and not cps2 and not cps3 and not neogeo_noslot&lt;/Driver&gt;
+  &lt;Categories&gt;not Casino and not PinMAME and not Fruit Machines&lt;/Categories&gt;
+  &lt;Controls&gt;Joy or Lightgun and not(Mahjong or Hanafuda)&lt;/Controls&gt;
+  &lt;Buttons&gt;buttons == 1&lt;/Buttons&gt;
+  &lt;Players&gt;players == 1&lt;/Players&gt;
+  &lt;Years&gt;year == 1990 and year == 1991&lt;/Years&gt;
+&lt;/MAMEFilter&gt;
+&lt;/MAMEConfig&gt;
+</pre>
+
+<p>Every <span class="application">MAME</span> filter requires a 
+<strong class="userinput"><code>&lt;MAMEFilter&gt;</code></strong> tag and there the <strong class="userinput"><code>name</code></strong> attribute
+defines the name you will used to invoke other command for this filter. Every 
+filter require the <strong class="userinput"><code>&lt;ROMsSource&gt;</code></strong> and 
+<strong class="userinput"><code>&lt;ROMsDest&gt;</code></strong> tags, which define the source
+directory when you have all your ROMs and the destination directory where
+filtered ROMs will be copied.</p>
+
+<p>The rest of the tags inside <strong class="userinput"><code>MAMEFilter</code></strong> allows to
+define filters to discard the games you don not want and keeps the ones you 
+want.</p>
+
+<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp62536992"></a>Main filter</h4></div></div></div>
+
+
+<p>The first filter is configured with the tag 
+<strong class="userinput"><code>&lt;MainFilter&gt;</code></strong>. Here you can write the following
+filtering options (separated by commas if more than one).</p> 
+
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: bullet; "><li class="listitem" style="list-style-type: disc">
+<p><strong class="userinput"><code>NoClones</code></strong> will filter all the cloned games.
+Clones are derived games, maybe in a different language other than
+English or bootleg games. Most users will choose this option.</p>
+</li><li class="listitem" style="list-style-type: disc">
+<p><strong class="userinput"><code>NoSamples</code></strong> will filter all the games that use samples.</p>
+</li><li class="listitem" style="list-style-type: disc">
+<p><strong class="userinput"><code>NoMechanical</code></strong> will remove all the mechanical games. Most
+of them are slot or pinball machines and do not work anyway.</p>
+</li><li class="listitem" style="list-style-type: disc">
+<p><strong class="userinput"><code>NoBIOS</code></strong> will remove all BIOS ROMs. BIOS are non-playable
+ROMs necessary for other ROMs to work. Required BIOS are automatically added
+as dependencies (that is, if a game you want needs a specific BIOS or device
+they will be automatically included regardless of your filters), so using 
+this option is always safe and recommended.</p>
+</li><li class="listitem" style="list-style-type: disc">
+<p><strong class="userinput"><code>NoNonworking</code></strong> will remove all games that do not work
+or have serious emulation problems or emulation is preliminary.</p>
+</li></ul></div>
+
+<p>Note that games belonging to the <strong class="userinput"><code>devices</code></strong> 
+type are removed automatically. Those are not really games but 
+emulated devices and are non-playable. If a ROM you want requires some
+device or BIOS these will be automatically added as dependencies so
+removing devices (and BIOS) is a safe operation.</p>
+
+<div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;"><h3 class="title">Tip</h3>If a ROM you want requires a device or BIOS in order to work they
+will be added automatically to the filtered list as dependencies
+regardless of your filter configuration. This guarantees that you
+will be able to run all your ROMs. CHDs are not supported yet
+as dependencies (you will need to copy CHDs manually to your
+destination directory).</div>
+</div>
+
+<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp62522448"></a>Driver filter</h4></div></div></div>
+
+
+<p>After the main filter comes the driver filter, which is defined
+inside the tag <strong class="userinput"><code>&lt;Driver&gt;</code></strong>. By default all drivers
+will be included. If you specify a driver, then only games belonging
+to that driver will be included. The <strong class="userinput"><code>not</code></strong> operator 
+in front of a driver name excludes games belonging to that driver.
+You can also specify multiple drivers separated by <strong class="userinput"><code>and</code></strong>
+and <strong class="userinput"><code>or</code></strong> operators and use parenthesis to change the
+operator precedence. For example:</p>
+
+<pre class="programlisting">
+(a) &lt;Driver&gt;cps1&lt;/Driver&gt;
+(b) &lt;Driver&gt;not cps1&lt;/Driver&gt;
+(c) &lt;Driver&gt;not cps1 and not cps2&lt;/Driver&gt;
+(d) &lt;Driver&gt;not (cps1 or cps2)&lt;/Driver&gt;
+(e) &lt;Driver&gt;cps1 or cps2&lt;/Driver&gt;
+
+(a) Include CPS1 games.
+(b) Exclude CPS1 games.
+(c) Exclude both CPS1 and CPS2 games.
+(d) Same as (c). Just another way of writing this filter.
+(e) Include CPS1 or CPS2.
+</pre>
+
+<p>You can list the <span class="application">MAME</span> drivers with 
+the command <strong class="userinput"><code>list-drivers</code></strong> command.</p>
+
+<pre class="screen">
+$ ./xru-mame.py list-drivers
+XBMC ROM utilities - MAME edition version 0.1.0
+[Parsing config file]
+[Listing MAME drivers]
+NOTE: clones are not included
+NOTE: mechanical are not included
+NOTE: devices are not included
+Parsing merged MAME XML file './DAT-mame/mame-0154-merged.xml'...   done
+[Final (used) categories]
+   1  calorie.c
+   1  subs.c
+...
+ 157  neogeo_noslot.c
+ 160  peplus.c
+ 199  naomi.c
+ 471  bfm_sc4.c
+</pre>
+
+<p>Note that you do not need to write the trailing .c when configuring
+driver filters.</p>
+
+</div>
+
+<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp62554976"></a>Categories filter</h4></div></div></div>
+
+
+<p>Categories are controlled with the tag
+<strong class="userinput"><code>&lt;Categories&gt;</code></strong>. This filter and the filter
+language (<strong class="userinput"><code>and</code></strong>, <strong class="userinput"><code>or</code></strong>, 
+<strong class="userinput"><code>not</code></strong>, <strong class="userinput"><code>(</code></strong>, <strong class="userinput"><code>)</code></strong>)
+works in a similar way to the <strong class="userinput"><code>&lt;Driver&gt;</code></strong> filter, 
+but instead of drivers you specify game categories. For example:</p>
+
+<pre class="programlisting">
+(a) &lt;Categories&gt;not Casino and not PinMAME and not Fruit_Machines&lt;/Categories&gt;
+(b) &lt;Categories&gt;Fighter or Shooter&lt;/Categories&gt;
+(c) &lt;Categories&gt;Fighter and Shooter&lt;/Categories&gt;
+
+(a) Exclude games belonging to Casino, PinMAME or Fruit_Machines
+(b) Include only Fighter or Shooter games
+(c) Will exclude all games. Note that every game has a unique category, so
+    no game can be a Fighter AND Shooter. Be careful when configuring your
+    filters.
+</pre>
+
+<p>You can have a look at the available categories with 
+the <strong class="userinput"><code>list-categories</code></strong> command.</p>
 
 <pre class="screen">
 $ ./xru-mame.py list-categories
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
+XBMC ROM utilities - MAME edition version 0.1.0
 [Parsing config file]
 [Listing categories from Catver.ini]
 Opening ./DAT-mame/Catver.ini
@@ -1194,130 +1353,214 @@ a sub-category for each game. For example:</p>
 <p><span class="application">xru-mame</span> only takes into account the main
 category and ignores any sub-categories. For example, the game 005 will
 have category Maze, 10yard Sports, etc. Also, when merging the categories
-into the merged XML database some categories are renamed for convenience.</p>
+into the merged XML database some categories are renamed for convenience, spaces
+are changed with _, and dots are removed. For example:</p>
 
 <pre class="programlisting">
 System / BIOS               --&gt; BIOS
 Electromechanical - PinMAME --&gt; PinMAME
-Ball &amp; Paddle               --&gt; Ball and Paddle
+Ball &amp; Paddle               --&gt; Ball_and_Paddle
 </pre>
 
 <p>Any game that contains the category *Mature* either in the main
-category or in the sub-category will be assigned to the cateogory Mature
+category or in the sub-category will be assigned to the category Mature
 (no * in the final category name). In addition to the renamed, final categories
 you can see the original <code class="filename">Catver.ini</code> categories with the 
 <strong class="userinput"><code>-v</code></strong> switch and even more
 information with <strong class="userinput"><code>-vv</code></strong>.</p>
 
-<p>You can list the <span class="application">MAME</span> drivers with 
-the command <strong class="userinput"><code>list-drivers</code></strong> command.</p>
-
-<pre class="screen">
-$ ./xru-mame.py list-drivers
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
-[Parsing config file]
-[Listing MAME drivers]
-NOTE: clones are not included
-Parsing merged MAME XML file './DAT-mame/mame-0153-reduced-merged.xml'...   done
-[Final (used) categories]
-   1  src/mame/video/tia.c
-   1  calorie.c
-...
- 199  naomi.c
- 202  jpmimpctsw.c
- 259  bfm_sc5sw.c
- 300  mpu5.c
- 470  bfm_sc4.c
-</pre>
-
-<p>Note that you do not need to write the trailing .c when configuring
-driver filters.</p>
-
-<p>You are now ready to start filtering your 
-<span class="application">MAME</span> ROMs.</p>
-
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440291200"></a>Understanding <span class="application">MAME</span> filters</h3></div></div></div>
+<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp62555232"></a>Controls filter</h4></div></div></div>
 
 
-<p>In order to understand how the <span class="application">MAME</span> filters
-work, a basic filter named <span class="emphasis"><em>main</em></span> will be created. Edit
-your <code class="filename">xru-mame-config.xml</code> and add the following.</p>
+<p>With the controls filter you can choose games based on the input
+peripherals they required. This is useful if you only have a digital
+joystick and will no be able to play games that require a lightgun.
+Also, it allows you to remove mahjong games and fruit machines (fruit
+machines typically have the controls ButtonsOnly).</p>
 
-<pre class="programlisting">
-&lt;MAMEConfig&gt;
-&lt;General&gt;
-  &lt;MAME_XML      &gt;./DAT-mame/mame-0153.xml&lt;/MAME_XML&gt;
-  &lt;MAME_XML_redux&gt;./DAT-mame/mame-0153-reduced.xml&lt;/MAME_XML_redux&gt;
-  &lt;Catver        &gt;./DAT-mame/Catver.ini&lt;/Catver&gt;
-  &lt;MergedInfo    &gt;./DAT-mame/mame-0153-reduced-merged.xml&lt;/MergedInfo&gt;
-&lt;/General&gt;
-
-&lt;MAMEFilter name="main"&gt;
-  &lt;ROMsSource&gt;/home/wintermute/mame-roms/&lt;/ROMsSource&gt;
-  &lt;ROMsDest  &gt;/home/wintermute/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest&gt;
-  
-  &lt;MainFilter&gt;NoClones, NoSamples, NoMechanical, NoNonworking&lt;/MainFilter&gt;
-  &lt;Driver&gt;not cps1, not cps2, not cps3, not neogeo&lt;/Driver&gt;
-  &lt;Categories&gt;not Mature, not Casino, not PinMAME, not Fruit Machines&lt;/Categories&gt;
-&lt;/MAMEFilter&gt;
-&lt;/MAMEConfig&gt;
-</pre>
-
-<p>Every <span class="application">MAME</span> filter requires a 
-<strong class="userinput"><code>MAMEFilter</code></strong> tag and there the <strong class="userinput"><code>name</code></strong> attribute
-defines the name you will used to invoke other command for this filter. Every 
-filter require the <strong class="userinput"><code>ROMsSource</code></strong> and 
-<strong class="userinput"><code>ROMsDest</code></strong> tags, which define the source
-directory when you have all your ROMs and the destination directory where
-filtered ROMs will be copied</p>
-
-<p>The <span class="application">MAME</span> filtering process is done in several
-steps. The first filter is configured with the tag 
-<strong class="userinput"><code>&lt;MainFilter&gt;</code></strong>. Here you can write the following
-filtering options.</p> 
-
-<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: bullet; "><li class="listitem" style="list-style-type: disc">
-<p><strong class="userinput"><code>NoClones</code></strong> will filter all the cloned games.</p>
-</li><li class="listitem" style="list-style-type: disc">
-<p><strong class="userinput"><code>NoSamples</code></strong> will filter all the games that use samples.</p>
-</li><li class="listitem" style="list-style-type: disc">
-<p><strong class="userinput"><code>NoMechanical</code></strong> will remove all the mechanical games. Most
-of them are slot machines and do not work anyway.</p>
-</li><li class="listitem" style="list-style-type: disc">
-<p><strong class="userinput"><code>NoNonworking</code></strong> will remove all games that do not work
-properly.</p>
-</li></ul></div>
-
-<p>Note that games belonging to the <strong class="userinput"><code>devices</code></strong> 
-type are removed automatically. Those are not really games but 
-emulated devices.</p>
-
-<p>After the main filter comes the driver filter. This filter is controlled
-with the tag <strong class="userinput"><code>&lt;Driver&gt;</code></strong>. By default all drivers
-will be included. If you specify a driver, then only games belonging
-to that driver will be included. You can also specify a 
-<strong class="userinput"><code>not</code></strong> operator to not include games belonging
-to that filter. For example:</p>
+<p>The controls filter is configured with the tag
+<strong class="userinput"><code>&lt;Controls&gt;</code></strong>. This filter and the filter
+language (<strong class="userinput"><code>and</code></strong>, <strong class="userinput"><code>or</code></strong>, 
+<strong class="userinput"><code>not</code></strong>, <strong class="userinput"><code>(</code></strong>, <strong class="userinput"><code>)</code></strong>)
+works in a similar way to the <strong class="userinput"><code>&lt;Driver&gt;</code></strong> and
+<strong class="userinput"><code>&lt;Categories&gt;</code></strong>. For example:</p>
 
 <pre class="programlisting">
-...
-&lt;Driver&gt;not cps1, not cps2, not cps3, not neogeo&lt;/Driver&gt;
-...
+(a) &lt;Controls&gt;Joy&lt;/Controls&gt;
+(b) &lt;Controls&gt;Joy and not Mahjong&lt;/Controls&gt;
+(c) &lt;Controls&gt;not Mahjong and not Hanafuda&lt;/Controls&gt;
+(d) &lt;Controls&gt;not (Mahjong or Hanafuda)&lt;/Controls&gt;
+(e) &lt;Controls&gt;Joy and not(Mahjong or Hanafuda)&lt;/Controls&gt;
+
+(a) Include if Joy and maybe other controls.
+(b) Include if Joy and maybe other controls, but not Mahjong.
+(c) Exclude game if Mahjong or Hanafuda.
+(d) Same as above
+(e) Include games that use digital Joystick and exclude games which
+    use Mahjong or Hanafuda controls.
 </pre>
 
-<p>will include all the games expect those belonging to
-the cps1, cps2, cps3 and neogeo drivers. Remember that you can have a 
-look at the available drivers with the <strong class="userinput"><code>list-drivers</code></strong>
-command.</p>
+<p>You can have a look at the available controls with 
+the <strong class="userinput"><code>list-controls</code></strong> command.</p>
 
-<p>The last filter is the categories filter, controlled with the tag
-<strong class="userinput"><code>&lt;Categories&gt;</code></strong>. This works in a similar way
-to the <strong class="userinput"><code>&lt;Driver&gt;</code></strong> filter, but instead of drivers you
-specify game categories. Remember that you can have a look at the
-available categories with the <strong class="userinput"><code>list-categories</code></strong>
-command.</p>
+<pre class="screen">
+$ ./xru-mame.py list-controls
+XBMC ROM utilities - MAME edition version 0.1.0
+[Parsing config file]
+[Listing MAME controls]
+NOTE: clones are not included
+NOTE: mechanical are not included
+NOTE: devices are not included
+Parsing merged MAME XML file './../DAT-mame/mame-0154-reduced.xml'...   done
+[Input - control - type histogram (per game)]
+    1  joy, mahjong, stick
+    1  keypad, stick
+...
+  487  hanafuda, mahjong
+  519  gambling
+ 1434  ButtonsOnly
+ 2874  joy
+ 
+[Input - buttons histogram]
+    9  14
+   13  13
+...
+ 1178  0
+ 1328  2
+ 
+[Input - players histogram]
+    1  6
+    2  8
+...
+ 2704  1
+ 2990  2
+ 
+[Input - control - type histogram]
+    9  Keyboard
+   14  Keypad
+...
+  776  Mahjong
+ 1434  ButtonsOnly
+ 3134  Joy
+</pre>
+
+<p>This command additionally tells you the buttons and player
+statistics. Note that some games require more than one control, and this is
+indicated in the 
+<strong class="userinput"><code>[Input - control - type histogram (per game)]</code></strong>. 
+However, in the <strong class="userinput"><code>[Input - control - type histogram]</code></strong>
+games that use two controls are counted twice, three controls are counted
+three times, and so on.</p>
+</div>
+
+<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp62577664"></a>Buttons filter</h4></div></div></div>
+
+
+<p>This filter allows you to filter games based on the number of buttons
+that they require. This filter works as a Python expression and all
+Python operators can be used with the variable <strong class="userinput"><code>buttons</code></strong>. 
+Let's see this with an example. For example:</p>
+
+<pre class="screen">
+(a) &lt;Buttons&gt;buttons == 1 or buttons == 2&lt;/Buttons&gt;
+(b) &lt;Buttons&gt;buttons &amp;lt;= 8&lt;/Buttons&gt;
+
+(a) Include games with 1 or 2 buttons.
+(b) Include games that require 8 buttons or less. The operator &lt;=  must be 
+    written &amp;lt;= in the configuration file because of the XML rules.
+</pre>
+
+<p>You can see the button statistics with the <strong class="userinput"><code>list-controls</code></strong>
+command. Have a look at the previous section for an example.</p>
+</div>
+
+<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp62581424"></a>Players filter</h4></div></div></div>
+
+
+<p>This filter allows you to select games based on the number of players. Note
+that a game for 2 players means a game in which the two players play at simultaneously
+or alternated. The players filter is a Python expression over the variable players,
+like:</p>
+
+<pre class="screen">
+(a) &lt;Players&gt;players == 1 or players == 2&lt;/Players&gt;
+
+(a) Include games with 1 or 2 players.
+</pre>
+
+<p>You can see the player statistics with the <strong class="userinput"><code>list-controls</code></strong>
+command. Have a look at the controls filter section for an example.</p>
+</div>
+
+<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp62584608"></a>Years filter</h4></div></div></div>
+
+
+<p>With this filter you can choose games based on the year they were
+released. This is very useful to get rid of the oldies or to configure
+the 1980s launcher, the 1990s launcher, etc.</p>
+
+<p>This filter works in a similar way to the <strong class="userinput"><code>Buttons</code></strong> 
+and <strong class="userinput"><code>Players</code></strong> filters. Here, you can filter the 
+variable <strong class="userinput"><code>year</code></strong>. For example:</p>
+
+<pre class="screen">
+(a) &lt;Years&gt;year == 1982&lt;/Years&gt;
+(b) &lt;Years&gt;year &gt;= 1990 and year &amp;lt; 2000&lt;/Years&gt;
+
+(a) Include all games released in 1982.
+(b) Include games released between 1990 and 1999.
+</pre>
+
+<p>You can see the game release statistics with the 
+<strong class="userinput"><code>list-years</code></strong> command.</p>
+
+<pre class="screen">
+$ ./xru-mame.py list-years
+XBMC ROM utilities - MAME edition version 0.1.0
+[Parsing config file]
+[Listing MAME controls]
+NOTE: clones are not included
+NOTE: mechanical are not included
+NOTE: devices are not included
+Parsing merged MAME XML file './DAT-mame/mame-0154-reduced.xml'...   done
+[Release year histogram (raw)]
+    1  2007?
+    1  1973
+...
+    2  ????
+...
+    5  197?
+...
+  261  1996
+  345  1995
+  597  200?
+  668  199?
+
+[Release year histogram (trimmed)]
+   22  2011
+   23  2010
+...
+  952  1996
+ 1035  1995
+</pre>
+
+<p>Most years have a well determined release year, for example 1996. However,
+some games (most of them fruit machines) have release years of the form 199?.
+Also, for other games the release year is not completely determined, for example
+1998?, or even not known at all (????). <span class="application">xru-mame</span> will
+remove all the trailing question marks (for example, 1998? -&gt; 1998) and 
+undetermined years will be expanded. For example, a game with a year
+defined as 199? will be included in the filter 
+<strong class="userinput"><code>year == 1992</code></strong>. This year expansion can be controlled with the option
+<strong class="userinput"><code>&lt;YearsOpts&gt;YearExpansion&lt;/YearsOpts&gt;</code></strong>. Most user
+will not want this option at all because games with unknown release years
+are usually either fruit machines or low-quality bootlegs.</p>
+</div>
+
+<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp62592848"></a>Testing your filter</h4></div></div></div>
+
 
 <p>After you have configured your source and destination directories and
 your filters, you can check what games will be copied into the 
@@ -1327,55 +1570,65 @@ something like this.</p>
 
 <pre class="screen">
 $ ./xru-mame.py check-filter main
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
+XBMC ROM utilities - MAME edition version 0.1.0
 [Parsing config file]
 [Checking filter]
 Filter name = main
 [Parsing MAME merged XML]
-Parsing MAME merged XML file ./DAT-mame/mame-0153-reduced-merged.xml...  done
-Total number of games = 30043
-Number of parents = 9833
-Number of clones = 20210
+Parsing MAME merged XML file ./DAT-mame/mame-0154-merged.xml...  done
+Total number of games = 30551
+Number of parents = 10038
+Number of clones = 20513
 [Reading ROMs in source directory]
 [Applying MAME filters]
 NOTE: -vv if you want to see filters in action
-[Main filter]
-&gt;&gt;&gt; Default filter, removing devices
-Removed =   794 / Remaining = 29249
-&gt;&gt;&gt; Filtering out clones
-Removed = 20210 / Remaining =  9039
-&gt;&gt;&gt; Filtering out games with samples
-Removed =   279 / Remaining =  8760
-&gt;&gt;&gt; Filtering out mechanical games
-Removed =  2458 / Remaining =  6302
-&gt;&gt;&gt; Filtering out Non-Working games
-Removed =  2628 / Remaining =  3674
-[Driver filter]
-&gt;&gt;&gt; Filtering Drivers
-Removed =   237 / Remaining =  3437
-[Categories filter]
-&gt;&gt;&gt; Filtering Categories
-Removed =   739 / Remaining =  2698
-&lt;Game&gt; 10yard
- Have ROM
- Description = 10-Yard Fight (World, set 1)
-&lt;Game&gt; 1942
- Have ROM
- Description = 1942 (Revision B)
+&lt;Main filter&gt;
+Default filter, removing devices - Removed =   907 / Remaining = 29644
+Filtering out clones             - Removed = 20513 / Remaining =  9131
+User wants games with samples
+Filtering out mechanical games   - Removed =  2622 / Remaining =  6509
+Filtering out BIOS               - Removed =    67 / Remaining =  6442
+Filtering out Non-Working games  - Removed =  2627 / Remaining =  3815
+&lt;Driver filter&gt;
+Filter = "cps1 or cps2"
+Removed =  3742 / Remaining =    73
+&lt;Categories filter&gt;
+Filter = "not Mature and not Casino"
+Removed =     0 / Remaining =    73
+&lt;Controls filter&gt;
+Filter = "Joy or Lightgun and not Mahjong and not Hanafuda"
+Removed =     4 / Remaining =    69
+&lt;Buttons filter&gt;
+Filter = "buttons &lt; 8"
+Removed =     0 / Remaining =    69
+&lt;Players filter&gt;
+Filter = "players &lt; 8"
+Removed =     0 / Remaining =    69
+&lt;Year filter&gt;
+Filter = "year &gt;= 1985 and year &lt; 2005"
+Year expansion deactivated
+Removed =     0 / Remaining =    69
+[Adding ROM dependencies]
+Game mpang    depends on device qsound      - Adding  to list
+[Filtered game list]
+&lt;Game&gt; 1941     - Have ROM    - 1941: Counter Attack (World 900227) 
+&lt;Game&gt; 1944     - Have ROM    - 1944: The Loop Master (USA 000620) 
 ...
-&lt;Game&gt; zzyzzyxx
- Have ROM
- Description = Zzyzzyxx (set 1)
+&lt;Game&gt; xmvsf    - Have ROM    - X-Men Vs. Street Fighter (Euro 961004) 
+[Report]
+Number of filtered ROMs = 70
+Number of have ROMs = 70
+Number of missing ROMs = 0
 </pre>
 
 <p>Note than in this list only the filtered games are printed. You can see
 if you have that game or not (missing ROM).</p>
 
 <p>Once you are happy with your filter then it's time to copy your ROMs.</p>
-
+</div>
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440322736"></a>Updating/Copying <span class="application">MAME</span> ROMs</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62528592"></a>Updating/Copying <span class="application">MAME</span> ROMs</h3></div></div></div>
 
 
 <p>The <strong class="userinput"><code>copy &lt;filterName&gt;</code></strong> command will filter
@@ -1384,45 +1637,55 @@ destination directory.</p>
 
 <pre class="screen">
 $ ./xru-mame.py copy main
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
+XBMC ROM utilities - MAME edition version 0.1.0
 [Parsing config file]
 [Copy/Update ROMs]
 Filter name = main
 [Parsing MAME merged XML]
-Parsing MAME merged XML file ./DAT-mame/mame-0153-reduced-merged.xml...  done
-Total number of games = 30043
-Number of parents = 9833
-Number of clones = 20210
+Parsing MAME merged XML file ./DAT-mame/mame-0154-merged.xml...  done
+Total number of games = 30551
+Number of parents = 10038
+Number of clones = 20513
 [Reading ROMs in source directory]
 [Applying MAME filters]
 NOTE: -vv if you want to see filters in action
-[Main filter]
-&gt;&gt;&gt; Default filter, removing devices
-Removed =   794 / Remaining = 29249
-&gt;&gt;&gt; Filtering out clones
-Removed = 20210 / Remaining =  9039
-&gt;&gt;&gt; Filtering out games with samples
-Removed =   279 / Remaining =  8760
-&gt;&gt;&gt; Filtering out mechanical games
-Removed =  2458 / Remaining =  6302
-&gt;&gt;&gt; Filtering out Non-Working games
-Removed =  2628 / Remaining =  3674
-[Driver filter]
-&gt;&gt;&gt; Filtering Drivers
-Removed =   237 / Remaining =  3437
-[Categories filter]
-&gt;&gt;&gt; Filtering Categories
-Removed =   739 / Remaining =  2698
+&lt;Main filter&gt;
+Default filter, removing devices - Removed =   907 / Remaining = 29644
+Filtering out clones             - Removed = 20513 / Remaining =  9131
+User wants games with samples
+Filtering out mechanical games   - Removed =  2622 / Remaining =  6509
+Filtering out BIOS               - Removed =    67 / Remaining =  6442
+Filtering out Non-Working games  - Removed =  2627 / Remaining =  3815
+&lt;Driver filter&gt;
+Filter = "cps1 or cps2"
+Removed =  3742 / Remaining =    73
+&lt;Categories filter&gt;
+Filter = "not Mature and not Casino"
+Removed =     0 / Remaining =    73
+&lt;Controls filter&gt;
+Filter = "Joy or Lightgun and not Mahjong and not Hanafuda"
+Removed =     4 / Remaining =    69
+&lt;Buttons filter&gt;
+Filter = "buttons &lt; 8"
+Removed =     0 / Remaining =    69
+&lt;Players filter&gt;
+Filter = "players &lt; 8"
+Removed =     0 / Remaining =    69
+&lt;Year filter&gt;
+Filter = "year &gt;= 1985 and year &lt; 2005"
+Year expansion deactivated
+Removed =     0 / Remaining =    69
+[Adding ROM dependencies]
+Game mpang    depends on device qsound      - Adding  to list
 [Creating list of ROMs to be copied/updated]
-Added 2672 ROMs
+Added 70 ROMs
 [Copying ROMs into destDir]
-  0% &lt;Copied&gt; 10yard.zip
-  0% &lt;Copied&gt; 1942.zip
+  0% &lt;Copied&gt; 1941.zip
+  1% &lt;Copied&gt; 1944.zip
 ...
- 99% &lt;Copied&gt; zwackery.zip
- 99% &lt;Copied&gt; zzyzzyxx.zip
+ 98% &lt;Copied&gt; xmvsf.zip
 [Report]
-Copied ROMs   2672
+Copied ROMs     70
 </pre>
 
 <p>The <strong class="userinput"><code>update &lt;filterName&gt;</code></strong> command operates
@@ -1430,48 +1693,8 @@ in a similar way to <strong class="userinput"><code>copy</code></strong>. Howeve
 copying all the ROMs, each ROMs in sourceDir is compared with the same
 named ROM in destDir, and the file will be copied only if the destination
 ROM does not exist or the file sizes are different. This is very
-useful when you destination directory is network-mounted.</p>
-
-<pre class="screen">
-$ ./xru-mame.py update main
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
-[Parsing config file]
-[Copy/Update ROMs]
-Filter name = main
-[Parsing MAME merged XML]
-Parsing MAME merged XML file ./DAT-mame/mame-0153-reduced-merged.xml...  done
-Total number of games = 30043
-Number of parents = 9833
-Number of clones = 20210
-[Reading ROMs in source directory]
-[Applying MAME filters]
-NOTE: -vv if you want to see filters in action
-[Main filter]
-&gt;&gt;&gt; Default filter, removing devices
-Removed =   794 / Remaining = 29249
-&gt;&gt;&gt; Filtering out clones
-Removed = 20210 / Remaining =  9039
-&gt;&gt;&gt; Filtering out games with samples
-Removed =   279 / Remaining =  8760
-&gt;&gt;&gt; Filtering out mechanical games
-Removed =  2458 / Remaining =  6302
-&gt;&gt;&gt; Filtering out Non-Working games
-Removed =  2628 / Remaining =  3674
-[Driver filter]
-&gt;&gt;&gt; Filtering Drivers
-Removed =   237 / Remaining =  3437
-[Categories filter]
-&gt;&gt;&gt; Filtering Categories
-Removed =   739 / Remaining =  2698
-[Creating list of ROMs to be copied/updated]
-Added 2672 ROMs
-[Updating ROMs into destDir]
-[Report]
-Copied ROMs      0
-Updated ROMs  2672
-</pre>
-
-<p>By default, only the newly copied files are displayed during the update
+useful when you destination directory is network-mounted.
+By default, only the newly copied files are displayed during the update
 process. If you want to check also the updated files, then use the
 option <strong class="userinput"><code>-v</code></strong> in the command line.</p>
 
@@ -1480,7 +1703,7 @@ commands, you can use the flags <strong class="userinput"><code>--dryRun</code><
 <strong class="userinput"><code>--cleanROMs</code></strong>.</p>
 
 <p><strong class="userinput"><code>--dryRun</code></strong> will not perform any operation in your
-files. Use this flag if you want to test what will happend with your ROMs,
+files. Use this flag if you want to test what will happen with your ROMs,
 and if you are happy with the results execute 
 <span class="application">xru-mame</span> without <strong class="userinput"><code>--dryRun</code></strong>
 option. Note that if you use <strong class="userinput"><code>--dryRun</code></strong>, 
@@ -1494,7 +1717,7 @@ filtered ROMs will be deleted. Use this with caution! The list of deleted ROMs
 in destDir is always printed.</p>
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440360176"></a>NFO files and Artwork</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62610784"></a>NFO files</h3></div></div></div>
 
 
 <p>Both <a class="ulink" href="http://forum.xbmc.org/showthread.php?tid=85724" target="_top">Advanced Launcher</a> 
@@ -1514,15 +1737,20 @@ genre, etc. A typical NFO file looks like this.</p>
 &lt;/game&gt;
 </pre>
 
-<p>You can create NFO files if you specify the <strong class="userinput"><code>--generateNFO</code></strong>
-when invoking the <strong class="userinput"><code>copy</code></strong> or 
-<strong class="userinput"><code>update</code></strong> commands. Note that the generated files will have
-and empty plot (maybe in a future version the game plot will be extracted from
-<code class="filename">history.dat</code>).</p>
+<p>The scrapping process may be extremely slow. In order to speed up your
+MAME ROM collection scanning, you can create NFO files if you specify 
+the <strong class="userinput"><code>--generateNFO</code></strong> when invoking the <strong class="userinput"><code>copy</code></strong> or 
+<strong class="userinput"><code>update</code></strong> commands and then use the offline scrapers. 
+Note that the generated files will have and empty plot (maybe in a future version 
+the game plot will be extracted from <code class="filename">history.dat</code>).</p>
 
 <p>Use the <strong class="userinput"><code>--cleanNFO</code></strong> to remove any unknown
 NFO files, in a similar way to the <strong class="userinput"><code>--cleanROMs</code></strong> flag. The
 list of deleted NFO files in destDir is always printed.</p>
+</div>
+
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62618368"></a>Artwork files</h3></div></div></div>
+
 
 <p>Regarding Artwork files, have a look first at the Artwork section of
 <span class="application">xru-console</span> because in <span class="application">xru-mame</span>
@@ -1552,53 +1780,68 @@ into your MAME ROM filter.</p>
 
 <pre class="screen">
 $ ./xru-console.py check-artwork main
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
+XBMC ROM utilities - MAME edition version 0.1.0
 [Parsing config file]
 [Check-ArtWork]
 Filter name = main
 [Parsing MAME merged XML]
-Parsing MAME merged XML file ./DAT-mame/mame-0153-reduced-merged.xml...  done
-Total number of games = 30043
-Number of parents = 9833
-Number of clones = 20210
+Parsing MAME merged XML file ./DAT-mame/mame-0154-merged.xml...  done
+Total number of games = 30551
+Number of parents = 10038
+Number of clones = 20513
 [Applying MAME filters]
 NOTE: -vv if you want to see filters in action
-[Main filter]
-&gt;&gt;&gt; Default filter, removing devices
-Removed =   794 / Remaining = 29249
-&gt;&gt;&gt; Filtering out clones
-Removed = 20210 / Remaining =  9039
-&gt;&gt;&gt; Filtering out games with samples
-Removed =   279 / Remaining =  8760
-&gt;&gt;&gt; Filtering out mechanical games
-Removed =  2458 / Remaining =  6302
-&gt;&gt;&gt; Filtering out Non-Working games
-Removed =  2628 / Remaining =  3674
-[Driver filter]
-&gt;&gt;&gt; Filtering Drivers
-Removed =   237 / Remaining =  3437
-[Categories filter]
-&gt;&gt;&gt; Filtering Categories
-Removed =   739 / Remaining =  2698
+&lt;Main filter&gt;
+Default filter, removing devices - Removed =   907 / Remaining = 29644
+Filtering out clones             - Removed = 20513 / Remaining =  9131
+User wants games with samples
+Filtering out mechanical games   - Removed =  2622 / Remaining =  6509
+Filtering out BIOS               - Removed =    67 / Remaining =  6442
+Filtering out Non-Working games  - Removed =  2627 / Remaining =  3815
+&lt;Driver filter&gt;
+Filter = "cps1 or cps2"
+Removed =  3742 / Remaining =    73
+&lt;Categories filter&gt;
+Filter = "not Mature and not Casino"
+Removed =     0 / Remaining =    73
+&lt;Controls filter&gt;
+Filter = "Joy or Lightgun and not Mahjong and not Hanafuda"
+Removed =     4 / Remaining =    69
+&lt;Buttons filter&gt;
+Filter = "buttons &lt; 8"
+Removed =     0 / Remaining =    69
+&lt;Players filter&gt;
+Filter = "players &lt; 8"
+Removed =     0 / Remaining =    69
+&lt;Year filter&gt;
+Filter = "year &gt;= 1985 and year &lt; 2005"
+Year expansion deactivated
+Removed =     0 / Remaining =    69
+[Adding ROM dependencies]
+Game mpang    depends on device qsound      - Adding  to list
 [Creating list of ROMs to be copied/updated]
-Added 2672 ROMs
+Added 70 ROMs
 [Artwork report]
-&lt;&lt;  ROM  &gt;&gt; 10yard.zip
- Original   10yard
- Have T     10yard.png
- Have F     10yard.png
+&lt;&lt;  ROM  &gt;&gt; 1941.zip
+ Original   1941
+ Have T     1941.png
+ Have F     1941.png
+&lt;&lt;  ROM  &gt;&gt; 1944.zip
+ Original   1944
+ Have T     1944.png
+ Have F     1944.png
 ...
-&lt;&lt;  ROM  &gt;&gt; zzyzzyxx.zip
- Original   zzyzzyxx
- Have T     zzyzzyxx.png
- Have F     zzyzzyxx.png
-Number of ROMs in destDir  = 2672
-Number of ArtWork found    = 2672
-Number of original ArtWork = 2672
+&lt;&lt;  ROM  &gt;&gt; xmvsf.zip
+ Original   xmvsf
+ Have T     xmvsf.png
+ Have F     xmvsf.png
+Number of ROMs in destDir  = 70
+Number of ArtWork found    = 70
+Number of original ArtWork = 70
 Number of replaced ArtWork = 0
-Number of have Thumbs    = 2672
+Number of have Thumbs    = 70
 Number of missing Thumbs = 0
-Number of have Fanart    = 2672
+Number of have Fanart    = 70
 Number of missing Fanart = 0
 </pre>
 
@@ -1612,24 +1855,10 @@ and <strong class="userinput"><code>update-artwork &lt;filterName&gt;</code></st
 <strong class="userinput"><code>--cleanArtWork</code></strong> flag if you want to delete
 unknown Artwork into the thumbs and fanart destination directories.</p>
 </div>
-
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440377888"></a>Some notes</h3></div></div></div>
-
-
-<div class="sect3"><div class="titlepage"><div><div><h4 class="title"><a id="idp440379072"></a>QSound and CPS1 and CPS 2 ROMs</h4></div></div></div>
-
-
-<p>Some CPS1 games and most (all?) CPS2 games require the 
-<code class="filename">qsound</code> ROM. This ROM is a <strong class="userinput"><code>device</code></strong>
-that is automatically removed. Until I find a better solution,
-<code class="filename">qsound</code> is always included no matter the filters
-configured by the user.</p>
-</div>
-</div>
 </div>
 
 
-<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp440382208"></a><span class="application">xru-launcher-AL</span></h2></div></div></div>
+<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp62629520"></a><span class="application">xru-launcher-AL</span></h2></div></div></div>
 
 
 <p><span class="application">xru-launcher-AL</span> is a small utility that reads XBMC's 
@@ -1655,7 +1884,7 @@ $ xru-launcher-AL.py [-options] command
 <p>Lists every launcher found in the configuration file.</p>
 </li><li class="listitem" style="list-style-type: disc">
 <p><strong class="userinput"><code>check</code></strong></p>
-<p>Checks the Advanced Launcher configuration file and compares againts
+<p>Checks the Advanced Launcher configuration file and compares against
 the ROM directories. It reports if Advanced Launcher should rescan the
 ROM launchers if outdated.</p>
 </li></ul></div>
@@ -1673,11 +1902,11 @@ ROM launchers if outdated.</p>
 <p>Save program output in <code class="filename">xru-launcher-AL-log.txt</code></p>
 </li></ul></div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440398880"></a>Configuration</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62645872"></a>Configuration</h3></div></div></div>
 
 
 <p><span class="application">xru-launcher-AL</span> expects to be run on a different
-computer where your XBMC media center is. The user's directory is network-mounted
+computer where your XBMC media centre is. The user's directory is network-mounted
 in the computer you run <span class="application">xru-launcher-AL</span> using FUSE 
 <span class="application">sshfs</span>, <span class="application">nfs</span>,
 <span class="application">samba</span>, etc. However, it can also be run on the
@@ -1697,7 +1926,7 @@ Advanced Launcher's configuration file.</p>
 
 <p>Next, use the <strong class="userinput"><code>list</code></strong> command to read
 Advance Launcher's configuration file and list every launcher found
-there. You sould get something like this.</p>
+there. You should get something like this.</p>
 
 <pre class="programlisting">
 $ ./xru-launcher-AL.py list       
@@ -1758,7 +1987,7 @@ Advanced Launcher configuration file
 </pre>
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440399136"></a>Checking launchers</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62646000"></a>Checking launchers</h3></div></div></div>
 
 
 <p>To check you launchers use the <strong class="userinput"><code>check</code></strong> command. You will
@@ -1803,10 +2032,10 @@ Advanced Launcher needs an update for the following launchers
 </div>
 
 
-<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp440417504"></a>Examples</h2></div></div></div>
+<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp62664192"></a>Examples</h2></div></div></div>
 
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440418176"></a>Simple filtering of a console ROM collection</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62665056"></a>Simple filtering of a console ROM collection</h3></div></div></div>
 
 
 <p>You have a No-Intro ROM collection of the Sega Genesis and want to
@@ -1866,7 +2095,7 @@ $ ./xru-console.py update genesis
 
 </div>
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440418608"></a>Splitting <span class="application">MAME</span> ROMs into several launchers
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62665344"></a>Splitting <span class="application">MAME</span> ROMs into several launchers
 for each driver</h3></div></div></div>
 
 
@@ -1878,7 +2107,6 @@ computer in the directory <code class="filename">/home/wintermute/MAME/roms/</co
 The xbmc user's home directory is network-mounted in the 
 desktop computer using FUSE's <span class="application">sshfs</span> in 
 <code class="filename">/home/wintermute/XBMC-remote/</code>.</p>
-
 
 <p>First, create the destination directories. Make sure your HTPC
 is network-mounted.</p>
@@ -1909,9 +2137,13 @@ described <a class="link" href="#create_mame_database" title="Creating the MAME 
   &lt;ROMsSource&gt;/home/wintermute/MAME/roms-mame/&lt;/ROMsSource&gt;
   &lt;ROMsDest  &gt;/home/wintermute/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest&gt;
 
-  &lt;MainFilter&gt;NoClones, NoSamples, NoMechanical, NoNonworking&lt;/MainFilter&gt;
-  &lt;Driver&gt;not cps1, not cps2&lt;/Driver&gt;
-  &lt;Categories&gt;Fighter, Puzzle&lt;/Categories&gt;
+  &lt;MainFilter&gt;NoClones, NoMechanical, NoBIOS, NoNonworking&lt;/MainFilter&gt;
+  &lt;Driver&gt;not cps1 and not cps2 and not cps3 and not neogeo_noslot&lt;/Driver&gt;
+  &lt;Categories&gt;not Casino and not PinMAME and not Fruit_Machines&lt;/Categories&gt;
+  &lt;Controls&gt;Joy and not(Mahjong or Gambling or Hanafuda)&lt;/Controls&gt;
+  &lt;Buttons&gt;buttons &amp;lt;= 8&lt;/Buttons&gt;
+  &lt;Players&gt;&lt;/Players&gt;
+  &lt;Years&gt;year &lt; 2000&lt;/Years&gt;
 &lt;/MAMEFilter&gt;
 
 &lt;MAMEFilter name="cps1"&gt;
@@ -1953,10 +2185,10 @@ $ ./xru-mame.py update cps2
 
 
 
-<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp440443264"></a>Changelog</h2></div></div></div>
+<div class="sect1"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a id="idp62689712"></a>Changelog</h2></div></div></div>
 
 
-<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp440444224"></a>Version 0.1</h3></div></div></div>
+<div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a id="idp62690576"></a>Version 0.1</h3></div></div></div>
 
 </div>
 <p>Released on July 2014.</p>
