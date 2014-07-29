@@ -2286,7 +2286,7 @@ described <link linkend="create_mame_database">here</link>.</para>
 
 &lt;MAMEFilter name="cps1">
   &lt;ROMsSource>/home/wintermute/MAME/roms-mame/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-mame-cps1/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/NUC-remote/ROMs/roms-mame-cps1/&lt;/ROMsDest>
 
   &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
   &lt;Driver>cps1&lt;/Driver>
@@ -2294,7 +2294,7 @@ described <link linkend="create_mame_database">here</link>.</para>
 
 &lt;MAMEFilter name="cps2">
   &lt;ROMsSource>/home/wintermute/MAME/roms-mame/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-mame-cps2/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/NUC-remote/ROMs/roms-mame-cps2/&lt;/ROMsDest>
 
   &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
   &lt;Driver>cps2&lt;/Driver>
