@@ -7,9 +7,7 @@
 <articleinfo>
   <author>
     <surname>Wintermute0110</surname>
-    <affiliation>
-      <address><email>wintermute0110@gmail.com</email></address>
-    </affiliation>
+    <email>wintermute0110@gmail.com</email>
   </author>
   <copyright>
     <year>2014</year>
@@ -22,40 +20,39 @@
 <sect1>
 <title>Introduction</title>
 
-<para>
-XBMC ROM utilities (XRU) is a set of Python scripts that allows you to filter 
-your ROM collections to be used with the XBMC launcher plugins like Advanced 
-Launcher, ROM Collection Browser, or any other front-end. If the ROM 
-collections are updated or a new version of the emulators installed (which may 
-require some new ROMs to be updated) XRU is able to synchronise the XBMC 
-launchers with the new ROMs quickly and effectively.
-</para>
+<para>XBMC ROM utilities (XRU) is a set of Python scripts that allows you to filter
+your ROM collections to remove unwanted ROMs from XBMC's launcher plugins like
+Advanced Launcher, ROM Collection Browser, or any other front-end. If the ROM
+collections are updated or a new version of the emulators installed (which may
+require some new ROMs to be updated) XRU is able to synchronise the ROM
+directories of your HTPC quickly and effectively.</para>
 
-<para>
-XRU includes three programs
+<para>XRU includes three programs</para>
 
 <itemizedlist mark='bullet'>
 <listitem><para>
-<application>xru-console</application> filters a ROM collection with No-Intro naming conventions and copies 
-the filtered list to the destination directory of your choice. Multiple ROM collections, 
-each with a different filter, can be configured. Multiple filters can be
-configured to the same ROM collection, for example to split the ROMs into
-regions. Also, if artwork is available, it may also be synchronised.
+<application>xru-console</application> filters a ROM collection with No-Intro names and copies
+the filtered list to the destination directory of your choice. Multiple ROM
+collections, each with a different filter, can be configured. Multiple filters
+can be configured to the same ROM collection, for example to split the ROMs
+into USA, Europe and Japan regions. Also, if artwork is available, it may also
+be synchronised.
 </para></listitem>
 
 <listitem><para>
-<application>xru-mame</application> takes the MAME-generated XML game database 
-and merges it with <filename>Catver.ini</filename>. Then, 
-a set of filters can be defined (for example, to remove mechanical games) so filtered 
-ROMs are copied to different destination directories. It also creates NFO files with 
-game information for launchers and copies local artwork if available.
+<application>xru-mame</application> takes the MAME-generated XML game database and merges it
+with <filename>Catver.ini</filename>. Then, a set of filters can be defined (for example,
+to remove mechanical games or select games that use a lightgun) and filtered
+ROMs are copied to different destination directories. It also creates NFO files
+with game information for launchers and copies local artwork if available so
+offline scrapers can be used.
 </para></listitem>
+
 <listitem><para>
-<application>xru-launcher-AL</application> parses XBMC's Advanced Launcher configuration file and scans your 
+<application>xru-launcher-AL</application> parses XBMC's Advanced Launcher configuration file and scans your
 ROM launchers for missing ROMs. It prints a report with the launchers you have to update.
 </para></listitem>
 </itemizedlist>
-</para>
 </sect1>
 
 <!-- ======================================================================= -->
@@ -572,7 +569,7 @@ sure you use the correct XML DAT for the collection!</para>
 
 <para>In No-Intro 1G1R mode, <application>xru-console</application> makes the
 main parent/clone list using the XML DAT instead of scanning you source 
-directory. Then, the two pass filtering is applied in a similar way. Finally, 
+directory. Then, the two pass filtering is applied. Finally, 
 your source directory will be scanned and for every ROM set in the 
 parent/clone list, the ROM with highest score will be copied into the
 destination directory. If you do not have that ROM, then the second ROM
@@ -675,7 +672,7 @@ Number of clones = 1538
 <para>In this ROM listing, you can see the parent/clone sets, the score of each
 ROM, if the ROM is included or excluded, and if the ROM exists in the source
 directory or not. Note that if you use a No-Intro XML DAT you may have missing
-ROMs. However, if you don not use the DAT, then <emphasis>you will always have
+ROMs. However, if you do not use the DAT then <emphasis>you will always have
 all the ROMs</emphasis> in this list.</para>
 </sect2>
 
@@ -842,7 +839,7 @@ into your ROM collection</para>
 
 <screen>
 $ ./xru-console.py check-artwork genesis
-XBMC ROM utilities - Console ROMsESC[0m version 0.1.0
+XBMC ROM utilities - Console ROMs version 0.1.0
 [Parsing config file]
 [Check-ArtWork]
 Filter name = genesis
@@ -880,7 +877,7 @@ Number of missing Fanart = 15
 
 <para>Note that for the game <emphasis>Speedball 2</emphasis> no artwork was
 found for the filtered game in destDir. However, a replacement belonging to
-another ROM in the set was found. Some other ROMs, particularly BIOSes,
+another ROM in the parent/clone set was found. Some other ROMs, particularly BIOSes,
 won't have any artwork and will produce a miss.</para>
 
 <para>When you are happy with the results, you can copy/update your
@@ -927,10 +924,11 @@ Deleted 0 redundant fanart
 
 <para><application>xru-mame</application> is able to filter a 
 <application>MAME</application> ROM collection. This tool is somewhat more
-sofisticated than <application>xru-console</application> because 
+sophisticated than <application>xru-console</application> because 
 <application>MAME</application> keeps a full database with a lot of 
-information. This database can be used with a lot of filtering options to fully
-customize the list of games in your front-end.</para>
+information about the arcade game it runs. This database can be used with a 
+lot of filtering options to fully customize the list of games in your 
+front-end.</para>
 
 <para><application>xru-mame</application> requires a command that defines the
 main action to do. Also, many commands require the name of the filter
@@ -959,8 +957,9 @@ processing should be much quicker.</para>
 
 <listitem>
 <para><userinput>merge</userinput></para>
-<para>Takes MAME XML (reduced) info file and Catver.ini and makes an output XML
-file with all the necessary information for proper game filtering.</para>
+<para>Takes MAME XML (reduced) info file and <filename>Catver.ini</filename> 
+and makes an output XML file with all the necessary information for proper 
+game filtering.</para>
 </listitem>
 
 <listitem>
@@ -1178,19 +1177,19 @@ convenience.</para>
 information than needed for game filtering. Next, the game database will be "reduced",
 that is, non-relevant information will be stripped off and a shorted game database
 will be created (named <filename>mame-0154-reduced.xml</filename> in the above 
-configuration file example. Execute:</para>
+configuration file example). Execute:</para>
 
 <screen>
 $ ./xru-mame.py reduce-XML
-XBMC ROM utilities - MAME edition version 0.1.0 alpha 1
+XBMC ROM utilities - MAME edition version 0.1.0
 [Parsing config file]
 [Reducing MAME XML game database]
 Reading MAME XML game database...
 NOTE: this will take a looong time...
-Parsing MAME XML file ./DAT-mame/mame-0153.xml...   done
+Parsing MAME XML file ./DAT-mame/mame-0154.xml...   done
 Reducing MAME XML database...
 Building reduced output XML file...
-Writing reduced XML file ./DAT-mame/mame-0153-reduced.xml
+Writing reduced XML file ./DAT-mame/mame-0154-reduced.xml
 </screen>
 
 <para>Please be patient! This reduction process will take several minutes and
@@ -1213,13 +1212,13 @@ XBMC ROM utilities - MAME edition version 0.1.0
 [Building merged MAME filter database]
 [Parsing Catver.ini]
 [Parsing (reduced) MAME XML file]
-Parsing MAME XML file ./../DAT-mame/mame-0154-reduced.xml...   done
+Parsing MAME XML file ./DAT-mame/mame-0154-reduced.xml...   done
 [Merging MAME XML and categories]
 [WARNING] Category not found for game 18wheelu
 ...
 [WARNING] Category not found for game r4700le
 [Writing output file]
-Output file ./../DAT-mame/mame-0154-merged.xml
+Output file ./DAT-mame/mame-0154-merged.xml
 </screen>
 
 <para>If you get some some warnings about non-found categories for some games
@@ -1273,7 +1272,7 @@ your <filename>xru-mame-config.xml</filename> and add the following.</para>
 
 &lt;MAMEFilter name="main">
   &lt;ROMsSource>/home/wintermute/mame-roms/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest>
 
   &lt;MainFilter>NoClones, NoSamples, NoMechanical, NoBIOS, NoNonworking&lt;/MainFilter>
   &lt;Driver>not cps1 and not cps2 and not cps3 and not neogeo_noslot&lt;/Driver>
@@ -1281,7 +1280,7 @@ your <filename>xru-mame-config.xml</filename> and add the following.</para>
   &lt;Controls>Joy or Lightgun and not(Mahjong or Hanafuda)&lt;/Controls>
   &lt;Buttons>buttons == 1&lt;/Buttons>
   &lt;Players>players == 1&lt;/Players>
-  &lt;Years>year == 1990 and year == 1991&lt;/Years>
+  &lt;Years>year == 1990 or year == 1991&lt;/Years>
 &lt;/MAMEFilter>
 &lt;/MAMEConfig>
 </programlisting>
@@ -1372,11 +1371,11 @@ operator precedence. For example:</para>
 (b) Exclude CPS1 games.
 (c) Exclude both CPS1 and CPS2 games.
 (d) Same as (c). Just another way of writing this filter.
-(e) Include CPS1 or CPS2.
+(e) Include CPS1 or CPS2 games.
 </programlisting>
 
 <para>You can list the <application>MAME</application> drivers with 
-the command <userinput>list-drivers</userinput> command.</para>
+the command <userinput>list-drivers</userinput>.</para>
 
 <screen>
 $ ./xru-mame.py list-drivers
@@ -1387,7 +1386,7 @@ NOTE: clones are not included
 NOTE: mechanical are not included
 NOTE: devices are not included
 Parsing merged MAME XML file './DAT-mame/mame-0154-merged.xml'...   done
-[Final (used) categories]
+[Final (used) drivers]
    1  calorie.c
    1  subs.c
 ...
@@ -1417,11 +1416,11 @@ but instead of drivers you specify game categories. For example:</para>
 (b) &lt;Categories>Fighter or Shooter&lt;/Categories>
 (c) &lt;Categories>Fighter and Shooter&lt;/Categories>
 
-(a) Exclude games belonging to Casino, PinMAME or Fruit_Machines
-(b) Include only Fighter or Shooter games
+(a) Exclude games belonging to Casino, PinMAME or Fruit_Machines.
+(b) Include only Fighter or Shooter games.
 (c) Will exclude all games. Note that every game has a unique category, so
-    no game can be a Fighter AND Shooter. Be careful when configuring your
-    filters.
+    no game can be a Fighter AND a Shooter at the same time. Be careful when 
+    configuring your filters.
 </programlisting>
 
 <para>You can have a look at the available categories with 
@@ -1484,9 +1483,9 @@ information with <userinput>-vv</userinput>.</para>
 <title>Controls filter</title>
 
 <para>With the controls filter you can choose games based on the input
-peripherals they required. This is useful if you only have a digital
-joystick and will no be able to play games that require a lightgun.
-Also, it allows you to remove mahjong games and fruit machines (fruit
+peripherals they require. This is useful if you only have a digital
+joystick and will no be able to play games that require a Lightgun.
+Also, it allows you to remove Mahjong games and fruit machines (fruit
 machines typically have the controls ButtonsOnly).</para>
 
 <para>The controls filter is configured with the tag
@@ -1494,7 +1493,7 @@ machines typically have the controls ButtonsOnly).</para>
 language (<userinput>and</userinput>, <userinput>or</userinput>, 
 <userinput>not</userinput>, <userinput>(</userinput>, <userinput>)</userinput>)
 works in a similar way to the <userinput>&lt;Driver></userinput> and
-<userinput>&lt;Categories></userinput>. For example:</para>
+<userinput>&lt;Categories></userinput> filters. For example:</para>
 
 <programlisting>
 (a) &lt;Controls>Joy&lt;/Controls>
@@ -1522,7 +1521,7 @@ XBMC ROM utilities - MAME edition version 0.1.0
 NOTE: clones are not included
 NOTE: mechanical are not included
 NOTE: devices are not included
-Parsing merged MAME XML file './../DAT-mame/mame-0154-reduced.xml'...   done
+Parsing merged MAME XML file './DAT-mame/mame-0154-reduced.xml'...   done
 [Input - control - type histogram (per game)]
     1  joy, mahjong, stick
     1  keypad, stick
@@ -1589,9 +1588,9 @@ command. Have a look at the previous section for an example.</para>
 <title>Players filter</title>
 
 <para>This filter allows you to select games based on the number of players. Note
-that a game for 2 players means a game in which the two players play at simultaneously
-or alternated. The players filter is a Python expression over the variable players,
-like:</para>
+that a game for 2 players means a game in which the two players may play simultaneously
+or alternated. The players filter is a Python expression over the variable 
+<userinput>players</userinput>, for example:</para>
 
 <screen>
 (a) &lt;Players>players == 1 or players == 2&lt;/Players>
@@ -1655,11 +1654,11 @@ Parsing merged MAME XML file './DAT-mame/mame-0154-reduced.xml'...   done
  1035  1995
 </screen>
 
-<para>Most years have a well determined release year, for example 1996. However,
+<para>Most games have a well determined release year, for example 1996. However,
 some games (most of them fruit machines) have release years of the form 199?.
 Also, for other games the release year is not completely determined, for example
 1998?, or even not known at all (????). <application>xru-mame</application> will
-remove all the trailing question marks (for example, 1998? -> 1998) and 
+remove all the trailing question marks (for example, 1998? becomes 1998) and 
 undetermined years will be expanded. For example, a game with a year
 defined as 199? will be included in the filter 
 <userinput>year == 1992</userinput>. This year expansion can be controlled with the option
@@ -1731,9 +1730,10 @@ Number of missing ROMs = 0
 </screen>
 
 <para>Note than in this list only the filtered games are printed. You can see
-if you have that game or not (missing ROM).</para>
+if you have that ROM or not (missing ROM) in the source directory.</para>
 
-<para>Once you are happy with your filter then it's time to copy your ROMs.</para>
+<para>Once you are happy with your filter then it's time to copy your ROMs to
+the destination directory.</para>
 </sect3>
 </sect2>
 
@@ -1799,7 +1799,7 @@ Copied ROMs     70
 
 <para>The <userinput>update &lt;filterName></userinput> command operates
 in a similar way to <userinput>copy</userinput>. However, rather than
-copying all the ROMs, each ROMs in sourceDir is compared with the same
+copying all the ROMs, each ROM in sourceDir is compared with the same
 named ROM in destDir, and the file will be copied only if the destination
 ROM does not exist or the file sizes are different. This is very
 useful when you destination directory is network-mounted.
@@ -1846,12 +1846,14 @@ genre, etc. A typical NFO file looks like this.</para>
 &lt;/game>
 </screen>
 
-<para>The scrapping process may be extremely slow. In order to speed up your
+<para>The scrapping process may be extremely slow if your ROM collection is
+huge. In order to speed up your
 MAME ROM collection scanning, you can create NFO files if you specify 
 the <userinput>--generateNFO</userinput> when invoking the <userinput>copy</userinput> or 
 <userinput>update</userinput> commands and then use the offline scrapers. 
-Note that the generated files will have and empty plot (maybe in a future version 
-the game plot will be extracted from <filename>history.dat</filename>).</para>
+Note that the generated files will have and empty plot (maybe in a future version
+of <application>xru-mame</application> the game plot will be extracted 
+from <filename>history.dat</filename>).</para>
 
 <para>Use the <userinput>--cleanNFO</userinput> to remove any unknown
 NFO files, in a similar way to the <userinput>--cleanROMs</userinput> flag. The
@@ -1865,7 +1867,7 @@ list of deleted NFO files in destDir is always printed.</para>
 <application>xru-console</application> because in <application>xru-mame</application>
 this works in a very similar way. The main difference is that complete collections
 of Artwork for MAME exist, so there is no need for artwork substitution in 
-<application>xru-mame</application>. Either you have the artwork or have not.</para>
+<application>xru-mame</application>. Either you have the artwork or not.</para>
 
 <important>Artwork must have .png extension (lowercase).</important>
 
@@ -1878,8 +1880,8 @@ into your MAME ROM filter.</para>
 ...
   &lt;ThumbsSource>/home/xbmc/roms/ArtWork/mame-titles/&lt;/ThumbsSource>
   &lt;FanartSource>/home/xbmc/roms/ArtWork/mame-snaps/&lt;/FanartSource>
-  &lt;ThumbsDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/mame-thumbs/&lt;/ThumbsDest>
-  &lt;FanartDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/mame-fanart/&lt;/FanartDest>
+  &lt;ThumbsDest  >/home/NUC-remote/ROMs/ArtWork/mame-thumbs/&lt;/ThumbsDest>
+  &lt;FanartDest  >/home/NUC-remote/ROMs/ArtWork/mame-fanart/&lt;/FanartDest>
 ...
 &lt;/MAMEFilter>
 </programlisting>
@@ -1955,14 +1957,14 @@ Number of missing Fanart = 0
 </screen>
 
 <para>Note that in <application>xru-mame</application> no artwork substitution
-is done. All artwork should be either original or missing and if not then 
+is done. All artwork should be either original or missing and if not 
 that is a bug.</para>
 
 <para>When you are happy with the results, you can copy/update your
-Artwork with the commands <userinput>copy-artwork &lt;filterName></userinput>
+artwork with the commands <userinput>copy-artwork &lt;filterName></userinput>
 and <userinput>update-artwork &lt;filterName></userinput>. You can use the
 <userinput>--cleanArtWork</userinput> flag if you want to delete
-unknown Artwork into the thumbs and fanart destination directories.</para>
+unknown artwork into the thumbs and fanart destination directories.</para>
 </sect2>
 </sect1>
 
@@ -2029,27 +2031,28 @@ ROM launchers if outdated.</para>
 <title>Configuration</title>
 
 <para><application>xru-launcher-AL</application> expects to be run on a different
-computer where your XBMC media centre is. The user's directory is network-mounted
+computer where your XBMC media centre is. The XBMC user's directory is network-mounted
 in the computer you run <application>xru-launcher-AL</application> using FUSE 
 <application>sshfs</application>, <application>nfs</application>,
 <application>samba</application>, etc. However, it can also be run on the
 HTPC computer.</para>
 
 <para>To start using <application>xru-launcher-AL</application>, create a
-minimalistic configuration file named <filename>xru-launcher-AL-config.xml</filename>.</para>
+minimalistic configuration file named 
+<filename>xru-launcher-AL-config.xml</filename>.</para>
 
 <programlisting>
 &lt;AdvancedLauncher>
-&lt;configFile>/home/wintermute/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml&lt;/configFile>
+&lt;configFile>/home/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml&lt;/configFile>
 &lt;/AdvancedLauncher>
 </programlisting>
 
 <para>The tag <userinput>configFile</userinput> configures the location of 
-Advanced Launcher's configuration file.</para>
-
-<para>Next, use the <userinput>list</userinput> command to read
-Advance Launcher's configuration file and list every launcher found
-there. You should get something like this.</para>
+<ulink url="http://forum.xbmc.org/showthread.php?tid=85724">Advanced Launcher's</ulink> 
+configuration file. Next, use the <userinput>list</userinput> command to read 
+<ulink url="http://forum.xbmc.org/showthread.php?tid=85724">Advanced Launcher's</ulink> 
+configuration file and list every launcher found there. You should get 
+something like this.</para>
 
 <programlisting>
 $ ./xru-launcher-AL.py list       
@@ -2059,11 +2062,11 @@ XBMC ROM utilities - Advanced Launcher version 0.1.0
 Parsing Advanced Launcher configuration file... done
 &lt;Launcher>
  lauch_name        = "Game Boy Advance (RetroArch VBA-Next)"
- lauch_application = /home/wintermute/bin/bin-retroarch/retroarch
- lauch_args        = -L /home/wintermute/bin/bin-libretro/vba_next_libretro.so "%rom%"
- lauch_rompath     = /home/wintermute/ROMs/roms-nintendo-gbadvance-nointro/
- lauch_thumbpath   = /home/wintermute/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/
- lauch_fanartpath  = /home/wintermute/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/
+ lauch_application = /home/xbmc/bin/bin-retroarch/retroarch
+ lauch_args        = -L /home/xbmc/bin/bin-libretro/vba_next_libretro.so "%rom%"
+ lauch_rompath     = /home/xbmc/ROMs/roms-nintendo-gbadvance-nointro/
+ lauch_thumbpath   = /home/xbmc/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/
+ lauch_fanartpath  = /home/xbmc/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/
  lauch_romext      = zip
 ...
 </programlisting>
@@ -2071,16 +2074,16 @@ Parsing Advanced Launcher configuration file... done
 <para>For every launcher you want to check you need to create an entry
 in <application>xru-launcher-AL</application> configuration file. To
 check the launcher in the example, add this to the configuration
-file.</para>
+file <filename>xru-launcher-AL-config.xml</filename>.</para>
 
 <programlisting>
 &lt;AdvancedLauncher>
-&lt;configFile>/home/wintermute/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml&lt;/configFile>
+&lt;configFile>/home/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml&lt;/configFile>
 
 &lt;launcher name="Game Boy Advance (RetroArch VBA-Next)">
-&lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-nintendo-gbadvance-nointro/&lt;/ROMsDest>
-&lt;FanartDest>/home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/&lt;/FanartDest>
-&lt;ThumbsDest>/home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/&lt;/ThumbsDest>
+&lt;ROMsDest  >/home/NUC-remote/ROMs/roms-nintendo-gbadvance-nointro/&lt;/ROMsDest>
+&lt;FanartDest>/home/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/&lt;/FanartDest>
+&lt;ThumbsDest>/home/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/&lt;/ThumbsDest>
 &lt;/launcher>
 &lt;/AdvancedLauncher>
 </programlisting>
@@ -2101,19 +2104,19 @@ XBMC ROM utilities - Advanced Launcher version 0.1.0
 [Parsing config file]
 [Listing configuration]
 Advanced Launcher configuration file
- /home/wintermute/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml
+ /home/NUC-remote/.xbmc/userdata/addon_data/plugin.program.advanced.launcher/launchers.xml
 &lt;Launcher>
  name          = Game Boy Advance (RetroArch VBA-Next)
- destDir       = /home/wintermute/NUC-remote/ROMs/roms-nintendo-gbadvance-nointro/
- fanartDestDir = /home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/
- thumbsDestDir = /home/wintermute/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/
+ destDir       = /home/NUC-remote/ROMs/roms-nintendo-gbadvance-nointro/
+ fanartDestDir = /home/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/fanart/
+ thumbsDestDir = /home/NUC-remote/ROMs/artwork-AL/artwork-nintendo-gbadvance/thumbs/
 </programlisting>
 </sect2>
 
 <sect2>
 <title>Checking launchers</title>
 
-<para>To check you launchers use the <userinput>check</userinput> command. You will
+<para>To check your launchers use the <userinput>check</userinput> command. You will
 see some information of the process and at the end a report of the launchers not
 checked, launchers checked and up to date, and launchers checked which need
 an update.</para>
@@ -2176,13 +2179,13 @@ with user xbmc.</para></listitem>
 
 <listitem><para>The xbmc user's home directory is network-mounted in the 
 desktop computer using FUSE's <application>sshfs</application> in 
-<filename>/home/wintermute/XBMC-remote/</filename>.</para>
+<filename>/home/XBMC-remote/</filename>.</para>
 </listitem>
 
 <listitem><para>You want to store your ROM collection in the HTPC computer in
 the directory <filename>/home/xbmc/ROMs/roms-sega-genesis/</filename>. Note 
 that in the desktop computer this directory is 
-<filename>/home/wintermute/XBMC-remote/ROMs/roms-sega-genesis/</filename>.</para>
+<filename>/home/XBMC-remote/ROMs/roms-sega-genesis/</filename>.</para>
 </listitem>
 
 <listitem><para>You prefer European/USA ROMs over Japanese ones. Also, you
@@ -2194,7 +2197,7 @@ want to remove all Japanese games.</para>
 is network-mounted.</para>
 
 <screen>
-$ mkdir XBMC-remote/ROMs/roms-sega-genesis
+$ mkdir /home/XBMC-remote/ROMs/roms-sega-genesis
 </screen>
 
 <para>Then, create the configuration file
@@ -2204,7 +2207,7 @@ $ mkdir XBMC-remote/ROMs/roms-sega-genesis
 &lt;ROMcollections>
 &lt;collection name="Sega Mega Drive" shortname="genesis">
   &lt;ROMsSource>/home/wintermute/No-Intro/Sega Genesis/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/wintermute/XBMC-remote/ROMs/roms-sega-genesis/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/XBMC-remote/ROMs/roms-sega-genesis/&lt;/ROMsDest>
 
   &lt;filterUpTags>Europe, World, Rev2, Rev 1, Rev A&lt;/filterUpTags>
   &lt;filterDownTags>Japan, Beta, Proto&lt;/filterDownTags>
@@ -2239,19 +2242,21 @@ will have only CPS2 games. The ROM collection is stored in your desktop
 computer in the directory <filename>/home/wintermute/MAME/roms/</filename>.
 The xbmc user's home directory is network-mounted in the 
 desktop computer using FUSE's <application>sshfs</application> in 
-<filename>/home/wintermute/XBMC-remote/</filename>.</para>
+<filename>/home/XBMC-remote/</filename>.</para>
 
 <para>First, create the destination directories. Make sure your HTPC
 is network-mounted.</para>
 
 <screen>
+$ pwd
+/home/wintermute
 $ mkdir DAT-mame
-$ mkdir XBMC-remote/ROMs/roms-mame-main
-$ mkdir XBMC-remote/ROMs/roms-mame-cps1
-$ mkdir XBMC-remote/ROMs/roms-mame-cps2
+$ mkdir /home/XBMC-remote/ROMs/roms-mame-main
+$ mkdir /home/XBMC-remote/ROMs/roms-mame-cps1
+$ mkdir /home/XBMC-remote/ROMs/roms-mame-cps2
 </screen>
 
-<para>Create the <application>MAME</application> game databases as
+<para>Create the <application>MAME</application> game database as
 described <link linkend="create_mame_database">here</link>.</para>
 
 <para>Then, create the configuration file
@@ -2260,15 +2265,15 @@ described <link linkend="create_mame_database">here</link>.</para>
 <screen>
 &lt;MAMEConfig>
 &lt;General>
-  &lt;MAME_XML      >./DAT-mame/mame-0153.xml&lt;/MAME_XML>
-  &lt;MAME_XML_redux>./DAT-mame/mame-0153-reduced.xml&lt;/MAME_XML_redux>
+  &lt;MAME_XML      >./DAT-mame/mame-0154.xml&lt;/MAME_XML>
+  &lt;MAME_XML_redux>./DAT-mame/mame-0154-reduced.xml&lt;/MAME_XML_redux>
   &lt;Catver        >./DAT-mame/Catver.ini&lt;/Catver>
-  &lt;MergedInfo    >./DAT-mame/mame-0153-reduced.xml&lt;/MergedInfo>
+  &lt;MergedInfo    >./DAT-mame/mame-0154-reduced.xml&lt;/MergedInfo>
 &lt;/General>
 
 &lt;MAMEFilter name="main">
   &lt;ROMsSource>/home/wintermute/MAME/roms-mame/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/NUC-remote/ROMs/roms-mame-main/&lt;/ROMsDest>
 
   &lt;MainFilter>NoClones, NoMechanical, NoBIOS, NoNonworking&lt;/MainFilter>
   &lt;Driver>not cps1 and not cps2 and not cps3 and not neogeo_noslot&lt;/Driver>
@@ -2276,12 +2281,12 @@ described <link linkend="create_mame_database">here</link>.</para>
   &lt;Controls>Joy and not(Mahjong or Gambling or Hanafuda)&lt;/Controls>
   &lt;Buttons>buttons &amp;lt;= 8&lt;/Buttons>
   &lt;Players>&lt;/Players>
-  &lt;Years>year &lt; 2000&lt;/Years>
+  &lt;Years>&lt;/Years>
 &lt;/MAMEFilter>
 
 &lt;MAMEFilter name="cps1">
   &lt;ROMsSource>/home/wintermute/MAME/roms-mame/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-mame-cps1/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/NUC-remote/ROMs/roms-mame-cps1/&lt;/ROMsDest>
 
   &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
   &lt;Driver>cps1&lt;/Driver>
@@ -2289,7 +2294,7 @@ described <link linkend="create_mame_database">here</link>.</para>
 
 &lt;MAMEFilter name="cps2">
   &lt;ROMsSource>/home/wintermute/MAME/roms-mame/&lt;/ROMsSource>
-  &lt;ROMsDest  >/home/wintermute/NUC-remote/ROMs/roms-mame-cps2/&lt;/ROMsDest>
+  &lt;ROMsDest  >/home/NUC-remote/ROMs/roms-mame-cps2/&lt;/ROMsDest>
 
   &lt;MainFilter>NoClones, NoSamples, NoMechanical&lt;/MainFilter>
   &lt;Driver>cps2&lt;/Driver>

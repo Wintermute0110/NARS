@@ -2420,7 +2420,7 @@ def do_list_drivers():
 
   # - Print histogram
   sorted_histo = sorted(drivers_histo_dic.iteritems(), key=operator.itemgetter(1))
-  print_info('[Final (used) categories]');
+  print_info('[Final (used) drivers]');
   for key in sorted_histo:
     print_info('{:4d}'.format(key[1]) + '  ' + key[0]);
 
