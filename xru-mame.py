@@ -24,22 +24,26 @@
 # --- Import stuff
 import sys, os, re, shutil
 import operator, argparse
+
 # * ElementTree XML parser
 import xml.etree.ElementTree as ET
+
 # * This is supposed to be much faster than ElementTree
 #   See http://effbot.org/zone/celementtree.htm
 #   Tests with list-* commands indicate this 6x faster than ElementTree
 #   HOWEVER: the reduce command takes AGES checking the dependencies!!!
 import xml.etree.cElementTree as cET
+
 # * ElementTree generated XML files are nasty looking (no end of lines)
 #   Minidom does a much better job
 # NOTE: minidom seems to be VERY SLOOW
-from xml.dom import minidom
+# NOTE: not needed anymore. I found a way of doing pretty print with ElementTree
+# from xml.dom import minidom
 
-# MAME XML is written by this file:
+# * MAME XML is written by this file:
 #   http://www.mamedev.org/source/src/emu/info.c.html
 
-# --- Global variables
+# * Global variables
 __software_version = '0.1.0';
 __config_configFileName = 'xru-mame-config.xml';
 __config_logFileName = 'xru-mame-log.txt';
@@ -1077,6 +1081,22 @@ def parse_catver_ini():
   f.close();
 
   return final_categories_dic;
+
+# See http://norwied.wordpress.com/2013/08/27/307/
+def indent_ElementTree_XML(elem, level=0):
+  i = "\n" + level*" "
+  if len(elem):
+    if not elem.text or not elem.text.strip():
+      elem.text = i + " "
+    if not elem.tail or not elem.tail.strip():
+      elem.tail = i
+    for elem in elem:
+      indent_ElementTree_XML(elem, level+1)
+    if not elem.tail or not elem.tail.strip():
+      elem.tail = i
+  else:
+    if level and (not elem.tail or not elem.tail.strip()):
+      elem.tail = i
 
 # Reads merged MAME XML file.
 # Returns an ElementTree OR cElementTree object.
@@ -2127,15 +2147,24 @@ def do_reduce_XML():
 
   # --- Pretty print XML output using miniDOM
   # See http://broadcast.oreilly.com/2010/03/pymotw-creating-xml-documents.html
-  print_info('[Building reduced output XML file]');
-  rough_string = ET.tostring(root_output, 'utf-8');
-  reparsed = minidom.parseString(rough_string);
-  del root_output; # Reduce memory consumption
+  # NOTE: this approach works well but is very slooow
+  if 0:
+    print_info('[Building reduced output XML file]');
+    rough_string = ET.tostring(root_output, 'utf-8');
+    reparsed = minidom.parseString(rough_string);
+    del root_output; # Reduce memory consumption
 
+    print_info('Writing reduced XML file ' + output_filename);
+    f = open(output_filename, "w")
+    f.write(reparsed.toprettyxml(indent=" "))
+    f.close()
+
+  # --- Write output file (don't use miniDOM, is sloow)
+  # See http://norwied.wordpress.com/2013/08/27/307/
+  print_info('[Writing output file]');
   print_info('Writing reduced XML file ' + output_filename);
-  f = open(output_filename, "w")
-  f.write(reparsed.toprettyxml(indent=" "))
-  f.close()
+  indent_ElementTree_XML(root_output);
+  tree_output.write(output_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
 def do_merge():
   "Merges main MAME database ready for filtering"
@@ -2222,16 +2251,12 @@ def do_merge():
   # --- To save memory destroy variables now
   del tree;
 
-  # --- Write output file
+  # --- Write output file (don't use miniDOM, is sloow)
+  # See http://norwied.wordpress.com/2013/08/27/307/
   print_info('[Writing output file]');
   print_info('Output file ' + merged_filename);
-  rough_string = ET.tostring(root_output, 'utf-8');
-  reparsed = minidom.parseString(rough_string);
-  del root_output; # Reduce memory consumption
-
-  f = open(merged_filename, "w")
-  f.write(reparsed.toprettyxml(indent=" "))
-  f.close()
+  indent_ElementTree_XML(root_output);
+  tree_output.write(merged_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
 def do_list_merged():
   "Short list of MAME XML file"
