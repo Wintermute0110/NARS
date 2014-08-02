@@ -20,11 +20,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+# --- Import stuff
 import sys, os, re, shutil
 import operator, argparse
+# * ElementTree XML parser
 import xml.etree.ElementTree as ET
-# ElementTree generated XML files are nasty looking (no end of lines)
-# Minidom does a much better job
+# * This is supposed to be much faster than ElementTree
+#   See http://effbot.org/zone/celementtree.htm
+#   Tests with list-* commands indicate this 6x faster than ElementTree
+#   HOWEVER: the reduce command takes AGES checking the dependencies!!!
+import xml.etree.cElementTree as cET
+# * ElementTree generated XML files are nasty looking (no end of lines)
+#   Minidom does a much better job
+# NOTE: minidom seems to be VERY SLOOW
 from xml.dom import minidom
 
 # MAME XML is written by this file:
