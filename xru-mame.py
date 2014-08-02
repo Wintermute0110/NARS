@@ -1078,19 +1078,38 @@ def parse_catver_ini():
 
   return final_categories_dic;
 
-def parse_MAME_merged_XML():
-  "Parses a MAME merged XML and creates a parent/clone list"
-  filename = configuration.MergedInfo_XML;
-  print_info('[Parsing MAME merged XML]');
+# Reads merged MAME XML file.
+# Returns an ElementTree OR cElementTree object.
+def read_MAME_merged_XML(filename):
+  "Reads merged MAME XML database and returns a [c]ElementTree object"
+
   print "Parsing MAME merged XML file " + filename + "...",;
   sys.stdout.flush();
   try:
-    tree = ET.parse(filename);
+    # -- Use ElementTree
+    # tree = ET.parse(filename);
+    # -- Use cElementTree. Much faster but extremely slow for the reduce command.
+    tree = cET.parse(filename);
   except IOError:
     print '\n';
     print_error('[ERROR] cannot find file ' + filename);
     sys.exit(10);
   print ' done';
+  sys.stdout.flush();
+
+  return tree;
+
+# Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
+# do_update_artwork()), but not in the do_list_*() functions.
+#
+# Returns a dictionary with key the (unique) ROM name and value a ROM object with
+# all the ROM information from the XML.
+def parse_MAME_merged_XML():
+  "Parses a MAME merged XML and creates a parent/clone list"
+
+  filename = configuration.MergedInfo_XML;
+  print_info('[Parsing MAME merged XML]');
+  tree = read_MAME_merged_XML(filename);
 
   # --- Raw list: literal information from the XML
   rom_raw_dict = {};
@@ -2135,15 +2154,7 @@ def do_merge():
   root_output = ET.Element('mame');
   tree_output._setroot(root_output);
   print_info('[Parsing (reduced) MAME XML file]');
-  print "Parsing MAME XML file " + mame_redux_filename + "... ",;
-  sys.stdout.flush();
-  try:
-    tree = ET.parse(mame_redux_filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + mame_redux_filename);
-    sys.exit(10);
-  print ' done';
+  tree = read_MAME_merged_XML(mame_redux_filename);
 
   # --- Traverse MAME XML input file ---
   print_info('[Merging MAME XML and categories]');
@@ -2227,14 +2238,7 @@ def do_list_merged():
 
   print_info('[Short listing of reduced MAME XML]');
   filename = configuration.MergedInfo_XML;
-  print "Parsing merged MAME XML file '" + filename + "'...",;
-  try:
-    tree = ET.parse(filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + filename);
-    sys.exit(10);
-  print ' done';
+  tree = read_MAME_merged_XML(filename);
 
   # Root element (Reduced MAME XML):
   root = tree.getroot();
@@ -2383,14 +2387,7 @@ def do_list_drivers():
   print_info('NOTE: devices are not included');
 
   filename = configuration.MergedInfo_XML;
-  print "Parsing merged MAME XML file '" + filename + "'... ",;
-  try:
-    tree = ET.parse(filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + filename);
-    sys.exit(10);
-  print ' done';
+  tree = read_MAME_merged_XML(filename);
 
   # Do histogram
   drivers_histo_dic = {};
@@ -2437,14 +2434,7 @@ def do_list_controls():
 
   # filename = configuration.MergedInfo_XML;
   filename = configuration.MAME_XML_redux;
-  print "Parsing merged MAME XML file '" + filename + "'... ",;
-  try:
-    tree = ET.parse(filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + filename);
-    sys.exit(10);
-  print ' done';
+  tree = read_MAME_merged_XML(filename);
 
   # --- Histogram data
   input_buttons_dic = {};
@@ -2584,14 +2574,7 @@ def do_list_years():
 
   # filename = configuration.MergedInfo_XML;
   filename = configuration.MAME_XML_redux;
-  print "Parsing merged MAME XML file '" + filename + "'... ",;
-  try:
-    tree = ET.parse(filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + filename);
-    sys.exit(10);
-  print ' done';
+  tree = read_MAME_merged_XML(filename);
 
   # --- Histogram data
   years_dic = {};
