@@ -1817,7 +1817,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     tree_output = ET.ElementTree();
     root_output = a = ET.Element('game');
     tree_output._setroot(root_output);
-    
+
     # <title>1944 - The Loop Master</title>
     sub_element = ET.SubElement(root_output, 'title');
     sub_element.text = romObj.description;
@@ -1825,7 +1825,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     # <platform>MAME</platform>
     sub_element = ET.SubElement(root_output, 'platform');
     sub_element.text = 'MAME';
-    
+
     # <year>2000</year>
     # NOTE: some devices which are included as dependencies do not have
     # some fields. Write defaults.
@@ -1843,7 +1843,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     else:
       print 'ROM has no publisher tag ' + rom_name;
       sub_element.text = 'Unknown';
-    
+
     # <genre>Shooter / Flying Vertical</genre>
     sub_element = ET.SubElement(root_output, 'genre');
     if hasattr(romObj, 'category'):
@@ -1854,16 +1854,19 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 
     # <plot></plot>
     # Probably need to merge information from history.dat or mameinfo.dat
+    # Now, just add some technical information about the game.
+    plot_str = 'Name = ' + romObj.name + '\n' + \
+               'Driver = ' + romObj.sourcefile + '\n' + \
+               'Buttons = ' + romObj.buttons + '\n' + \
+               'Players = ' + romObj.players + '\n' + \
+               'Controls = ' + str(romObj.control_type);
     sub_element = ET.SubElement(root_output, 'plot');
-    sub_element.text = '';
+    sub_element.text = plot_str;
 
     # --- Write output file
-    rough_string = ET.tostring(root_output, 'utf-8');
-    reparsed = minidom.parseString(rough_string);
     print_verb('Writing ' + NFO_full_filename);
-    f = open(NFO_full_filename, "w")
-    f.write(reparsed.toprettyxml(indent="  "))
-    f.close()
+    indent_ElementTree_XML(root_output);
+    tree_output.write(NFO_full_filename, xml_declaration=True, encoding='utf-8', method="xml")
     num_NFO_files += 1;
 
   print_info('[Report]');
