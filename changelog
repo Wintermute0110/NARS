@@ -1,3 +1,13 @@
+XBMC-rom-utilities (0.1.1)
+
+  * Use cElementTree instead ElemntTree for speeding up XML loading (about 6x).
+  * xru-mame: Print some technical ROM information in the plot filed of NFO
+    files.
+  * xru-mame: Add CDHs as ROM dependencies. New commands check-chd, copy-chd,
+    update-chd and option --cleanCHD
+
+ -- August 2014
+
 XBMC-rom-utilities (0.1.0)
 
   * Initial release

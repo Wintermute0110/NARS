@@ -208,6 +208,81 @@ def update_ArtWork_file(fileName, artName, sourceDir, destDir):
 
   return 0
 
+# Returns:
+#  0 no error
+# -1 copy error (exception)
+def copy_CHD_file(romName, chdName, sourceDir, destDir):
+  sourceFullFilename = sourceDir + romName + '/' + chdName;
+  destFullFilename = destDir + romName + '/' + chdName;
+  chdDestDir = destDir + romName;
+
+  print_debug(' Copying     ' + sourceFullFilename);
+  print_debug('      Into        ' + destFullFilename);
+  print_debug('      CHD destDir ' + chdDestDir);
+
+  existsSource = os.path.isfile(sourceFullFilename);
+  if not existsSource:
+    return 2;
+
+  ret = 0;
+  if not __prog_option_dry_run:
+    # --- Create CHD destination directory if needed
+    if not os.path.isdir(chdDestDir):
+      os.makedirs(chdDestDir);
+    # --- Copy CHD file
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      ret = -1;
+      print_debug("copy_CHD_file() >> Error happened when copying file");
+
+  return ret;
+
+# Returns:
+#  0 - File copied (sizes different)
+#  1 - File not copied (updated)
+#  2 - source CHD not found (missing CHD)
+# -1 - copy error (exception)
+def update_CHD_file(romName, chdName, sourceDir, destDir):
+  sourceFullFilename = sourceDir + romName + '/' + chdName;
+  destFullFilename = destDir + romName + '/' + chdName;
+  chdDestDir = destDir + romName;
+
+  print_debug(' Updating   ' + sourceFullFilename);
+  print_debug('      Into        ' + destFullFilename);
+  print_debug('      CHD destDir ' + chdDestDir);
+
+  existsSource = os.path.isfile(sourceFullFilename);
+  existsDest = os.path.isfile(destFullFilename);
+  if not existsSource:
+    return 2;
+
+  sizeSource = os.path.getsize(sourceFullFilename);
+  if existsDest:
+    sizeDest = os.path.getsize(destFullFilename);
+  else:
+    sizeDest = -1;
+
+  # If sizes are equal. Skip copy and return 1
+  if sizeSource == sizeDest:
+    return 1;
+
+  # destFile does not exist or sizes are different, copy.
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
+  if not __prog_option_dry_run:
+    # --- Create CHD destination directory if needed
+    if not os.path.isdir(chdDestDir):
+      os.makedirs(chdDestDir);
+    # --- Copy file
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      print_debug("update_CHD_file >> Error happened");
+      return -1;
+
+  return 0;
+
 def copy_ROM_file(fileName, sourceDir, destDir):
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
@@ -277,9 +352,9 @@ def haveDir_or_abort(dirName, infoStr = None):
       sys.exit(10);
   else:
     if dirName == None:
-      print_error('\033[31m[ERROR]\033[0m Directory '+infoStr+' not configured');
+      print_error('\033[31m[ERROR]\033[0m Directory ' + infoStr + ' not configured');
       sys.exit(10);
-    
+
   if not os.path.isdir(dirName):
     print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
     sys.exit(10);
@@ -313,7 +388,7 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
 
 def update_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Updating ROMs into destDir]');
-  
+
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   step = 0;
@@ -347,6 +422,102 @@ def update_ROM_list(rom_list, sourceDir, destDir):
   print_info('[Report]');
   print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
   print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
+
+def copy_CHD_dic(chd_dic, sourceDir, destDir):
+  print_info('[Copying CHDs into destDir]');
+
+  # * If user did not configure CHDs source directory then do nothing
+  if sourceDir == None or sourceDir == '':
+    print_info('CHD source directory not configured');
+    print_info('Skipping CHD copy');
+    return
+
+  if not os.path.exists(sourceDir):
+    print_error('CHD source directory not found ' + sourceDir)
+    sys.exit(10);
+
+  # * Copy CHDs
+  num_steps = len(chd_dic);
+  step = 0; # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
+  num_files = 0;
+  num_copied_CHDs = 0;
+  for chd_copy_key in sorted(chd_dic):
+    # --- Update progress
+    percentage = 100 * step / num_steps;
+    sys.stdout.write('{:3d}% '.format(percentage));
+
+    # --- Copy file (this function succeeds or aborts program)
+    chdFileName = chd_dic[chd_copy_key] + '.chd';
+    ret = copy_CHD_file(chd_copy_key, chdFileName, sourceDir, destDir);
+    if ret == 0:
+      num_copied_CHDs += 1;
+      print_info('<Copied > ' + chd_copy_key + '/' + chdFileName);
+    elif ret == 2:
+      print_info('<Missing> ' + chd_copy_key + '/' + chdFileName);
+    elif ret == -1:
+      print_info('<ERROR  > ' + chd_copy_key + '/' + chdFileName);
+    else:
+      print_error('Wrong value returned by copy_CHD_file()');
+      sys.exit(10);
+    sys.stdout.flush();
+
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]');
+  print_info('Copied CHDs ' + '{:6d}'.format(num_copied_CHDs));
+
+def update_CHD_dic(chd_dic, sourceDir, destDir):
+  print_info('[Updating CHDs into destDir]');
+
+  # * If user did not configure CHDs source directory then do nothing
+  if sourceDir == None or sourceDir == '':
+    print_info('CHD source directory not configured');
+    print_info('Skipping CHD copy');
+    return
+
+  if not os.path.exists(sourceDir):
+    print_error('CHD source directory not found ' + sourceDir)
+    sys.exit(10);
+
+  num_steps = len(chd_dic);
+  step = 0; # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
+  num_copied_CHDs = 0;
+  num_updated_CHDs = 0;
+  for chd_copy_key in sorted(chd_dic):
+    # --- Update progress
+    percentage = 100 * step / num_steps;
+
+    # --- Copy file (this function succeeds or aborts program)
+    chdFileName = chd_dic[chd_copy_key] + '.chd';
+    ret = update_CHD_file(chd_copy_key, chdFileName, sourceDir, destDir);
+    if ret == 0:
+      # On default verbosity level only report copied files
+      sys.stdout.write('{:3d}% '.format(percentage));
+      num_copied_CHDs += 1;
+      print_info('<Copied > ' + chd_copy_key + '/' + chdFileName);
+    elif ret == 1:
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3d}% '.format(percentage));
+      num_updated_CHDs += 1;
+      print_verb('<Updated> ' + chd_copy_key + '/' + chdFileName);
+    elif ret == 2:
+      sys.stdout.write('{:3d}% '.format(percentage));
+      print_info('<Missing> ' + chd_copy_key + '/' + chdFileName);
+    elif ret == -1:
+      sys.stdout.write('{:3d}% '.format(percentage));
+      print_info('<ERROR  > ' + chd_copy_key + '/' + chdFileName);
+    else:
+      print_error('Wrong value returned by update_ROM_file()');
+      sys.exit(10);
+    sys.stdout.flush()
+
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]');
+  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_CHDs));
+  print_info('Updated ROMs ' + '{:5d}'.format(num_updated_CHDs));
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
   print_info('[Cleaning ROMs in ROMsDest]');
@@ -629,6 +800,7 @@ def parse_File_Config():
         #       filter_child.text will be None. Take this into account.
         filter_class.sourceDir = None;
         filter_class.destDir = None;
+        filter_class.destDir_CHD = None;
         filter_class.fanartSourceDir = None;
         filter_class.fanartDestDir = None;
         filter_class.thumbsSourceDir = None;
@@ -659,6 +831,12 @@ def parse_File_Config():
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.destDir = tempDir;
+
+          elif filter_child.tag == 'CHDsSource':
+            print_debug(' CHDsSource = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.destDir_CHD = tempDir;
 
           elif filter_child.tag == 'FanartSource':
             print_debug(' FanartSource = ' + filter_child.text);
@@ -1251,6 +1429,8 @@ def parse_MAME_merged_XML():
           romObject.device_depends = child_game.text.split(",");
         elif child_game.tag == 'bios_depends':
           romObject.BIOS_depends = child_game.text.split(",");
+        elif child_game.tag == 'chd_depends':
+          romObject.CHD_depends = child_game.text.split(",");
 
         # - Controls
         elif child_game.tag == 'input':
@@ -1716,7 +1896,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   print_info('[Adding ROM dependencies]');
   # NOTE: dictionaries cannot change size during iteration. Create auxiliary list.
   dependencies_ROM_list = {};
-  for key in mame_filtered_dic:
+  for key in sorted(mame_filtered_dic):
     romObject = mame_filtered_dic[key];
     # - BIOS dependencies
     if len(romObject.BIOS_depends):
@@ -1781,10 +1961,30 @@ def create_copy_list(mame_filtered_dic, rom_main_list):
 
   return copy_list;
 
+def create_copy_CHD_dic(mame_filtered_dic):
+  "With list of filtered ROMs and, create list of CHDs to be copied"
+
+  print_info('[Creating list of CHDs to be copied/updated]');
+  CHD_dic = {};
+  num_added_CHDs = 0;
+  for key in sorted(mame_filtered_dic):
+    romObject = mame_filtered_dic[key];
+    # - CHD dependencies
+    if hasattr(romObject, 'CHD_depends') and (romObject.CHD_depends):
+      for CHD_depend in romObject.CHD_depends:
+        # CHD names may be different from ROM names
+        CHD_dic[key] = CHD_depend;
+        num_added_CHDs += 1;
+        print_info('Game ' + key.ljust(8) + ' depends on CHD    ' + \
+                    CHD_depend.ljust(11) + ' - Adding  to list');
+  print_info('Added ' + str(num_added_CHDs) + ' CHDs');
+
+  return CHD_dic;
+
 def get_ROM_main_list(sourceDir):
   "Reads sourceDir and creates a dictionary of ROMs"
   __debug_get_ROM_main_list = 0;
-  
+
   # --- Parse sourceDir ROM list and create main ROM list
   print_info('[Reading ROMs in source directory]');
   romMainList_dict = {};
@@ -1855,15 +2055,19 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     # <plot></plot>
     # Probably need to merge information from history.dat or mameinfo.dat
     # Now, just add some technical information about the game.
-    plot_str = 'Name = ' + romObj.name + '\n' + \
-               'Driver = ' + romObj.sourcefile + '\n' + \
-               'Buttons = ' + romObj.buttons + '\n' + \
-               'Players = ' + romObj.players + '\n' + \
-               'Controls = ' + str(romObj.control_type);
+    plot_str = 'Name = ' + romObj.name + \
+               ' / Driver = ' + romObj.sourcefile;
+    if hasattr(romObj, 'buttons'):
+      plot_str += ' / Buttons = ' + romObj.buttons;
+    if hasattr(romObj, 'players'):
+      plot_str += ' / Players = ' + romObj.players;
+    if hasattr(romObj, 'control_type'):
+      plot_str += ' / Controls = ' + str(romObj.control_type);
     sub_element = ET.SubElement(root_output, 'plot');
     sub_element.text = plot_str;
 
-    # --- Write output file
+    # --- Write output file (don't use miniDOM, is sloow)
+    # See http://norwied.wordpress.com/2013/08/27/307/
     print_verb('Writing ' + NFO_full_filename);
     indent_ElementTree_XML(root_output);
     tree_output.write(NFO_full_filename, xml_declaration=True, encoding='utf-8', method="xml")
@@ -1877,19 +2081,15 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # -----------------------------------------------------------------------------
 # IMPLEMENT ME: SAX API can make the loading of XML much faster and MUCH LESS
 #               memory consuming.
-# IMPLEMENT ME: a new field with game dependencies must be implemented. Game
-#               dependencies may be BIOSes and game devices that have ROMs.
-#               Still is not clear how to do this in an efficient way...
-#               Maybe a good idea is to create an undocumented function to not
-#               to disturb this code until dependencies are working OK.
 # -------------------------------------
 # Dependency implementation: there are 2 types of dependencies: a) game that
 # depend and a device and the device has a ROM, b) game depends on a BIOS.
+# NOTE: CHD games and games that use samples are also dependencies: type c)
 #
-# Example of a device with a ROM:
+# Example of a device with a ROM ----------------------------------------------
 #  <game name="qsound" sourcefile="src/emu/sound/qsound.c" isdevice="yes" runnable="no">
 #    <description>Q-Sound</description>
-#    <rom name="qsound.bin" size="8192" crc="059c847d" sha1="2...e" status="baddump" region="qsound" offset="0"/>
+#    <rom name="qsound.bin" size="8192" crc="" sha1="" status="baddump" region="qsound" offset="0"/>
 #    <chip type="cpu" tag=":qsound" name="DSP16" clock="4000000"/>
 #    <sound channels="0"/>
 #  </game>
@@ -1914,12 +2114,12 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #    <biosset name="euro" description="Europe MVS (Ver. 2)" default="yes"/>
 #    <biosset name="euro-s1" description="Europe MVS (Ver. 1)"/>
 #    ...
-#    <rom name="sp-s2.sp1" merge="sp-s2.sp1" bios="euro" size="131072" crc="9036d879" sha1="4...3" region="mainbios" offset="0"/>
-#    <rom name="sp-s.sp1" merge="sp-s.sp1" bios="euro-s1" size="131072" crc="c7f2fa45" sha1="0...d" region="mainbios" offset="0"/>
+#    <rom name="sp-s2.sp1" merge="sp-s2.sp1" bios="euro" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
+#    <rom name="sp-s.sp1" merge="sp-s.sp1" bios="euro-s1" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
 #    ...
 #  </game>
 #
-# Example of a BIOS game
+# Example of a BIOS game ------------------------------------------------------
 #  <game name="neogeo" sourcefile="neogeo.c" isbios="yes">
 #    <description>Neo-Geo</description>
 #    <year>1990</year>
@@ -1927,11 +2127,43 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #    <biosset name="euro" description="Europe MVS (Ver. 2)" default="yes"/>
 #    <biosset name="euro-s1" description="Europe MVS (Ver. 1)"/>
 #    ...
-#    <rom name="sp-s2.sp1" bios="euro" size="131072" crc="9036d879" sha1="4...3" region="mainbios" offset="0"/>
-#    <rom name="sp-s.sp1" bios="euro-s1" size="131072" crc="c7f2fa45" sha1="0...d" region="mainbios" offset="0"/>
+#    <rom name="sp-s2.sp1" bios="euro" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
+#    <rom name="sp-s.sp1" bios="euro-s1" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
 #    ...
 #  </game>
 #
+# Example of a CHD game -------------------------------------------------------
+# See http://www.mameworld.info/easyemu/mameguide/mameguide-roms.html
+# Some games with CHDs:
+#  99bottles cdrom
+#  area51mx ide:0:hdd:image
+#  astron laserdisc
+#  astron laserdisc
+#  atronic cdrom
+#  av2mj1bb vhs
+#  av2mj2rg vhs
+#  gdt-0010c gdrom
+#
+# Some games have a disk entry and no <device><extension name="chd"...
+#  <disk name="astron" status="nodump" region="laserdisc" index="0" writable="no"/>
+#  <disk name="atronic" sha1="" region="cdrom" index="0" writable="no" optional="yes"/>
+#  <disk name="gdt-0010c" sha1="" status="baddump" region="gdrom" index="0" writable="no"/>
+#
+#  <game name="carnevil" sourcefile="seattle.c">
+#    <description>CarnEvil (v1.0.3)</description>
+#    <year>1998</year>
+#    <manufacturer>Midway Games</manufacturer>
+#    <disk name="carnevil" sha1="" region="ide:0:hdd:image" index="0" writable="yes"/>
+#    ...
+#    <driver status="good" emulation="good" color="good" sound="good" graphic="good" savestate="supported"/>
+#    <device type="harddisk" tag="ide:0:hdd:image">
+#      <instance name="harddisk" briefname="hard"/>
+#      <extension name="chd"/>
+#      <extension name="hd"/>
+#    </device>
+#  </game>
+#
+# Dependencies implementation -------------------------------------------------
 # To solve a) games that depend on a device that has a ROM:
 #   1) Traverse MAME XML and make a list of devices that have a ROM. A device has
 #      a ROM if there is a ROM tag inside the game object.
@@ -1955,6 +2187,10 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #         bios_depends dependency.
 #      b) game has a "romof" attribute and a "cloneof" attribute. In this case,
 #         the parent game should be checked for a) case.
+#
+# To solve c) games that depend on CHD:
+#   A game has a CHD if it has a <disk> entry, and this entry has an attribute
+#   sha1 with checksum
 #
 __debug_do_reduce_XML_dependencies = 0;
 def do_reduce_XML():
@@ -1985,6 +2221,7 @@ def do_reduce_XML():
   # --- Dependencies variables
   device_rom_list = [];
   bios_list = [];
+  chd_list = [];
 
   # --- Traverse MAME XML input file ---
   # Root element:
@@ -2055,6 +2292,12 @@ def do_reduce_XML():
           driver_output = ET.SubElement(game_output, 'driver');
           driver_output.attrib = game_child.attrib; # Copy game attributes in output XML
 
+        # --- CHDs (disks)
+        if game_child.tag == 'disk':
+          # print game_child.attrib['name'], game_child.attrib['region'];
+          if 'name' in game_child.attrib and 'sha1' in game_child.attrib:
+            chd_list.append(game_child.attrib['name']);
+
         # --- List of devices with ROMs
         if isdevice_flag:
           if game_child.tag == 'rom':
@@ -2071,9 +2314,15 @@ def do_reduce_XML():
     for deviceName in device_rom_list:
       print deviceName;
 
+    # --- Print list of ROMs with CHD
+    print '[List of game with disks]';
+    for chdName in chd_list:
+      print chdName;
+
   # --- Make list of dependencies
   device_depends_dic = {};
   parent_bios_depends_dic = {};
+  chd_depends_dic = {};
   print_info('[Checking ROM dependencies (1st pass)]');
   for game_EL in root:
     if game_EL.tag == 'game':
@@ -2089,6 +2338,7 @@ def do_reduce_XML():
           pass
 
       # --- Check for device dependencies
+      # --- Check for CHD dependencies
       device_depends = [];
       for game_child in game_EL:
         if game_child.tag == 'device_ref':
@@ -2102,6 +2352,12 @@ def do_reduce_XML():
           else:
             print_error('device_ref has no name attribute!');
             sys.exit(10);
+        # CHDs
+        elif game_child.tag == 'disk':
+          if 'sha1' in game_child.attrib:
+            # CAREFUL: disk name (CHD) is not necessary the same as the ROM name
+            # If a game has more than 1 disk, this will produce a key error.
+            chd_depends_dic[game_EL.attrib['name']] = game_child.attrib['name'];
 
       # --- If device dependency list is not empty, insert a <device_depends>
       #     tag.
@@ -2147,6 +2403,11 @@ def do_reduce_XML():
         # http://stackoverflow.com/questions/7961363/python-removing-duplicates-in-lists
         device_depends_tag = ET.SubElement(game_EL, 'device_depends');
         device_depends_tag.text = ",".join(set(device_depends_dic[game_name]));
+
+      if game_name in chd_depends_dic:
+        # values of bios_depends_dic are strings
+        chd_depends_tag = ET.SubElement(game_EL, 'chd_depends');
+        chd_depends_tag.text = chd_depends_dic[game_name];
 
   # --- Pretty print XML output using miniDOM
   # See http://broadcast.oreilly.com/2010/03/pymotw-creating-xml-documents.html
@@ -2240,6 +2501,10 @@ def do_merge():
         if game_child.tag == 'bios_depends':
           bios_depends_output = ET.SubElement(game_output, 'bios_depends');
           bios_depends_output.text = game_child.text;
+
+        if game_child.tag == 'chd_depends':
+          chd_depends_output = ET.SubElement(game_output, 'chd_depends');
+          chd_depends_output.text = game_child.text;
 
       # --- Add category element
       game_name = game_EL.attrib['name'];
@@ -2752,7 +3017,106 @@ def do_update(filterName):
     delete_redundant_NFO(destDir);
 
 # ----------------------------------------------------------------------------
-def do_checkArtwork(filterName):
+def do_check_CHD(filterName):
+  "Applies filter and copies ROMs into destination directory"
+
+  print_info('[Checking CHDs]');
+  print_info('Filter name = ' + filterName);
+
+  # --- Get configuration for the selected filter and check for errors
+  filter_config = get_Filter_Config(filterName);
+  sourceDir = filter_config.sourceDir;
+  destDir = filter_config.destDir;
+  sourceDir_CHD = filter_config.destDir_CHD;
+
+  # --- Check for errors, missing paths, etc...
+  haveDir_or_abort(sourceDir);
+  haveDir_or_abort(destDir);
+  haveDir_or_abort(sourceDir_CHD);
+
+  # --- Get MAME parent/clone dictionary --------------------------------------
+  mame_xml_dic = parse_MAME_merged_XML();
+
+  # --- Create main ROM list in sourceDir -------------------------------------
+  rom_main_list = get_ROM_main_list(sourceDir);
+
+  # --- Apply filter and create list of files to be copied --------------------
+  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+
+  # --- Create list of CHDs and samples needed --------------------------------
+  CHD_dic = create_copy_CHD_dic(mame_filtered_dic);
+  # samples_list = create_copy_samples_list(mame_filtered_dic);
+
+  # --- Print list in alphabetical order
+  print_info('[Filtered game list]');
+  missing_roms = 0;
+  have_roms = 0;
+  for key_main in sorted(mame_filtered_dic):
+    romObject = mame_filtered_dic[key_main];
+
+    # --- Check if CHD exists (maybe it does not exist for No-Intro lists)
+    sourceFullFilename = sourceDir + romObject.name + '.zip';
+    haveFlag = 'Have ROM';
+    if not os.path.isfile(sourceFullFilename):
+      missing_roms += 1;
+      haveFlag = 'Missing ROM';
+    else:
+      have_roms += 1;
+
+    # --- Print
+    print_info("<Game> " + romObject.name.ljust(8) + ' - ' + \
+               haveFlag.ljust(11) + ' - ' + romObject.description + ' ');
+
+  print_info('[Report]');
+  print_info('Number of filtered ROMs = ' + str(len(mame_filtered_dic)));
+  print_info('Number of have ROMs = ' + str(have_roms));
+  print_info('Number of missing ROMs = ' + str(missing_roms));
+
+# ----------------------------------------------------------------------------
+# Copy ROMs in destDir
+def do_update_CHD(filterName):
+  "Applies filter and copies ROMs into destination directory"
+
+  print_info('[Copy/Update CHDs]');
+  print_info('Filter name = ' + filterName);
+
+  # --- Get configuration for the selected filter and check for errors
+  filter_config = get_Filter_Config(filterName);
+  sourceDir = filter_config.sourceDir;
+  destDir = filter_config.destDir;
+  sourceDir_CHD = filter_config.destDir_CHD;
+
+  # --- Check for errors, missing paths, etc...
+  haveDir_or_abort(sourceDir);
+  haveDir_or_abort(destDir);
+  haveDir_or_abort(sourceDir_CHD);
+
+  # --- Get MAME parent/clone dictionary --------------------------------------
+  mame_xml_dic = parse_MAME_merged_XML();
+
+  # --- Create main ROM list in sourceDir -------------------------------------
+  rom_main_list = get_ROM_main_list(sourceDir);
+
+  # --- Apply filter and create list of files to be copied --------------------
+  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+  rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list);
+
+  # --- Create list of CHDs and samples needed --------------------------------
+  CHD_dic = create_copy_CHD_dic(mame_filtered_dic);
+  # samples_list = create_copy_samples_list(mame_filtered_dic);
+
+  # --- Copy CHDs into destDir ------------------------------------------------
+  if __prog_option_sync:
+    update_CHD_dic(CHD_dic, sourceDir_CHD, destDir);
+  else:
+    copy_CHD_dic(CHD_dic, sourceDir_CHD, destDir);
+
+  # If --cleanCHDs is on then delete unknown CHD and directories.
+  if __prog_option_clean_CHDs:
+    clean_CHDs_destDir(destDir, CHD_dic);
+
+# ----------------------------------------------------------------------------
+def do_check_Artwork(filterName):
   "Checks for missing artwork and prints a report"
 
   print_info('[Check-ArtWork]');
@@ -2804,7 +3168,7 @@ def do_checkArtwork(filterName):
       print ' Not found';
     else:
       art_baseName = artwork_copy_dic[rom_baseName];
-      
+
       # --- Check if artwork exist
       thumb_Source_fullFileName = thumbsSourceDir + art_baseName + '.png';
       fanart_Source_fullFileName = fanartSourceDir + art_baseName + '.png';
@@ -2843,7 +3207,7 @@ def do_checkArtwork(filterName):
   print_info('Number of missing Fanart = ' + str(num_missing_fanart));
 
 # ----------------------------------------------------------------------------
-def do_update_artwork(filterName):
+def do_update_Artwork(filterName):
   "Reads ROM destDir and copies Artwork"
 
   print_info('[Updating/copying ArtWork]');
@@ -2873,7 +3237,7 @@ def do_update_artwork(filterName):
   # --- Apply filter and create list of files to be copied --------------------
   mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
   rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list);
-  
+
   # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
   # Crate a dictionary where key and value are the same (no artwork
   # substitution in xru-mame).
@@ -2951,6 +3315,15 @@ if updated are needed.
     a lot of time, particularly if sourceDir and/or destDir are on a 
     network-mounted filesystem).
 
+ \033[31m check-chd <filterName>\033[0m
+    Applies filters and checks you source directory for have and missing CHDs.
+
+ \033[31m copy-chd <filterName>\033[0m
+    WRITE ME.
+
+ \033[31m update-chd <filterName>\033[0m
+    WRITE ME.
+
  \033[31m check-artwork <filterName>\033[0m
     Reads the ROMs in destDir, checks if you have the corresponding artwork 
     files, and prints a report.
@@ -3003,6 +3376,7 @@ def main(argv):
      help="usage, reduce-XML, merge, list-merged, \
            list-categories, list-drivers, list-controls, list-years,\
            check-filter, copy, update \
+           check-chd, copy-chd, update-chd \
            check-artwork, copy-artwork, update-artwork", nargs = 1)
   parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
   args = parser.parse_args();
@@ -3090,15 +3464,25 @@ def main(argv):
     __prog_option_sync = 1;
     do_update(args.filterName);  
 
+  elif command == 'check-chd':
+    do_check_CHD(args.filterName);
+
+  elif command == 'copy-chd':
+    do_update_CHD(args.filterName);
+
+  elif command == 'update-chd':
+    __prog_option_sync = 1;
+    do_update_CHD(args.filterName);
+
   elif command == 'check-artwork':
-    do_checkArtwork(args.filterName);
+    do_check_Artwork(args.filterName);
 
   elif command == 'copy-artwork':
-    do_update_artwork(args.filterName);
+    do_update_Artwork(args.filterName);
 
   elif command == 'update-artwork':
     __prog_option_sync = 1;
-    do_update_artwork(args.filterName);  
+    do_update_Artwork(args.filterName);
 
   else:
     print_error('Unrecognised command');
