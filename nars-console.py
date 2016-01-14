@@ -1,7 +1,7 @@
 #!/usr/bin/python
-# XBMC ROM utilities - Console ROMs
+# NARS Advanced ROM Sorting - Console ROMs
 
-# Copyright (c) 2014 Wintermute0110 <wintermute0110@gmail.com>
+# Copyright (c) 2014-2016 Wintermute0110 <wintermute0110@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,12 @@
 import sys, os, re, shutil
 import operator, argparse
 import xml.etree.ElementTree as ET
+import NARS
 
 # --- Global variables
-__software_version = '0.1.0';
-__config_configFileName = 'xru-console-config.xml';
-__config_logFileName = 'xru-console-log.txt';
+__software_version = '0.2.0';
+__config_configFileName = 'nars-console-config.xml';
+__config_logFileName = 'nars-console-log.txt';
 
 # --- Config file options global class (like a C struct)
 class ConfigFile:
@@ -44,85 +45,6 @@ __prog_option_clean_ROMs = 0;
 __prog_option_clean_NFO = 0;
 __prog_option_clean_ArtWork = 0;
 __prog_option_sync = 0;
-
-# -----------------------------------------------------------------------------
-# DEBUG functions
-# -----------------------------------------------------------------------------
-def dumpclean(obj):
-  if type(obj) == dict:
-    for k, v in obj.items():
-      if hasattr(v, '__iter__'):
-        print k
-        dumpclean(v)
-      else:
-        print '%s : %s' % (k, v)
-  elif type(obj) == list:
-    for v in obj:
-      if hasattr(v, '__iter__'):
-        dumpclean(v)
-      else:
-        print v
-  else:
-      print obj
-
-# -----------------------------------------------------------------------------
-# Logging functions
-# -----------------------------------------------------------------------------
-class Log():
-  error = 1
-  warn = 2
-  info = 3
-  verb = 4  # Verbose: -v
-  vverb = 5 # Very verbose: -vv
-  debug = 6 # Debug: -vvv
-
-# ---  Console print and logging
-f_log = 0;
-log_level = 3;
-
-def change_log_level(level):
-  global log_level;
-
-  log_level = level;
-
-# --- Print/log to a specific level  
-def pprint(level, print_str):
-  global f_log;
-
-  # --- If file descriptor not open, open it
-  if __prog_option_log:
-    if f_log == 0:
-      f_log = open(__prog_option_log_filename, 'w')
-
-  # --- Write to console depending on verbosity
-  if level <= log_level:
-    print print_str;
-
-  # --- Write to file
-  if __prog_option_log:
-    if level <= log_level:
-      if print_str[-1] != '\n':
-        print_str += '\n';
-      f_log.write(print_str) # python will convert \n to os.linesep
-
-# --- Some useful function overloads
-def print_error(print_str):
-  pprint(Log.error, print_str);
-
-def print_warn(print_str):
-  pprint(Log.warn, print_str);
-
-def print_info(print_str):
-  pprint(Log.info, print_str);
-
-def print_verb(print_str):
-  pprint(Log.verb, print_str);
-
-def print_vverb(print_str):
-  pprint(Log.vverb, print_str);
-
-def print_debug(print_str):
-  pprint(Log.debug, print_str);
 
 # -----------------------------------------------------------------------------
 # Filesystem functions
@@ -621,7 +543,7 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
 # -----------------------------------------------------------------------------
 def parse_File_Config():
   "Parses config file"
-  print_info('[Parsing config file]');
+  NARS.print_info('[Parsing config file]');
   try:
     tree = ET.parse(__config_configFileName);
   except IOError:
@@ -636,15 +558,15 @@ def parse_File_Config():
   # --- Parse filters
   for root_child in root:
     if root_child.tag == 'collection':
-      print_debug('<collection>');
+      NARS.print_debug('<collection>');
       if 'name' in root_child.attrib:
         filter_class = ConfigFileFilter();
         
         # -- Mandatory config file options
         filter_class.name = root_child.attrib['name'];
         filter_class.shortname = root_child.attrib['shortname'];
-        print_debug(' name           = ' + filter_class.name);
-        print_debug(' shortname      = ' + filter_class.shortname);
+        NARS.print_debug(' name           = ' + filter_class.name);
+        NARS.print_debug(' shortname      = ' + filter_class.shortname);
         sourceDirFound = 0;
         destDirFound = 0;
 
@@ -664,74 +586,74 @@ def parse_File_Config():
         #   to avoid None objects later.
         for filter_child in root_child:
           if filter_child.tag == 'ROMsSource':
-            print_debug('ROMsSource    = ' + filter_child.text);
+            NARS.print_debug('ROMsSource    = ' + filter_child.text);
             sourceDirFound = 1;
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.sourceDir = tempDir;
 
           elif filter_child.tag == 'ROMsDest':
-            print_debug('ROMsDest      = ' + filter_child.text);
+            NARS.print_debug('ROMsDest      = ' + filter_child.text);
             destDirFound = 1;
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.destDir = tempDir;
 
           elif filter_child.tag == 'FanartSource':
-            print_debug('FanartSource = ' + filter_child.text);
+            NARS.print_debug('FanartSource = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.fanartSourceDir = tempDir;
 
           elif filter_child.tag == 'FanartDest':
-            print_debug('FanartDest = ' + filter_child.text);
+            NARS.print_debug('FanartDest = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.fanartDestDir = tempDir;
 
           elif filter_child.tag == 'ThumbsSource':
-            print_debug('ThumbsSource = ' + filter_child.text);
+            NARS.print_debug('ThumbsSource = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsSourceDir = tempDir;
 
           elif filter_child.tag == 'ThumbsDest':
-            print_debug('ThumbsDest = ' + filter_child.text);
+            NARS.print_debug('ThumbsDest = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsDestDir = tempDir;
 
           elif filter_child.tag == 'filterUpTags' and \
                filter_child.text is not None:
-            print_debug('filterUpTags   = ' + filter_child.text);
+            NARS.print_debug('filterUpTags   = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.filterUpTags = list;
 
           elif filter_child.tag == 'filterDownTags' and \
                filter_child.text is not None:
-            print_debug('filterDownTags = ' + filter_child.text);
+            NARS.print_debug('filterDownTags = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.filterDownTags = list;
 
           elif filter_child.tag == 'includeTags' and \
                filter_child.text is not None:
-            print_debug('includeTags    = ' + filter_child.text);
+            NARS.print_debug('includeTags    = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.includeTags = list;
 
           elif filter_child.tag == 'excludeTags' and \
                filter_child.text is not None:
-            print_debug('excludeTags    = ' + filter_child.text);
+            NARS.print_debug('excludeTags    = ' + filter_child.text);
             text_string = filter_child.text;
             list = text_string.split(",");
             filter_class.excludeTags = list;
 
           elif filter_child.tag == 'NoIntroDat' and \
                filter_child.text is not None:
-            print_debug('NoIntroDat    = ' + filter_child.text);
+            NARS.print_debug('NoIntroDat    = ' + filter_child.text);
             filter_class.NoIntro_XML = filter_child.text;
 
         # - Trim blank spaces on filter lists
@@ -753,16 +675,16 @@ def parse_File_Config():
 
         # - Check for errors in this filter
         if not sourceDirFound:
-          print_error('source directory not found in config file');
+          NARS.print_error('source directory not found in config file');
           sys.exit(10);
         if not destDirFound:
-          print_error('destination directory not found in config file');
+          NARS.print_error('destination directory not found in config file');
           sys.exit(10);
 
         # - Aggregate filter to configuration main variable
         configFile.filter_dic[filter_class.shortname] = filter_class;
       else:
-        print_error('<collection> tag does not have name attribute');
+        NARS.print_error('<collection> tag does not have name attribute');
         sys.exit(10);
 
   return configFile;
@@ -1191,14 +1113,14 @@ def create_copy_list(romMain_list, filter_config):
 def do_list():
   "List of configuration file"
 
-  print_info('[Listing configuration file]');
-  print "Parsing configuration XML file " + __config_configFileName + "...",;
+  NARS.print_info('[Listing configuration file]');
+  print "Reading configuration XML file " + __config_configFileName + "...",;
   sys.stdout.flush();
   try:
     tree = ET.parse(__config_configFileName);
   except IOError:
     print '\n';
-    print_error('[ERROR] cannot find file ' + __config_configFileName);
+    NARS.print_error('[ERROR] cannot find file ' + __config_configFileName);
     sys.exit(10);
   print 'done';
 
@@ -1206,27 +1128,27 @@ def do_list():
   root = tree.getroot();
   for collection in root:
     # print collection.tag, collection.attrib;
-    print_info('<ROM Collection>');
-    print_info('Short name      ' + collection.attrib['shortname']);
-    print_info('Name            ' + collection.attrib['name']);
+    NARS.print_info('<ROM Collection>');
+    NARS.print_info('Short name      ' + collection.attrib['shortname']);
+    NARS.print_info('Name            ' + collection.attrib['name']);
 
     # - For every collection, iterate over the elements
     # - This is not very efficient
     for collectionEL in collection:
       if collectionEL.tag == 'source':
-        print_verb('Source          ' + collectionEL.text);
+        NARS.print_verb('Source          ' + collectionEL.text);
       elif collectionEL.tag == 'dest':
-        print_verb('Destination     ' + collectionEL.text);
+        NARS.print_verb('Destination     ' + collectionEL.text);
       elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
-        print_verb('filterUpTags    ' + collectionEL.text);
+        NARS.print_verb('filterUpTags    ' + collectionEL.text);
       elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
-        print_verb('filterDownTags  ' + collectionEL.text);
+        NARS.print_verb('filterDownTags  ' + collectionEL.text);
       elif collectionEL.tag == 'includeTags' and collectionEL.text is not None:
-        print_verb('includeTags     ' + collectionEL.text);
+        NARS.print_verb('includeTags     ' + collectionEL.text);
       elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
-        print_verb('excludeTags     ' + collectionEL.text);
+        NARS.print_verb('excludeTags     ' + collectionEL.text);
       elif collectionEL.tag == 'NoIntroDat' and collectionEL.text is not None:
-        print_info('NoIntroDat      ' + collectionEL.text);
+        NARS.print_info('NoIntroDat      ' + collectionEL.text);
 
     # - Test if all mandatory elements are there
     # TODO: finish this
