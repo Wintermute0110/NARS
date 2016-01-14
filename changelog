@@ -1,12 +1,14 @@
-XBMC-rom-utilities (0.1.1)
+NARS (0.2.0)
 
+  * Rename software to avoid using the "XBMC" word in the name. New name will
+    be NARS Advanced ROM Sorting.
   * Use cElementTree instead ElemntTree for speeding up XML loading (about 6x).
   * xru-mame: Print some technical ROM information in the plot filed of NFO
     files.
   * xru-mame: Add CDHs as ROM dependencies. New commands check-chd, copy-chd,
-    update-chd and option --cleanCHD
+    update-chd and option --cleanCHD.
 
- -- August 2014
+ -- January 2016
 
 XBMC-rom-utilities (0.1.0)
 
