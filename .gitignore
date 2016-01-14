@@ -1,2 +1,3 @@
-xru-*.txt
+*.pyc
+nars-*.txt
 doc/*.html
