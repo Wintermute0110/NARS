@@ -1,11 +1,13 @@
 NARS (0.2.0)
 
+  * nars-mame: Add support to new MAME XML format after the merge of MAME and
+    MESS.
   * Rename software to avoid using the "XBMC" word in the name. New name will
     be NARS Advanced ROM Sorting.
   * Use cElementTree instead ElemntTree for speeding up XML loading (about 6x).
-  * xru-mame: Print some technical ROM information in the plot filed of NFO
+  * nars-mame: Print some technical ROM information in the plot filed of NFO
     files.
-  * xru-mame: Add CDHs as ROM dependencies. New commands check-chd, copy-chd,
+  * nars-mame: Add CDHs as ROM dependencies. New commands check-chd, copy-chd,
     update-chd and option --cleanCHD.
 
  -- January 2016
