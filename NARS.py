@@ -20,6 +20,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import sys
+import os
+import xml.etree.ElementTree as ET
 
 # -----------------------------------------------------------------------------
 # DEBUG functions
@@ -104,3 +107,94 @@ def print_vverb(print_str):
 
 def print_debug(print_str):
   pprint(Log.debug, print_str);
+
+
+# -----------------------------------------------------------------------------
+# Filesystem low-level functions
+# -----------------------------------------------------------------------------
+# This function either succeeds or aborts the program. Check if file exists
+# before calling this.
+def delete_ROM_file(fileName, dir):
+  fullFilename = dir + fileName;
+
+  if not __prog_option_dry_run:
+    try:
+      os.remove(fullFilename);
+    except EnvironmentError:
+      print_debug("delete_ROM_file >> Error happened");
+
+def exists_ROM_file(fileName, dir):
+  fullFilename = dir + fileName;
+
+  return os.path.isfile(fullFilename);
+
+def have_dir_or_abort(dirName):
+  if not os.path.isdir(dirName):
+    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
+    sys.exit(10);
+
+# -----------------------------------------------------------------------------
+# Filesystem helper functions
+# -----------------------------------------------------------------------------
+def copy_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
+  sourceFullFilename = sourceDir + fileName;
+  destFullFilename = destDir + fileName;
+
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
+  if not __prog_option_dry_run:
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      print_debug("copy_ROM_file >> Error happened");
+
+# Returns:
+#  0 - File copied (sizes different)
+#  1 - File not copied (updated)
+def update_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
+  sourceFullFilename = sourceDir + fileName;
+  destFullFilename = destDir + fileName;
+
+  existsSource = os.path.isfile(sourceFullFilename);
+  existsDest = os.path.isfile(destFullFilename);
+  if not existsSource:
+    print_error("Source file not found");
+    sys.exit(10);
+
+  sizeSource = os.path.getsize(sourceFullFilename);
+  if existsDest:
+    sizeDest = os.path.getsize(destFullFilename);
+  else:
+    sizeDest = -1;
+
+  # If sizes are equal. Skip copy and return 1
+  if sizeSource == sizeDest:
+    return 1;
+
+  # destFile does not exist or sizes are different, copy.
+  print_debug(' Copying ' + sourceFullFilename);
+  print_debug(' Into    ' + destFullFilename);
+  if not __prog_option_dry_run:
+    try:
+      shutil.copy(sourceFullFilename, destFullFilename)
+    except EnvironmentError:
+      print_debug("update_ROM_file >> Error happened");
+
+  return 0;
+
+# -----------------------------------------------------------------------------
+# XML functions
+# -----------------------------------------------------------------------------
+def XML_read_file(filename, infoString):
+  """Reads an XML file using Element Tree. Aborst if errors found"""
+  print infoString + filename + "...",
+  sys.stdout.flush()
+  try:
+    tree = ET.parse(filename)
+  except IOError:
+    print '\n'
+    print_error('\033[31m[ERROR]\033[0m cannot find file ' + filename)
+    sys.exit(10)
+  print 'done'
+  
+  return tree

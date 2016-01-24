@@ -62,13 +62,13 @@ def copy_ArtWork_file(fileName, artName, sourceDir, destDir):
   if not os.path.isfile(sourceFullFilename):
     return 1;
 
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
+  NARS.print_debug(' Copying ' + sourceFullFilename);
+  NARS.print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print_debug("copy_ArtWork_file >> Error happened");
+      NARS.print_debug("copy_ArtWork_file >> Error happened");
 
   return 0;
 
@@ -96,90 +96,23 @@ def update_ArtWork_file(fileName, artName, sourceDir, destDir):
 
   # If sizes are equal Skip copy and return 1
   if sizeSource == sizeDest:
-    print_debug(' Updated ' + destFullFilename);
+    NARS.print_debug(' Updated ' + destFullFilename);
     return 2;
 
   # destFile does not exist or sizes are different, copy.
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
+  NARS.print_debug(' Copying ' + sourceFullFilename);
+  NARS.print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print_debug("update_ArtWork_file >> Error happened");
+      NARS.print_debug("update_ArtWork_file >> Error happened");
 
   return 0
 
-def copy_ROM_file(fileName, sourceDir, destDir):
-  sourceFullFilename = sourceDir + fileName;
-  destFullFilename = destDir + fileName;
-
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
-  if not __prog_option_dry_run:
-    try:
-      shutil.copy(sourceFullFilename, destFullFilename)
-    except EnvironmentError:
-      print_debug("copy_ROM_file >> Error happened");
-
-# Returns:
-#  0 - File copied (sizes different)
-#  1 - File not copied (updated)
-def update_ROM_file(fileName, sourceDir, destDir):
-  sourceFullFilename = sourceDir + fileName;
-  destFullFilename = destDir + fileName;
-
-  existsSource = os.path.isfile(sourceFullFilename);
-  existsDest = os.path.isfile(destFullFilename);
-  if not existsSource:
-    print_error("Source file not found");
-    sys.exit(10);
-
-  sizeSource = os.path.getsize(sourceFullFilename);
-  if existsDest:
-    sizeDest = os.path.getsize(destFullFilename);
-  else:
-    sizeDest = -1;
-
-  # If sizes are equal. Skip copy and return 1
-  if sizeSource == sizeDest:
-    return 1;
-
-  # destFile does not exist or sizes are different, copy.
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
-  if not __prog_option_dry_run:
-    try:
-      shutil.copy(sourceFullFilename, destFullFilename)
-    except EnvironmentError:
-      print_debug("update_ROM_file >> Error happened");
-
-  return 0;
-
-# This function either succeeds or aborts the program. Check if file exists
-# before calling this.
-def delete_ROM_file(fileName, dir):
-  fullFilename = dir + fileName;
-
-  if not __prog_option_dry_run:
-    try:
-      os.remove(fullFilename);
-    except EnvironmentError:
-      print_debug("delete_ROM_file >> Error happened");
-
-def exists_ROM_file(fileName, dir):
-  fullFilename = dir + fileName;
-
-  return os.path.isfile(fullFilename);
-
-def haveDir_or_abort(dirName):
-  if not os.path.isdir(dirName):
-    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
-    sys.exit(10);
-
 # -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir):
-  print_info('[Copying ROMs into destDir]');
+  NARS.print_info('[Copying ROMs into destDir]');
 
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
@@ -193,19 +126,19 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
 
     # --- Copy file (this function succeeds or aborts program)
     romFileName = rom_copy_item + '.zip';
-    copy_ROM_file(romFileName, sourceDir, destDir);
+    NARS.copy_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run);
     num_copied_roms += 1;
-    print_info('<Copied> ' + romFileName);
+    NARS.print_info('<Copied> ' + romFileName);
     sys.stdout.flush();
 
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
 
 def update_ROM_list(rom_list, sourceDir, destDir):
-  print_info('[Updating ROMs into destDir]');
+  NARS.print_info('[Updating ROMs into destDir]');
   
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
@@ -218,28 +151,28 @@ def update_ROM_list(rom_list, sourceDir, destDir):
 
     # --- Copy file (this function succeeds or aborts program)
     romFileName = rom_copy_item + '.zip';
-    ret = update_ROM_file(romFileName, sourceDir, destDir);
+    ret = NARS.update_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run);
     if ret == 0:
       # On default verbosity level only report copied files
       sys.stdout.write('{:3d}% '.format(percentage));
       num_copied_roms += 1;
-      print_info('<Copied > ' + romFileName);
+      NARS.print_info('<Copied > ' + romFileName);
     elif ret == 1:
-      if log_level >= Log.verb:
+      if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:3d}% '.format(percentage));
       num_updated_roms += 1;
-      print_verb('<Updated> ' + romFileName);
+      NARS.print_verb('<Updated> ' + romFileName);
     else:
-      print_error('Wrong value returned by update_ROM_file()');
+      NARS.print_error('Wrong value returned by update_ROM_file()');
       sys.exit(10);
     sys.stdout.flush()
 
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
-  print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
+  NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
   print_info('[Cleaning ROMs in ROMsDest]');
@@ -276,17 +209,17 @@ def delete_redundant_NFO(destDir):
   print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
-  print_info('[Copying ArtWork]');
+  NARS.print_info('[Copying ArtWork]');
   fanartSourceDir = filter_config.fanartSourceDir;
   fanartDestDir = filter_config.fanartDestDir;
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
   
   # --- Check that directories exist
-  haveDir_or_abort(thumbsSourceDir);
-  haveDir_or_abort(thumbsDestDir);
-  haveDir_or_abort(fanartSourceDir);
-  haveDir_or_abort(fanartDestDir);
+  NARS.have_dir_or_abort(thumbsSourceDir);
+  NARS.have_dir_or_abort(thumbsDestDir);
+  NARS.have_dir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(fanartDestDir);
   
   # --- Copy artwork
   num_steps = len(rom_copy_dic);
@@ -307,12 +240,12 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
     ret = copy_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
     if ret == 0:
       num_copied_thumbs += 1;
-      print_info('<Copied Thumb  > ' + art_baseName);
+      NARS.print_info('<Copied Thumb  > ' + art_baseName);
     elif ret == 1:
       num_missing_thumbs += 1;
-      print_info('<Missing Thumb > ' + art_baseName);
+      NARS.print_info('<Missing Thumb > ' + art_baseName);
     else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
+      NARS.print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
 
     # --- Update progress
@@ -323,10 +256,10 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
     ret = copy_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
     if ret == 0:
       num_copied_fanart += 1;
-      print_info('<Copied Fanart > ' + art_baseName);
+      NARS.print_info('<Copied Fanart > ' + art_baseName);
     elif ret == 1:
       num_missing_fanart += 1;
-      print_info('<Missing Fanart> ' + art_baseName);
+      NARS.print_info('<Missing Fanart> ' + art_baseName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
@@ -334,14 +267,14 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
-  print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
-  print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
-  print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
+  NARS.print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
+  NARS.print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
+  NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
 
 def update_ArtWork_list(filter_config, rom_copy_dic):
-  print_info('[Updating ArtWork]');
+  NARS.print_info('[Updating ArtWork]');
   
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
@@ -349,10 +282,10 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
   fanartDestDir = filter_config.fanartDestDir;
 
   # --- Check that directories exist
-  haveDir_or_abort(thumbsSourceDir);
-  haveDir_or_abort(thumbsDestDir);
-  haveDir_or_abort(fanartSourceDir);
-  haveDir_or_abort(fanartDestDir);
+  NARS.have_dir_or_abort(thumbsSourceDir);
+  NARS.have_dir_or_abort(thumbsDestDir);
+  NARS.have_dir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(fanartDestDir);
   
   # --- Copy/update artwork
   num_steps = len(rom_copy_dic);
@@ -376,17 +309,17 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
       # On default verbosity level only report copied files
       sys.stdout.write('{:3d}% '.format(percentage));
       num_copied_thumbs += 1;
-      print_info('<Copied  Thumb > ' + art_baseName);
+      NARS.print_info('<Copied  Thumb > ' + art_baseName);
     elif ret == 1:
       # Also report missing artwork
       sys.stdout.write('{:3d}% '.format(percentage));
       num_missing_thumbs += 1;
-      print_info('<Missing Thumb > ' + art_baseName);
+      NARS.print_info('<Missing Thumb > ' + art_baseName);
     elif ret == 2:
-      if log_level >= Log.verb:
+      if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:3d}% '.format(percentage));
       num_updated_thumbs += 1;
-      print_verb('<Updated Thumb > ' + art_baseName);
+      NARS.print_verb('<Updated Thumb > ' + art_baseName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
@@ -397,17 +330,17 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
       # Also report missing artwork
       sys.stdout.write('{:3d}% '.format(percentage));
       num_copied_fanart += 1;
-      print_info('<Copied  Fanart> ' + art_baseName);
+      NARS.print_info('<Copied  Fanart> ' + art_baseName);
     elif ret == 1:
       # Also report missing artwork
       sys.stdout.write('{:3d}% '.format(percentage));
       num_missing_fanart += 1;
-      print_info('<Missing Fanart> ' + art_baseName);
+      NARS.print_info('<Missing Fanart> ' + art_baseName);
     elif ret == 2:
-      if log_level >= Log.verb:
+      if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:3d}% '.format(percentage));
       num_updated_fanart += 1;
-      print_verb('<Updated Fanart> ' + art_baseName);
+      NARS.print_verb('<Updated Fanart> ' + art_baseName);
     else:
       print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
@@ -415,13 +348,13 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
-  print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs));
-  print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
-  print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
-  print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart));
-  print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
+  NARS.print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs));
+  NARS.print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
+  NARS.print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
+  NARS.print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart));
+  NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
 
 # Artwork may be available for some of the parent/clones in the ROM set, but
 # not for the filtered ROMs. This function test this and makes a list of the
@@ -440,7 +373,7 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
   "Write me"
   __debug_optimize_ArtWork = 0;
 
-  print_info('[Optimising ArtWork file list]');
+  NARS.print_info('[Optimising ArtWork file list]');
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
   fanartSourceDir = filter_config.fanartSourceDir;
@@ -448,16 +381,16 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
 
   # --- Check that directories exist
   if not os.path.isdir(thumbsSourceDir):
-    print_error('thumbsSourceDir not found ' + thumbsSourceDir);
+    NARS.print_error('thumbsSourceDir not found ' + thumbsSourceDir);
     sys.exit(10);
   if not os.path.isdir(thumbsDestDir):
-    print_error('thumbsDestDir not found ' + thumbsDestDir);
+    NARS.print_error('thumbsDestDir not found ' + thumbsDestDir);
     sys.exit(10);
   if not os.path.isdir(fanartSourceDir):
-    print_error('fanartSourceDir not found ' + fanartSourceDir);
+    NARS.print_error('fanartSourceDir not found ' + fanartSourceDir);
     sys.exit(10);
   if not os.path.isdir(fanartDestDir):
-    print_error('fanartDestDir not found ' + fanartDestDir);
+    NARS.print_error('fanartDestDir not found ' + fanartDestDir);
     sys.exit(10);
 
   # - For every ROM to be copied (filtered) check if ArtWork exists. If not,
@@ -829,20 +762,11 @@ def isTag(tags, tag_list):
 # The first game in the list is the parent game according to the DAT,
 # and the rest are the clones in no particular order.
 def get_NoIntro_Main_list(filter_config):
-  "Parses NoInto XML and makes a parent-clone list"
+  """Parses NoInto XML and makes a parent-clone list"""
   __debug_parse_NoIntro_XML_Config = 0;
   
-  filename = filter_config.NoIntro_XML;
-  print_info('Parsing No-Intro XML DAT');
-  print "Parsing No-Intro XML file " + filename + "...",;
-  sys.stdout.flush();
-  try:
-    tree = ET.parse(filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + filename);
-    sys.exit(10);
-  print ' done';
+  XML_filename = filter_config.NoIntro_XML;
+  tree = NARS.XML_read_file(XML_filename, 'Parsing No-Intro XML DAT')
 
   # --- Raw list: literal information from the XML
   rom_raw_dict = {}; # Key is ROM baseName
@@ -874,9 +798,9 @@ def get_NoIntro_Main_list(filter_config):
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
   del tree;
-  print_info('Total number of games = ' + str(num_games));
-  print_info('Number of parents = ' + str(num_parents));
-  print_info('Number of clones = ' + str(num_clones));
+  NARS.print_info('Total number of games = ' + str(num_games));
+  NARS.print_info('Number of parents = ' + str(num_parents));
+  NARS.print_info('Number of clones = ' + str(num_clones));
 
   # --- Create a parent-clone list
   rom_pclone_dict = {};
@@ -916,10 +840,10 @@ def get_NoIntro_Main_list(filter_config):
   # DEBUG: print parent-clone list
   for key in rom_pclone_dict:
     romObj = rom_pclone_dict[key];
-    print_debug(" <Parent> '" + romObj.baseName + "'");
+    NARS.print_debug(" <Parent> '" + romObj.baseName + "'");
     if romObj.hasClones:
       for clone in romObj.clone_list:
-        print_debug("  <Clone> '" + clone + "'");
+        NARS.print_debug("  <Clone> '" + clone + "'");
 
   # --- Create ROM main list
   romMainList_list = [];
@@ -943,7 +867,7 @@ def get_directory_Main_list(filter_config):
   __debug_sourceDir_ROM_scanner = 0;
   
   # --- Read all files in sourceDir
-  print_info('[Reading ROMs in source dir]');
+  NARS.print_info('[Reading ROMs in source dir]');
   sourceDir = filter_config.sourceDir;
   romMainList_dict = {};
   num_ROMs_sourceDir = 0;
@@ -956,7 +880,7 @@ def get_directory_Main_list(filter_config):
       if __debug_sourceDir_ROM_scanner:
         print "  ROM       '" + romObject.fileName + "'";
         print "   baseName '" + romObject.baseName + "'";
-  print_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs');
+  NARS.print_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs');
   
   # --- Create a parent/clone list based on the baseName of the ROM
   pclone_ROM_dict = {}; # Key is ROM basename
@@ -999,7 +923,7 @@ def get_Tag_list(romMainList_list):
 
 def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
   "Score and filter the main ROM list"
-  print_info('[Filtering ROMs]');
+  NARS.print_info('[Filtering ROMs]');
   __debug_main_ROM_list = 0;
 
   upTag_list = filter_config.filterUpTags;
@@ -1075,7 +999,7 @@ def create_copy_list(romMain_list, filter_config):
   "Creates the list of ROMs to be copied based on the ordered main ROM list"
 
   # --- Scan sourceDir to get the list of available ROMs
-  print_info('[Scanning sourceDir for ROMs to be copied]');
+  NARS.print_info('[Scanning sourceDir for ROMs to be copied]');
   sourceDir = filter_config.sourceDir;
   rom_main_list = [];
   for file in os.listdir(sourceDir):
@@ -1084,7 +1008,7 @@ def create_copy_list(romMain_list, filter_config):
 
   # - From the parent/clone list, pick the first available ROM (and
   #   not excluded) to be copied.
-  print_info('[Creating list of ROMs to be copied/updated]');
+  NARS.print_info('[Creating list of ROMs to be copied/updated]');
   rom_copy_list = [];
   for mainROM_obj in romMain_list:
     num_set_files = len(mainROM_obj.filenames);
@@ -1155,20 +1079,11 @@ def do_list():
 
 def do_list_nointro(filterName):
   "List of NoIntro XML file"
-  print_info('[Listing No-Intro XML DAT]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Listing No-Intro XML DAT]');
+  NARS.print_info('Filter name: ' + filterName);
   filter_config = get_Filter_Config(filterName);
   filename = filter_config.NoIntro_XML;
-  print_info('Parsing No-Intro XML DAT');
-  print "Parsing No-Intro XML file " + filename + "...",;
-  sys.stdout.flush();
-  try:
-    tree = ET.parse(filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + filename);
-    sys.exit(10);
-  print ' done';
+  tree = NARS.XML_read_file(filename, "Parsing No-Intro XML DAT file ")
 
   # Child elements (NoIntro pclone XML)
   # Create a list containing game name
@@ -1190,36 +1105,27 @@ def do_list_nointro(filterName):
 
   # Print game list in alphabetical order
   for game in sorted(gameList):
-    print_info('<game> ' + game);
-  print_info('Number of games in No-Intro XML DAT = ' + str(num_games));
+    NARS.print_info('<game> ' + game);
+  NARS.print_info('Number of games in No-Intro XML DAT = ' + str(num_games));
 
 def do_check_nointro(filterName):
-  "List of NoIntro XML file"
+  """Checks ROMs in sourceDir against NoIntro XML file"""
 
-  print_info('[Checking ROMs with No-Intro XML DAT]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Checking ROMs against No-Intro XML DAT]');
+  NARS.print_info('Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
-  filename = filter_config.NoIntro_XML;
   
   # --- Get parameters and check for errors
   sourceDir = filter_config.sourceDir;
-  haveDir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(sourceDir);
 
-  # Load No-Intro DAT
-  if filename == None:
+  # --- Load No-Intro DAT
+  XML_filename = filter_config.NoIntro_XML;
+  if XML_filename == None:
     print_error('[ERROR] No-Intro XML DAT not configured for this filer.');
-    exit(10);
-  print_info('Parsing No-Intro XML DAT');
-  print "Parsing " + filename + "...",;
-  sys.stdout.flush();
-  try:
-    tree = ET.parse(filename);
-  except IOError:
-    print '\n';
-    print_error('\033[31m[ERROR]\033[0m cannot find file ' + filename);
     sys.exit(10);
-  print ' done';
-  
+  tree = NARS.XML_read_file(XML_filename, "Parsing No-Intro XML DAT file ")
+
   # Child elements (NoIntro pclone XML):
   nointro_roms = [];
   num_games = 0;
@@ -1232,7 +1138,7 @@ def do_check_nointro(filterName):
       nointro_roms.append(game_attrib['name'] + '.zip');
 
   # Check how many ROMs we have in sourceDir and the DAT
-  print_info('[Scanning ROMs in sourceDir]');
+  NARS.print_info('[Scanning ROMs in sourceDir]');
   have_roms = 0;
   unknown_roms = 0;
   file_list = [];
@@ -1242,35 +1148,36 @@ def do_check_nointro(filterName):
     if file.endswith(".zip"):
       if file in nointro_roms:
         have_roms += 1;
-        print_vverb('<Have ROM  > ' + file);
+        NARS.print_vverb('<Have ROM  > ' + file);
       else:
         unknown_roms += 1;
-        print_verb('<Unknown ROM> ' + file);
+        NARS.print_verb('<Unknown ROM> ' + file);
 
   # Check how many ROMs we have in the DAT not in sourceDir
   missing_roms = 0;  
   for game in sorted(nointro_roms):
     filename = sourceDir + game;
     if not os.path.isfile(filename):
-      print_verb('<Missing ROM> ' + game);
+      NARS.print_verb('<Missing ROM> ' + game);
       missing_roms += 1;
 
-  print_info('[Report]');
-  print_info('Games in DAT = ' + str(num_games));
-  print_info('Have ROMs    = ' + str(have_roms));
-  print_info('Missing ROMs = ' + str(missing_roms));
-  print_info('Unknown ROMs = ' + str(unknown_roms));
+  NARS.print_info('[Report]');
+  NARS.print_info('Files in sourceDir: ' + str(len(file_list)));
+  NARS.print_info('Games in DAT      : ' + str(num_games));
+  NARS.print_info('Have ROMs         : ' + str(have_roms));
+  NARS.print_info('Missing ROMs      : ' + str(missing_roms));
+  NARS.print_info('Unknown ROMs      : ' + str(unknown_roms));
 
 def do_taglist(filterName):
-  "Makes a histograms of the tags"
+  """Makes a histograms of the tags of the ROMs in sourceDir"""
 
-  print_info('[Listing tags]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Listing tags]');
+  NARS.print_info('Filter name = ' + filterName);
   filter_config = get_Filter_Config(filterName);
   sourceDir = filter_config.sourceDir;
 
   # Check if dest directory exists
-  haveDir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(sourceDir);
 
   # Traverse directory, for every file extract properties, and add them to the
   # dictionary.
@@ -1290,30 +1197,30 @@ def do_taglist(filterName):
 
   # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
   sorted_propertiesDic = sorted(propertiesDic.iteritems(), key=operator.itemgetter(1))
-  print_info('[Tag histogram]');
+  NARS.print_info('[Tag histogram]');
   for key in sorted_propertiesDic:
-    print_info('{:6d}'.format(key[1]) + '  ' + key[0]);
+    NARS.print_info('{:6d}'.format(key[1]) + '  ' + key[0]);
 
 # ----------------------------------------------------------------------------
 def do_checkFilter(filterName):
-  "Applies filter and prints filtered parent/clone list"
+  """Applies filter and prints filtered parent/clone list"""
 
-  print_info('[Check-filter ROM]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Check-filter ROM]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
   sourceDir = filter_config.sourceDir;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(sourceDir);
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
   if filter_config.NoIntro_XML == None:
-    print_info('Using directory listing');
+    NARS.print_info('Using directory listing');
     romMainList_list = get_directory_Main_list(filter_config);
   else:
-    print_info('Using No-Intro parent/clone DAT');
+    NARS.print_info('Using No-Intro parent/clone DAT');
     romMainList_list = get_NoIntro_Main_list(filter_config);
 
   # --- Get tag list for every rom
@@ -1324,10 +1231,11 @@ def do_checkFilter(filterName):
   romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config);
 
   # --- Print list in alphabetical order
+  NARS.print_info("[List of scored parent/clone ROM sets]")
   index_main = 0;
   for index_main in range(len(romMainList_list)):
     romObject = romMainList_list[index_main];
-    print_info("<ROM set> " + romObject.setName);
+    NARS.print_info("<ROM set> " + romObject.setName);
     for index in range(len(romObject.filenames)):
       # --- Check if file exists (maybe it does not exist for No-Intro lists)
       sourceFullFilename = sourceDir + romObject.filenames[index];
@@ -1340,16 +1248,16 @@ def do_checkFilter(filterName):
         excludeFlag = 'E';
 
       # --- Print
-      print_info('  ' + '{:2d} '.format(romObject.scores[index]) + \
-                 '[' + excludeFlag + haveFlag + '] ' + \
-                 romObject.filenames[index]);
+      NARS.print_info('  ' + '{:2d} '.format(romObject.scores[index]) + \
+                      '[' + excludeFlag + haveFlag + '] ' + \
+                      romObject.filenames[index]);
 
 # ----------------------------------------------------------------------------
 # Update ROMs in destDir
 def do_update(filterName):
   "Applies filter and updates (copies) ROMs"
-  print_info('[Copy/Update ROMs]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Copy/Update ROMs]');
+  NARS.print_info('Filter name: ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -1357,15 +1265,17 @@ def do_update(filterName):
   destDir = filter_config.destDir;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(sourceDir);
-  haveDir_or_abort(destDir);
+  NARS.print_info('Source directory     : ' + sourceDir);
+  NARS.have_dir_or_abort(sourceDir);
+  NARS.print_info('Destination directory: ' + destDir);
+  NARS.have_dir_or_abort(destDir);
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
   if filter_config.NoIntro_XML == None:
-    print_info('Using directory listing');
+    NARS.print_info('Using directory listing');
     romMainList_list = get_directory_Main_list(filter_config);
   else:
-    print_info('Using No-Intro parent/clone DAT');
+    NARS.print_info('Using No-Intro parent/clone DAT');
     romMainList_list = get_NoIntro_Main_list(filter_config);
 
   # --- Get tag list for every ROM
@@ -1398,8 +1308,8 @@ def do_update(filterName):
 def do_checkArtwork(filterName):
   "Checks for missing artwork and prints a report"
 
-  print_info('[Check-ArtWork]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Check-ArtWork]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -1408,9 +1318,9 @@ def do_checkArtwork(filterName):
   fanartSourceDir = filter_config.fanartSourceDir;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(destDir);
-  haveDir_or_abort(thumbsSourceDir);
-  haveDir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(destDir);
+  NARS.have_dir_or_abort(thumbsSourceDir);
+  NARS.have_dir_or_abort(fanartSourceDir);
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
@@ -1421,17 +1331,17 @@ def do_checkArtwork(filterName):
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
   if filter_config.NoIntro_XML == None:
-    print_info('Using directory listing');
+    NARS.print_info('Using directory listing');
     romMainList_list = get_directory_Main_list(filter_config);
   else:
-    print_info('Using No-Intro parent/clone DAT');
+    NARS.print_info('Using No-Intro parent/clone DAT');
     romMainList_list = get_NoIntro_Main_list(filter_config);
 
   # --- Replace missing artwork for alternative artwork in the parent/clone set
   artwork_copy_dic = optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config);
 
   # --- Print list in alphabetical order
-  print_info('[Artwork report]');
+  NARS.print_info('[Artwork report]');
   num_original = 0;
   num_replaced = 0;
   num_have_thumbs = 0;
@@ -1439,7 +1349,7 @@ def do_checkArtwork(filterName):
   num_have_fanart = 0;
   num_missing_fanart = 0;
   for rom_baseName in sorted(roms_destDir_list):
-    print_info("<<  ROM  >> " + rom_baseName + ".zip");    
+    NARS.print_info("<<  ROM  >> " + rom_baseName + ".zip");    
     if rom_baseName not in artwork_copy_dic:
       print ' Not found';
     else:
@@ -1473,21 +1383,21 @@ def do_checkArtwork(filterName):
         num_have_fanart += 1;
         print ' Have F     ' + art_baseName + '.png';
 
-  print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
-  print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
-  print_info('Number of original ArtWork = ' + str(num_original));
-  print_info('Number of replaced ArtWork = ' + str(num_replaced));
-  print_info('Number of have Thumbs    = ' + str(num_have_thumbs));
-  print_info('Number of missing Thumbs = ' + str(num_missing_thumbs));
-  print_info('Number of have Fanart    = ' + str(num_have_fanart));
-  print_info('Number of missing Fanart = ' + str(num_missing_fanart));
+  NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
+  NARS.print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
+  NARS.print_info('Number of original ArtWork = ' + str(num_original));
+  NARS.print_info('Number of replaced ArtWork = ' + str(num_replaced));
+  NARS.print_info('Number of have Thumbs    = ' + str(num_have_thumbs));
+  NARS.print_info('Number of missing Thumbs = ' + str(num_missing_thumbs));
+  NARS.print_info('Number of have Fanart    = ' + str(num_have_fanart));
+  NARS.print_info('Number of missing Fanart = ' + str(num_missing_fanart));
 
 # ----------------------------------------------------------------------------
 def do_update_artwork(filterName):
   "Reads ROM destDir and copies Artwork"
 
-  print_info('[Updating/copying ArtWork]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Updating/copying ArtWork]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -1496,9 +1406,9 @@ def do_update_artwork(filterName):
   fanartSourceDir = filter_config.fanartSourceDir;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(destDir);
-  haveDir_or_abort(thumbsSourceDir);
-  haveDir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(destDir);
+  NARS.have_dir_or_abort(thumbsSourceDir);
+  NARS.have_dir_or_abort(fanartSourceDir);
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
@@ -1509,10 +1419,10 @@ def do_update_artwork(filterName):
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
   if filter_config.NoIntro_XML == None:
-    print_info('Using directory listing');
+    NARS.print_info('Using directory listing');
     romMainList_list = get_directory_Main_list(filter_config);
   else:
-    print_info('Using No-Intro parent/clone DAT');
+    NARS.print_info('Using No-Intro parent/clone DAT');
     romMainList_list = get_NoIntro_Main_list(filter_config);
 
   # --- Replace missing artwork for alternative artwork in the parent/clone set
@@ -1593,9 +1503,9 @@ def main(argv):
   global __prog_option_sync; # 1 update, 0 copies
 
   if args.verbose:
-    if args.verbose == 1:   change_log_level(Log.verb);
-    elif args.verbose == 2: change_log_level(Log.vverb);
-    elif args.verbose >= 3: change_log_level(Log.debug);
+    if args.verbose == 1:   NARS.change_log_level(NARS.Log.verb);
+    elif args.verbose == 2: NARS.change_log_level(NARS.Log.vverb);
+    elif args.verbose >= 3: NARS.change_log_level(NARS.Log.debug);
   if args.log:
     __prog_option_log = 1;
   if args.logto:
@@ -1623,7 +1533,7 @@ def main(argv):
 
   # --- Positional arguments that require a romSetName
   if args.romSetName == None:
-    print_error('\033[31m[ERROR]\033[0m romSetName required');
+    NARS.print_error('\033[31m[ERROR]\033[0m romSetName required');
     sys.exit(10);
 
   if command == 'list-nointro':
