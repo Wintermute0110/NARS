@@ -1073,9 +1073,9 @@ def parse_catver_ini():
 
   # --- Parse Catver.ini
   # --- Create a histogram with the categories
-  print_info('[Parsing Catver.ini]');
+  NARS.print_info('[Parsing Catver.ini]');
   cat_filename = configuration.Catver;
-  print_verb(' Opening ' + cat_filename);
+  NARS.print_verb(' Opening ' + cat_filename);
   final_categories_dic = {};
   f = open(cat_filename, 'r');
   # 0 -> Looking for '[Category]' tag
@@ -1933,12 +1933,13 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # -----------------------------------------------------------------------------
 # Main body functions
 # -----------------------------------------------------------------------------
-# IMPLEMENT ME: SAX API can make the loading of XML much faster and MUCH LESS
-#               memory consuming.
-# -------------------------------------
-# Dependency implementation: there are 2 types of dependencies: a) game that
-# depend and a device and the device has a ROM, b) game depends on a BIOS.
-# NOTE: CHD games and games that use samples are also dependencies: type c)
+# IMPLEMENT ME SAX API can make the loading of XML much faster and MUCH LESS
+#              memory consuming.
+#
+# Dependency implementation: there are 3 types of dependencies: 
+# a) game that depends on a device and the device has a ROM.
+# b) game depends on a BIOS.
+# c) game depends on a CHD
 #
 # Example of a device with a ROM ----------------------------------------------
 #  <game name="qsound" sourcefile="src/emu/sound/qsound.c" isdevice="yes" runnable="no">
@@ -2076,24 +2077,32 @@ def do_reduce_XML():
   root_output.attrib = root.attrib; # Copy mame attributes in output XML
 
   # Child elements we want to keep in the reduced XML:
-  # <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
+  # NOTE since the mergue of MAME and MESS, <game> has been substituded by
+  #      <machine>
+  # <machine name="005" 
+  #          sourcefile="segag80r.c" 
+  #          sampleof="005" 
+  #          cloneof="10yard" romof="10yard">
   #   <description>005</description>
   #   <year>1981</year>
   #   <manufacturer>Sega</manufacturer>
+  # ...
+  #   <display tag="screen" type="raster" rotate="270" width="256" height="224" refresh="59.998138" pixclock="5156000" htotal="328" hbend="0" hbstart="256" vtotal="262" vbend="0" vbstart="224" />
   # ...
   #   <input players="2" buttons="1" coins="2" service="yes">
   #     <control type="joy" ways="4"/>
   #   </input>
   # ...
   #   <driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
-  # </game>
+  # </machine>
   NARS.print_info('[Reducing MAME XML database]');
-  for game_EL in root:
+  for machine_EL in root:
     isdevice_flag = 0;
-    if game_EL.tag == 'game':
-      print_verb('[Game]');
-      game_output = ET.SubElement(root_output, 'game');
-      game_output.attrib = game_EL.attrib; # Copy game attributes in output XML
+    if machine_EL.tag == 'machine':
+      NARS.print_verb('[Machine]');
+      game_output = ET.SubElement(root_output, 'machine');
+      # Copy machine attributes in output XML
+      game_output.attrib = machine_EL.attrib;
 
       # Put BIOSes in the list
       if 'isbios' in game_output.attrib:
@@ -2102,50 +2111,50 @@ def do_reduce_XML():
       if 'isdevice' in game_output.attrib:
         isdevice_flag = 1;
 
-      # --- Iterate through game tag attributes (DEBUG)
-      # for key in game_EL.attrib:
-      #   print ' game --', key, '->', game_EL.attrib[key];
+      # --- Iterate through machine tag attributes (DEBUG)
+      # for key in machine_EL.attrib:
+      #   print ' machine --', key, '->', machine_EL.attrib[key];
 
-      # --- Iterate through the children of a game
-      for game_child in game_EL:
-        if game_child.tag == 'description':
-          NARS.print_verb(' description = ' + game_child.text);
+      # --- Iterate through the children of a machine
+      for machine_child in machine_EL:
+        if machine_child.tag == 'description':
+          NARS.print_verb(' description = ' + machine_child.text);
           description_output = ET.SubElement(game_output, 'description');
-          description_output.text = game_child.text;
+          description_output.text = machine_child.text;
 
-        if game_child.tag == 'year':
-          NARS.print_verb(' year = ' + game_child.text);
+        if machine_child.tag == 'year':
+          NARS.print_verb(' year = ' + machine_child.text);
           year_output = ET.SubElement(game_output, 'year');
-          year_output.text = game_child.text;
+          year_output.text = machine_child.text;
 
-        if game_child.tag == 'manufacturer':
-          NARS.print_verb(' manufacturer = ' + game_child.text);
+        if machine_child.tag == 'manufacturer':
+          NARS.print_verb(' manufacturer = ' + machine_child.text);
           manufacturer_output = ET.SubElement(game_output, 'manufacturer');
-          manufacturer_output.text = game_child.text;
+          manufacturer_output.text = machine_child.text;
 
-        if game_child.tag == 'input':
+        if machine_child.tag == 'input':
           input_output = ET.SubElement(game_output, 'input');
-          input_output.attrib = game_child.attrib; # Copy game attributes in output XML
+          input_output.attrib = machine_child.attrib; # Copy machine attributes in output XML
 
           # Traverse children
-          for input_child in game_child:
+          for input_child in machine_child:
             if input_child.tag == 'control':
               control_output = ET.SubElement(input_output, 'control');
               control_output.attrib = input_child.attrib;
 
-        if game_child.tag == 'driver':
+        if machine_child.tag == 'driver':
           driver_output = ET.SubElement(game_output, 'driver');
-          driver_output.attrib = game_child.attrib; # Copy game attributes in output XML
+          driver_output.attrib = machine_child.attrib; # Copy game attributes in output XML
 
         # --- CHDs (disks)
-        if game_child.tag == 'disk':
-          # print game_child.attrib['name'], game_child.attrib['region'];
-          if 'name' in game_child.attrib and 'sha1' in game_child.attrib:
-            chd_list.append(game_child.attrib['name']);
+        if machine_child.tag == 'disk':
+          # print machine_child.attrib['name'], machine_child.attrib['region'];
+          if 'name' in machine_child.attrib and 'sha1' in machine_child.attrib:
+            chd_list.append(machine_child.attrib['name']);
 
         # --- List of devices with ROMs
         if isdevice_flag:
-          if game_child.tag == 'rom':
+          if machine_child.tag == 'rom':
             device_rom_list.append(game_output.attrib['name']);
 
   if __debug_do_reduce_XML_dependencies:
@@ -2270,8 +2279,6 @@ def do_reduce_XML():
 
   # --- Write output file (don't use miniDOM, is sloow)
   # See http://norwied.wordpress.com/2013/08/27/307/
-  # NOTE this does not work with MAME 0.169. Also minidom fails... maybe the
-  #      bug is somewhere else...
   NARS.print_info('[Writing output file]');
   NARS.print_info('Writing reduced XML file ' + output_filename);
   indent_ElementTree_XML(root_output);
@@ -2280,9 +2287,9 @@ def do_reduce_XML():
 def do_merge():
   "Merges main MAME database ready for filtering"
 
-  print_info('[Building merged MAME filter database]');
-  mame_redux_filename = configuration.MAME_XML_redux;
-  merged_filename = configuration.MergedInfo_XML;
+  NARS.print_info('[Building merged MAME filter database]')
+  mame_redux_filename = configuration.MAME_XML_redux
+  merged_filename = configuration.MergedInfo_XML
 
   # --- Get categories from Catver.ini
   categories_dic = parse_catver_ini();
@@ -2293,74 +2300,75 @@ def do_merge():
   tree_output = ET.ElementTree();
   root_output = ET.Element('mame');
   tree_output._setroot(root_output);
-  print_info('[Parsing (reduced) MAME XML file]');
+  NARS.print_info('[Parsing (reduced) MAME XML file]');
   tree = read_MAME_merged_XML(mame_redux_filename);
 
   # --- Traverse MAME XML input file ---
-  print_info('[Merging MAME XML and categories]');
+  NARS.print_info('[Merging MAME XML and categories]');
   root = tree.getroot();
   root_output.attrib = root.attrib; # Copy mame attributes in output XML
-  for game_EL in root:
-    if game_EL.tag == 'game':
-      game_output = ET.SubElement(root_output, 'game');
-      game_output.attrib = game_EL.attrib; # Copy game attributes in output XML
+  for machine_EL in root:
+    if machine_EL.tag == 'machine':
+      machine_output = ET.SubElement(root_output, 'machine');
+      # Copy machine attributes in output XML
+      machine_output.attrib = machine_EL.attrib;
 
-      # --- Iterate through the children of a game
-      for game_child in game_EL:
-        if game_child.tag == 'description':
-          description_output = ET.SubElement(game_output, 'description');
-          description_output.text = game_child.text;
+      # --- Iterate through the children of a machine
+      for machine_child in machine_EL:
+        if machine_child.tag == 'description':
+          description_output = ET.SubElement(machine_output, 'description');
+          description_output.text = machine_child.text;
 
-        if game_child.tag == 'year':
-          year_output = ET.SubElement(game_output, 'year');
-          year_output.text = game_child.text;
+        if machine_child.tag == 'year':
+          year_output = ET.SubElement(machine_output, 'year');
+          year_output.text = machine_child.text;
 
-        if game_child.tag == 'manufacturer':
-          manufacturer_output = ET.SubElement(game_output, 'manufacturer');
-          manufacturer_output.text = game_child.text;
+        if machine_child.tag == 'manufacturer':
+          manufacturer_output = ET.SubElement(machine_output, 'manufacturer');
+          manufacturer_output.text = machine_child.text;
 
-        if game_child.tag == 'input':
+        if machine_child.tag == 'input':
           # --- This information is not used yet. Don't add to the output
           #     file to save some space.
-          input_output = ET.SubElement(game_output, 'input');
-          input_output.attrib = game_child.attrib; # Copy game attributes in output XML
+          input_output = ET.SubElement(machine_output, 'input');
+          input_output.attrib = machine_child.attrib; # Copy game attributes in output XML
 
           # Traverse children
-          for input_child in game_child:
+          for input_child in machine_child:
             if input_child.tag == 'control':
               # --- This information is not used yet. Don't add to the output
               #     file to save some space.
               control_output = ET.SubElement(input_output, 'control');
               control_output.attrib = input_child.attrib;
 
-        if game_child.tag == 'driver':
-          driver_output = ET.SubElement(game_output, 'driver');
+        if machine_child.tag == 'driver':
+          driver_output = ET.SubElement(machine_output, 'driver');
           # --- From here only attribute 'status' is used
           driver_attrib = {};
-          driver_attrib['status'] = game_child.attrib['status'];
+          driver_attrib['status'] = machine_child.attrib['status'];
           driver_output.attrib = driver_attrib;
 
         # --- Dependencies
-        if game_child.tag == 'device_depends':
-          device_depends_output = ET.SubElement(game_output, 'device_depends');
-          device_depends_output.text = game_child.text;
+        if machine_child.tag == 'device_depends':
+          device_depends_output = ET.SubElement(machine_output, 'device_depends');
+          device_depends_output.text = machine_child.text;
 
-        if game_child.tag == 'bios_depends':
-          bios_depends_output = ET.SubElement(game_output, 'bios_depends');
-          bios_depends_output.text = game_child.text;
+        if machine_child.tag == 'bios_depends':
+          bios_depends_output = ET.SubElement(machine_output, 'bios_depends');
+          bios_depends_output.text = machine_child.text;
 
-        if game_child.tag == 'chd_depends':
-          chd_depends_output = ET.SubElement(game_output, 'chd_depends');
-          chd_depends_output.text = game_child.text;
+        if machine_child.tag == 'chd_depends':
+          chd_depends_output = ET.SubElement(machine_output, 'chd_depends');
+          chd_depends_output.text = machine_child.text;
 
       # --- Add category element
-      game_name = game_EL.attrib['name'];
+      game_name = machine_EL.attrib['name'];
       category = 'Unknown';
       if game_name in categories_dic:
         category = categories_dic[game_name];
       else:
-        print_warn('[WARNING] Category not found for game ' + game_name);
-      category_output = ET.SubElement(game_output, 'category');
+        NARS.print_warn('[WARNING] Category not found for game ' + game_name);
+      category_output = ET.SubElement(machine_output, 'category');
       category_output.text = category;
 
   # --- To save memory destroy variables now
@@ -2368,8 +2376,8 @@ def do_merge():
 
   # --- Write output file (don't use miniDOM, is sloow)
   # See http://norwied.wordpress.com/2013/08/27/307/
-  print_info('[Writing output file]');
-  print_info('Output file ' + merged_filename);
+  NARS.print_info('[Writing output file]');
+  NARS.print_info('Output file ' + merged_filename);
   indent_ElementTree_XML(root_output);
   tree_output.write(merged_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
@@ -3237,47 +3245,69 @@ def main(argv):
     do_list_years();
     sys.exit(0);
 
-  # --- Positional arguments that require a filterName
-  if args.filterName == None:
-    print_error('\033[31m[ERROR]\033[0m filterName required');
-    sys.exit(10);
-
-  if command == 'check-filter':
+  elif command == 'check-filter':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     do_checkFilter(args.filterName);
 
   elif command == 'copy':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     do_update(args.filterName);
 
   elif command == 'update':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     __prog_option_sync = 1;
     do_update(args.filterName);  
 
   elif command == 'check-chd':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     do_check_CHD(args.filterName);
 
   elif command == 'copy-chd':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     do_update_CHD(args.filterName);
 
   elif command == 'update-chd':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     __prog_option_sync = 1;
     do_update_CHD(args.filterName);
 
   elif command == 'check-artwork':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     do_check_Artwork(args.filterName);
 
   elif command == 'copy-artwork':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     do_update_Artwork(args.filterName);
 
   elif command == 'update-artwork':
+    if args.filterName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
+      sys.exit(10);
     __prog_option_sync = 1;
     do_update_Artwork(args.filterName);
 
   else:
-    print_error('Unrecognised command');
-    sys.exit(1);
+    NARS.print_error('Unrecognised command: ' + command)
+    sys.exit(1)
 
-  sys.exit(0);
+  sys.exit(0)
 
-# No idea what's this...
+# Execute script if called from command line ('no module' mode)
 if __name__ == "__main__":
   main(sys.argv[1:])
