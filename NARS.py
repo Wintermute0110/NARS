@@ -192,7 +192,7 @@ def update_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
 # -----------------------------------------------------------------------------
 def XML_read_file(filename, infoString):
   """Reads an XML file using Element Tree. Aborst if errors found"""
-  print infoString + filename + "...",
+  print infoString + " " + filename + "...",
   sys.stdout.flush()
   try:
     tree = ET.parse(filename)

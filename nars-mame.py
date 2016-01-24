@@ -38,8 +38,7 @@ import xml.etree.cElementTree as cET
 # * ElementTree generated XML files are nasty looking (no end of lines)
 #   Minidom does a much better job
 # NOTE minidom seems to be VERY SLOOW
-# NOTE not needed anymore. I found a way of doing pretty print with ElementTree
-# from xml.dom import minidom
+from xml.dom import minidom
 
 # * MAME XML is written by this file:
 #   http://www.mamedev.org/source/src/emu/info.c.html
@@ -607,12 +606,8 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
 # -----------------------------------------------------------------------------
 def parse_File_Config():
   "Parses configuration file"
-  print_info('[Parsing config file]');
-  try:
-    tree = ET.parse(__config_configFileName);
-  except IOError:
-    print_error('[ERROR] cannot find file ' + __config_configFileName);
-    sys.exit(10);
+  NARS.print_info('[Parsing config file]');
+  tree = NARS.XML_read_file(__config_configFileName, "Reading configuration XML file")
   root = tree.getroot();
 
   # --- Configuration object
@@ -638,20 +633,20 @@ def parse_File_Config():
         elif general_child.tag == 'Merged_XML':
           configFile.MergedInfo_XML = general_child.text;
         else:
-          print_error('Unrecognised tag "' + general_child.tag + '" inside <General>');
+          NARS.print_error('Unrecognised tag "' + general_child.tag + '" inside <General>');
           sys.exit(10);
   if not general_tag_found:
-    print_error('Configuration error. <General> tag not found');
+    NARS.print_error('Configuration error. <General> tag not found');
     sys.exit(10);
 
   # --- Parse filters
   for root_child in root:
     if root_child.tag == 'MAMEFilter':
-      print_debug('<MAMEFilter>');
+      NARS.print_debug('<MAMEFilter>');
       if 'name' in root_child.attrib:
         filter_class = ConfigFileFilter();
         filter_class.name = root_child.attrib['name'];
-        print_debug(' name = ' + filter_class.name);
+        NARS.print_debug(' name = ' + filter_class.name);
 
         # --- By default things are None, which means user didn't
         #     wrote them in config file.
@@ -677,7 +672,7 @@ def parse_File_Config():
         destDirFound = 0;
         for filter_child in root_child:
           if filter_child.tag == 'ROMsSource':
-            print_debug(' ROMsSource = ' + filter_child.text);
+            NARS.print_debug(' ROMsSource = ' + filter_child.text);
             sourceDirFound = 1;
             # - Make sure all directory names end in slash
             tempDir = filter_child.text;
@@ -685,38 +680,38 @@ def parse_File_Config():
             filter_class.sourceDir = tempDir;
 
           elif filter_child.tag == 'ROMsDest':
-            print_debug(' ROMsDest = ' + filter_child.text);
+            NARS.print_debug(' ROMsDest = ' + filter_child.text);
             destDirFound = 1;
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.destDir = tempDir;
 
           elif filter_child.tag == 'CHDsSource':
-            print_debug(' CHDsSource = ' + filter_child.text);
+            NARS.print_debug(' CHDsSource = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.destDir_CHD = tempDir;
 
           elif filter_child.tag == 'FanartSource':
-            print_debug(' FanartSource = ' + filter_child.text);
+            NARS.print_debug(' FanartSource = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.fanartSourceDir = tempDir;
 
           elif filter_child.tag == 'FanartDest':
-            print_debug(' FanartDest = ' + filter_child.text);
+            NARS.print_debug(' FanartDest = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.fanartDestDir = tempDir;
 
           elif filter_child.tag == 'ThumbsSource':
-            print_debug(' ThumbsSource = ' + filter_child.text);
+            NARS.print_debug(' ThumbsSource = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsSourceDir = tempDir;
 
           elif filter_child.tag == 'ThumbsDest':
-            print_debug(' ThumbsDest = ' + filter_child.text);
+            NARS.print_debug(' ThumbsDest = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsDestDir = tempDir;
@@ -724,7 +719,7 @@ def parse_File_Config():
           elif filter_child.tag == 'MainFilter':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' MainFilter = ' + text_string);
+              NARS.print_debug(' MainFilter = ' + text_string);
               filter_class.mainFilter = trim_list(text_string.split(","));
             else:
               filter_class.mainFilter = '';
@@ -732,7 +727,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Driver':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Driver = ' + text_string);
+              NARS.print_debug(' Driver = ' + text_string);
               filter_class.driver = text_string;
             else:
               filter_class.driver = '';
@@ -740,7 +735,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Categories':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Categories = ' + text_string);
+              NARS.print_debug(' Categories = ' + text_string);
               filter_class.categories = text_string;
             else:
               filter_class.categories = '';
@@ -748,7 +743,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Controls':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Controls = ' + text_string);
+              NARS.print_debug(' Controls = ' + text_string);
               filter_class.controls = text_string;
             else:
               filter_class.controls = '';
@@ -756,7 +751,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Buttons':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Buttons = ' + text_string);
+              NARS.print_debug(' Buttons = ' + text_string);
               filter_class.buttons_exp = text_string;
             else:
               filter_class.buttons_exp = '';
@@ -764,7 +759,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Players':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Players = ' + text_string);
+              NARS.print_debug(' Players = ' + text_string);
               filter_class.players_exp = text_string;
             else:
               filter_class.players_exp = '';
@@ -772,7 +767,7 @@ def parse_File_Config():
           elif filter_child.tag == 'Years':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' Years = ' + text_string);
+              NARS.print_debug(' Years = ' + text_string);
               filter_class.year_exp = text_string;
             else:
               filter_class.year_exp = '';
@@ -780,32 +775,32 @@ def parse_File_Config():
           elif filter_child.tag == 'YearsOpts':
             text_string = filter_child.text;
             if text_string != None:
-              print_debug(' YearsOpts = ' + text_string);
+              NARS.print_debug(' YearsOpts = ' + text_string);
               yearOpts_list = trim_list(text_string.split(","));
               for option in yearOpts_list:
                 # Only one option supported at the moment
                 if option == 'YearExpansion':
                   filter_class.year_YearExpansion = 1;
                 else:
-                  print_error('Unknown option ' + option + 'inside <YearsOpts>');
+                  NARS.print_error('Unknown option ' + option + 'inside <YearsOpts>');
                   sys.exit(10);
 
           else:
-            print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
+            NARS.print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
             sys.exit(10);
 
         # - Check for errors in this filter
         if not sourceDirFound:
-          print_error('ROMsSource directory not found in config file');
+          NARS.print_error('ROMsSource directory not found in config file');
           sys.exit(10);
         if not destDirFound:
-          print_error('ROMsDest directory not found in config file');
+          NARS.print_error('ROMsDest directory not found in config file');
           sys.exit(10);
 
         # - Aggregate filter to configuration main variable
         configFile.filter_dic[filter_class.name] = filter_class;
       else:
-        print_error('<MAMEFilter> tag does not have name attribute');
+        NARS.print_error('<MAMEFilter> tag does not have name attribute');
         sys.exit(10);
   
   return configFile;
@@ -2055,7 +2050,7 @@ __debug_do_reduce_XML_dependencies = 0;
 def do_reduce_XML():
   "Short list of MAME XML file (Experimental)"
 
-  print_info('[Reducing MAME XML game database]');
+  NARS.print_info('[Reducing MAME XML game database]');
   input_filename = configuration.MAME_XML;
   output_filename = configuration.MAME_XML_redux;
 
@@ -2065,9 +2060,9 @@ def do_reduce_XML():
   tree_output._setroot(root_output);
 
   # --- Read MAME XML input file ---
-  print_info('Reading MAME XML game database...');
-  print_info('NOTE: this will take a looong time...');
-  tree = NARS.XML_read_file(input_filename, "Parsing MAME XML file ");
+  NARS.print_info('Reading MAME XML game database...');
+  NARS.print_info('NOTE: this will take a looong time...');
+  tree = NARS.XML_read_file(input_filename, "Parsing MAME XML file");
 
   # --- Dependencies variables
   device_rom_list = [];
@@ -2092,7 +2087,7 @@ def do_reduce_XML():
   # ...
   #   <driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
   # </game>
-  print_info('[Reducing MAME XML database]');
+  NARS.print_info('[Reducing MAME XML database]');
   for game_EL in root:
     isdevice_flag = 0;
     if game_EL.tag == 'game':
@@ -2114,17 +2109,17 @@ def do_reduce_XML():
       # --- Iterate through the children of a game
       for game_child in game_EL:
         if game_child.tag == 'description':
-          print_verb(' description = ' + game_child.text);
+          NARS.print_verb(' description = ' + game_child.text);
           description_output = ET.SubElement(game_output, 'description');
           description_output.text = game_child.text;
 
         if game_child.tag == 'year':
-          print_verb(' year = ' + game_child.text);
+          NARS.print_verb(' year = ' + game_child.text);
           year_output = ET.SubElement(game_output, 'year');
           year_output.text = game_child.text;
 
         if game_child.tag == 'manufacturer':
-          print_verb(' manufacturer = ' + game_child.text);
+          NARS.print_verb(' manufacturer = ' + game_child.text);
           manufacturer_output = ET.SubElement(game_output, 'manufacturer');
           manufacturer_output.text = game_child.text;
 
@@ -2173,7 +2168,7 @@ def do_reduce_XML():
   device_depends_dic = {};
   parent_bios_depends_dic = {};
   chd_depends_dic = {};
-  print_info('[Checking ROM dependencies (1st pass)]');
+  NARS.print_info('[Checking ROM dependencies (1st pass)]');
   for game_EL in root:
     if game_EL.tag == 'game':
       if 'romof' in game_EL.attrib:
@@ -2214,8 +2209,8 @@ def do_reduce_XML():
       if len(device_depends) > 0:
         device_depends_dic[game_EL.attrib['name']] = device_depends;
 
+  NARS.print_info('[Checking ROM dependencies (2nd pass)]')
   bios_depends_dic = {};
-  print '[Checking ROM dependencies (2nd pass)]';
   for game_EL in root:
     if game_EL.tag == 'game':
       if 'romof' in game_EL.attrib:
@@ -2230,14 +2225,15 @@ def do_reduce_XML():
           if game_EL.attrib['cloneof'] in parent_bios_depends_dic:
             bios_depends_dic[game_EL.attrib['name']] = parent_bios_depends_dic[game_EL.attrib['cloneof']];
             if __debug_do_reduce_XML_dependencies:
-              print 'game = ' + game_EL.attrib['name'] + ' is a clone that BIOS depends on ' + parent_bios_depends_dic[game_EL.attrib['cloneof']];
+              print 'game = ' + game_EL.attrib['name'] + ' is a clone that BIOS depends on ' + \
+                    parent_bios_depends_dic[game_EL.attrib['cloneof']];
 
   # --- To save memory destroy variables now
   del tree;
   del root;
 
   # --- Incorporate dependencies into output XML
-  print '[Merging ROM dependencies in output XML]';
+  NARS.print_info('[Merging ROM dependencies in output XML]')
   for game_EL in root_output:
     if game_EL.tag == 'game':
       game_name = game_EL.attrib['name'];
@@ -2261,22 +2257,23 @@ def do_reduce_XML():
 
   # --- Pretty print XML output using miniDOM
   # See http://broadcast.oreilly.com/2010/03/pymotw-creating-xml-documents.html
-  # NOTE: this approach works well but is very slooow
+  # NOTE this approach works well but is very slooow
   if 0:
-    print_info('[Building reduced output XML file]');
+    NARS.print_info('[Building reduced output XML file]');
     rough_string = ET.tostring(root_output, 'utf-8');
     reparsed = minidom.parseString(rough_string);
     del root_output; # Reduce memory consumption
-
-    print_info('Writing reduced XML file ' + output_filename);
+    NARS.print_info('Writing reduced XML file ' + output_filename);
     f = open(output_filename, "w")
     f.write(reparsed.toprettyxml(indent=" "))
     f.close()
 
   # --- Write output file (don't use miniDOM, is sloow)
   # See http://norwied.wordpress.com/2013/08/27/307/
-  print_info('[Writing output file]');
-  print_info('Writing reduced XML file ' + output_filename);
+  # NOTE this does not work with MAME 0.169. Also minidom fails... maybe the
+  #      bug is somewhere else...
+  NARS.print_info('[Writing output file]');
+  NARS.print_info('Writing reduced XML file ' + output_filename);
   indent_ElementTree_XML(root_output);
   tree_output.write(output_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
