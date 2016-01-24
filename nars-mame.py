@@ -776,7 +776,7 @@ def parse_File_Config():
           configFile.MAME_XML_redux = general_child.text;
         elif general_child.tag == 'Catver':
           configFile.Catver = general_child.text;
-        elif general_child.tag == 'MergedInfo':
+        elif general_child.tag == 'Merged_XML':
           configFile.MergedInfo_XML = general_child.text;
         else:
           print_error('Unrecognised tag "' + general_child.tag + '" inside <General>');
@@ -2196,7 +2196,7 @@ __debug_do_reduce_XML_dependencies = 0;
 def do_reduce_XML():
   "Short list of MAME XML file (Experimental)"
 
-  print_info('[Reducing MAME XML game database (Experimental)]');
+  print_info('[Reducing MAME XML game database]');
   input_filename = configuration.MAME_XML;
   output_filename = configuration.MAME_XML_redux;
 
@@ -2208,15 +2208,7 @@ def do_reduce_XML():
   # --- Read MAME XML input file ---
   print_info('Reading MAME XML game database...');
   print_info('NOTE: this will take a looong time...');
-  print "Parsing MAME XML file " + input_filename + "... ",;
-  sys.stdout.flush();
-  try:
-    tree = ET.parse(input_filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + input_filename);
-    sys.exit(10);
-  print ' done';
+  tree = NARS.XML_read_file(input_filename, "Parsing MAME XML file ");
 
   # --- Dependencies variables
   device_rom_list = [];
@@ -2229,7 +2221,7 @@ def do_reduce_XML():
   root = tree.getroot();
   root_output.attrib = root.attrib; # Copy mame attributes in output XML
 
-  # Child elements:
+  # Child elements we want to keep in the reduced XML:
   # <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
   #   <description>005</description>
   #   <year>1981</year>
@@ -2241,7 +2233,6 @@ def do_reduce_XML():
   # ...
   #   <driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
   # </game>
-  # </mame>
   print_info('[Reducing MAME XML database]');
   for game_EL in root:
     isdevice_flag = 0;
