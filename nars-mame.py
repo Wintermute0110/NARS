@@ -1,7 +1,7 @@
 #!/usr/bin/python
-# XBMC ROM utilities - MAME version
+# NARS Advanced ROM Sorting - Console ROMs
 
-# Copyright (c) 2014 Wintermute0110 <wintermute0110@gmail.com>
+# Copyright (c) 2014-2016 Wintermute0110 <wintermute0110@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 # --- Import stuff
 import sys, os, re, shutil
 import operator, argparse
+import NARS
 
 # * ElementTree XML parser
 import xml.etree.ElementTree as ET
@@ -36,17 +37,16 @@ import xml.etree.cElementTree as cET
 
 # * ElementTree generated XML files are nasty looking (no end of lines)
 #   Minidom does a much better job
-# NOTE: minidom seems to be VERY SLOOW
-# NOTE: not needed anymore. I found a way of doing pretty print with ElementTree
+# NOTE minidom seems to be VERY SLOOW
+# NOTE not needed anymore. I found a way of doing pretty print with ElementTree
 # from xml.dom import minidom
 
 # * MAME XML is written by this file:
 #   http://www.mamedev.org/source/src/emu/info.c.html
 
 # * Global variables
-__software_version = '0.1.0';
-__config_configFileName = 'xru-mame-config.xml';
-__config_logFileName = 'xru-mame-log.txt';
+__config_configFileName = 'nars-mame-config.xml';
+__config_logFileName = 'nars-mame-log.txt';
 
 # --- Config file options global class (like a C struct)
 class ConfigFile:
@@ -3352,8 +3352,8 @@ if updated are needed.
 # main function
 # -----------------------------------------------------------------------------
 def main(argv):
-  print '\033[36mXBMC ROM utilities - MAME edition\033[0m' + \
-        ' version ' + __software_version;
+  print '\033[36mNARS Advanced ROM Sorting - MAME edition\033[0m' + \
+        ' version ' + NARS.__software_version;
 
   # --- Command line parser
   parser = argparse.ArgumentParser()

@@ -26,7 +26,6 @@ import xml.etree.ElementTree as ET
 import NARS
 
 # --- Global variables
-__software_version = '0.2.0';
 __config_configFileName = 'nars-console-config.xml';
 __config_logFileName = 'nars-console-log.txt';
 
@@ -1468,8 +1467,8 @@ def do_printHelp():
 # main function
 # -----------------------------------------------------------------------------
 def main(argv):
-  print '\033[36mXBMC ROM utilities - Console ROMs\033[0m' + \
-        ' version ' + __software_version;
+  print '\033[36mNARS Advanced ROM Sorting - Console ROMs\033[0m' + \
+        ' version ' + NARS.__software_version;
 
   # --- Command line parser
   parser = argparse.ArgumentParser()
