@@ -3256,97 +3256,38 @@ def do_update_Artwork(filterName):
     clean_ArtWork_destDir(filter_config, artwork_copy_dic);
 
 def do_printHelp():
-  print """
-This program is design to take a full collection of MAME ROMs and some 
-information files, filters this list to remove unwanted games, and updates the
-ROMs in a destination dir with this filtered-list. 
-
-Optionally, for launcher plugins, it generates a set of NFO files with game 
-information and copies artwork to the appropriate directory.
-
-For XBMC Advanced Launcher plugin, the configuration file is checked and reports
-if updated are needed.
-
-\033[32mUsage: xru-mame.py [options] <command> [filterName]\033[0m
+  print """\033[32mUsage: nars-mame.py [options] <command> [filter]\033[0m
 
 \033[32mCommands:\033[0m
- \033[31m usage\033[0m
-    Print usage information (this text)
-
- \033[31m reduce-XML\033[0m
-    Takes MAME XML as input, picks the useful information, and writes an 
-    stripped XML with only meaningful information. The reason for doing this
-    is because MAME XML file is huge and takes a long time to process it. After
-    reducing it, all subsequent processing should be much quicker.
-
- \033[31m merge\033[0m
-    Takes MAME XML (reduced) info file and Catver.ini and makes an output XML
-    file with all the necessary information for proper game filtering.
-
- \033[31m list-merged\033[0m
-    List every ROM set system defined in the merged MAME XML information file.
-    Use \033[35m--verbose\033[0m to get more information.
-
- \033[31m list-categories\033[0m
-    Reads Catver.ini and makes a histogram of the categories (prints all
-    available categories and tells how many ROMs every category has).
-
- \033[31m list-drivers\033[0m
-    Reads merged XML database and prints a histogram of the drivers (how many
-    games use each driver).
-
- \033[31m list-controls\033[0m
-    Reads merged XML database and prints a histogram of the game controls:
-    buttons, players and input devices.
-
- \033[31m list-years\033[0m
-    Reads merged XML database and prints a histogram of the game release year
-   (how many games were released on each year).
-
- \033[31m check-filter <filterName>\033[0m
-    Applies filters and checks you source directory for have and missing ROMs.
-
- \033[31m copy <filterName>\033[0m
-    Applies ROM filters defined in the configuration file and copies the 
-    contents of sourceDir into destDir. This overwrites ROMs in destDir.
-
- \033[31m update <filterName>\033[0m
-    Like copy, but only copies files if file size is different (this saves
-    a lot of time, particularly if sourceDir and/or destDir are on a 
-    network-mounted filesystem).
-
- \033[31m check-chd <filterName>\033[0m
-    Applies filters and checks you source directory for have and missing CHDs.
-
- \033[31m copy-chd <filterName>\033[0m
-    WRITE ME.
-
- \033[31m update-chd <filterName>\033[0m
-    WRITE ME.
-
- \033[31m check-artwork <filterName>\033[0m
-    Reads the ROMs in destDir, checks if you have the corresponding artwork 
-    files, and prints a report.
-
- \033[31m copy-artwork <filterName>\033[0m
-    Reads the ROMs in destDir and tries to copy the artwork to destination
-    directory. If No-Intro DAT is available, missing artwork
-
- \033[31m update-artwork <filterName>\033[0m
-    Like copy-artwork, but also delete unknown images in artwork destination
-    directories. Artwork files having same size in sourceDir and destDir will 
-    not be copied.
+\033[31musage\033[0m                   Print usage information (this text)
+\033[31mreduce-XML\033[0m              Takes MAME XML as input and writes an stripped XML.
+\033[31mmerge\033[0m                   Takes MAME XML (reduced) info file and Catver.ini a mergued XML.
+\033[31mlist-merged\033[0m             List every ROM set system in the merged MAME XML.
+\033[31mlist-categories\033[0m         Reads Catver.ini and makes a histogram of the categories.
+\033[31mlist-drivers\033[0m            Reads merged XML database and prints a histogram of the drivers.
+\033[31mlist-controls\033[0m           Reads merged XML database and prints a histogram of the game controls:
+                        buttons, players and input devices.
+\033[31mlist-years\033[0m              Reads merged XML database and prints a histogram of the game release year.
+\033[31mcheck-filter <filter>\033[0m   Applies filters and checks you source directory for have and missing ROMs.
+\033[31mcopy <filter>\033[0m           Applies ROM filters and copies sourceDir into destDir.
+\033[31mupdate <filter>\033[0m         Like copy, but only copies files if file size is different.
+\033[31mcheck-chd <filter>\033[0m      Applies filters and checks you source directory for have and missing CHDs.
+\033[31mcopy-chd <filter>\033[0m       WRITE ME.
+\033[31mupdate-chd <filter>\033[0m     WRITE ME.
+\033[31mcheck-artwork <filter>\033[0m  Checks if you have the artwork.
+\033[31mcopy-artwork <filter>\033[0m   Copies artwork to destination
+\033[31mupdate-artwork <filter>\033[0m Like copy-artwork, but also delete unknown images in artwork destination.
 
 \033[32mOptions:\033[0m
-  \033[35m-h\033[0m, \033[35m--help\033[0m  Print short command reference
-  \033[35m-v\033[0m, \033[35m--verbose\033[0m Print more information about what's going on
-  \033[35m-l\033[0m, \033[35m--log\033[0m  Save program output in xru-mame-log.txt.
-  \033[35m--logto\033[0m \033[31m[logName]\033[0m  Save program output in the file you specify.
-  \033[35m--dryRun\033[0m  Don't modify destDir at all, just print the operations to be done.
-  \033[35m--cleanROMs\033[0m  Deletes ROMs in destDir not present in the filtered ROM list.
-  \033[35m--generateNFO\033[0m  Generates NFO files with game information for the launchers.
-  \033[35m--cleanNFO\033[0m  Deletes ROMs in destDir not present in the filtered ROM list.
-  \033[35m--cleanArtWork\033[0m  Deletes unknown Artowork in destination directories."""
+\033[35m-h\033[0m, \033[35m--help\033[0m        Print short command reference
+\033[35m-v\033[0m, \033[35m--verbose\033[0m     Print more information about what's going on
+\033[35m-l\033[0m, \033[35m--log\033[0m         Save program output in xru-mame-log.txt.
+\033[35m--logto\033[0m \033[31m[logName]\033[0m Save program output in the file you specify.
+\033[35m--dryRun\033[0m          Don't modify destDir at all, just print the operations to be done.
+\033[35m--cleanROMs\033[0m       Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--generateNFO\033[0m     Generates NFO files with game information for the launchers.
+\033[35m--cleanNFO\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--cleanArtWork\033[0m    Deletes unknown Artowork in destination directories."""
 
 # -----------------------------------------------------------------------------
 # main function
