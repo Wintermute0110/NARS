@@ -1529,66 +1529,30 @@ def do_update_artwork(filterName):
     clean_ArtWork_destDir(filter_config, artwork_copy_dic);
 
 def do_printHelp():
-  print """
-\033[32mUsage: xru-console.py [options] <command> [romSetName]\033[0m
+  print """\033[32mUsage: nars-console.py [options] <command> [romSetName]\033[0m
 
 \033[32mCommands:\033[0m
- \033[31m usage\033[0m
-    Print usage information (this text)
-
- \033[31m list\033[0m
-    List every ROM set system defined in the configuration file and some basic
-    information. Use \033[35m--verbose\033[0m to get more information.
-
- \033[31m list-nointro <filterName>\033[0m
-    List every ROM set system defined in the No-Intro DAT file.
-
- \033[31m check-nointro <filterName>\033[0m
-    Scans the source directory and reads No-Intro XML data file. Checks if you
-    have all the ROMs and reports the number of missing ROMs.
-
- \033[31m list-tags <filterName>\033[0m
-    Scan the source directory and reports the total number of ROM files, all the
-    tags found, and the number of ROMs that have each tag. It also display 
-    tagless ROMs.
-
- \033[31m check-filter <filterName>\033[0m
-    Applies ROM filters defined in the configuration file and prints a list of
-    the scored ROMs. If a No-Intro DAT is configure for this filter it will be
-    used.
-
- \033[31m copy <filterName>\033[0m
-    Applies ROM filters defined in the configuration file and copies the 
-    contents of sourceDir into destDir. This overwrites ROMs in destDir. No
-    files will be removed on destDir.
-
- \033[31m update <filterName>\033[0m
-    Like copy, but also delete ROMs in destDir not present in the filtered
-    ROM list. Also, ROMs having same size in sourceDir and destDir will not be
-    copied.
-
- \033[31m check-artwork <filterName>\033[0m
-    Reads the ROMs in destDir, checks if you have the corresponding artwork 
-    files, and prints a report.
-
- \033[31m copy-artwork <filterName>\033[0m
-    Reads the ROMs in destDir and tries to copy the artwork to destination
-    directory. If No-Intro DAT is available, missing artwork
-
- \033[31m update-artwork <filterName>\033[0m
-    Like copy-artwork, but also delete unknown images in artwork destination
-    directories. Artwork files having same size in sourceDir and destDir will 
-    not be copied.
+\033[31musage\033[0m                   Print usage information (this text)
+\033[31mlist\033[0m                    List every ROM set system defined in the configuration file.
+\033[31mlist-nointro <filter>\033[0m   List every ROM set system defined in the No-Intro DAT file.
+\033[31mcheck-nointro <filter>\033[0m  Checks the ROMs you have and reports missing ROMs.
+\033[31mlist-tags <filter>\033[0m      Scan the source directory and reports the tags found.
+\033[31mcheck-filter <filter>\033[0m   Applies ROM filters and prints a list of the scored ROMs.
+\033[31mcopy <filter>\033[0m           Applies ROM filters defined and copies ROMS from sourceDir into destDir.
+\033[31mupdate <filter>\033[0m         Like copy, but also delete unneeded ROMs in destDir.
+\033[31mcheck-artwork <filter>\033[0m  Reads the ROMs in destDir, checks if you have the corresponding artwork. 
+\033[31mcopy-artwork <filter>\033[0m   Reads the ROMs in destDir and tries to copy the artwork to destDir.
+\033[31mupdate-artwork <filter>\033[0m Like copy-artwork, but also delete unknown images in artwork destDir.
 
 \033[32mOptions:
-  \033[35m-h\033[0m, \033[35m--help\033[0m  Print short command reference.
-  \033[35m-v\033[0m, \033[35m--verbose\033[0m  Print more information about what's going on.
-  \033[35m-l\033[0m, \033[35m--log\033[0m  Save program output in xru-console-log.txt.
-  \033[35m--logto\033[0m \033[31m[logName]\033[0m  Save program output in the file you specify.
-  \033[35m--dryRun\033[0m  Don't modify destDir at all, just print the operations to be done.
-  \033[35m--cleanROMs\033[0m  Deletes ROMs in destDir not present in the filtered ROM list.
-  \033[35m--cleanNFO\033[0m  Deletes redundant NFO files in destination directory.
-  \033[35m--cleanArtWork\033[0m  Deletes unknown artwork in destination."""
+\033[35m-h\033[0m, \033[35m--help\033[0m         Print short command reference.
+\033[35m-v\033[0m, \033[35m--verbose\033[0m      Print more information about what's going on.
+\033[35m-l\033[0m, \033[35m--log\033[0m          Save program output in xru-console-log.txt.
+\033[35m--logto\033[0m \033[31m[logName]\033[0m  Save program output in the file you specify.
+\033[35m--dryRun\033[0m           Don't modify destDir at all, just print the operations to be done.
+\033[35m--cleanROMs\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--cleanNFO\033[0m         Deletes redundant NFO files in destination directory.
+\033[35m--cleanArtWork\033[0m     Deletes unknown artwork in destination."""
 
 # -----------------------------------------------------------------------------
 # main function
