@@ -2248,7 +2248,7 @@ def do_reduce_XML():
   tree_output.write(output_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
 def do_merge():
-  "Merges main MAME database ready for filtering"
+  """Merges main MAME database ready for filtering"""
 
   NARS.print_info('[Building merged MAME filter database]')
   mame_redux_filename = configuration.MAME_XML_redux
@@ -2264,12 +2264,13 @@ def do_merge():
   root_output = ET.Element('mame');
   tree_output._setroot(root_output);
   NARS.print_info('[Parsing (reduced) MAME XML file]');
-  tree = read_MAME_merged_XML(mame_redux_filename);
-
+  tree = NARS.XML_read_file_cElementTree(mame_redux_filename, "Reading merged XML file")
+  
   # --- Traverse MAME XML input file ---
   NARS.print_info('[Merging MAME XML and categories]');
   root = tree.getroot();
   root_output.attrib = root.attrib; # Copy mame attributes in output XML
+  num_no_category = 0
   for machine_EL in root:
     if machine_EL.tag == 'machine':
       machine_output = ET.SubElement(root_output, 'machine');
@@ -2331,8 +2332,11 @@ def do_merge():
         category = categories_dic[game_name];
       else:
         NARS.print_warn('[WARNING] Category not found for game ' + game_name);
+        num_no_category += 1
       category_output = ET.SubElement(machine_output, 'category');
       category_output.text = category;
+  NARS.print_info('[Report]');
+  NARS.print_info('Machines without category  ' + str(num_no_category));
 
   # --- To save memory destroy variables now
   del tree;
@@ -2341,7 +2345,7 @@ def do_merge():
   # See http://norwied.wordpress.com/2013/08/27/307/
   NARS.print_info('[Writing output file]');
   NARS.print_info('Output file ' + merged_filename);
-  indent_ElementTree_XML(root_output);
+  NARS.indent_ElementTree_XML(root_output);
   tree_output.write(merged_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
 def do_list_merged():
@@ -2424,7 +2428,7 @@ def do_list_categories():
   __debug_do_list_categories = 0;
   NARS.print_info('[Listing categories from Catver.ini]');
 
-  # --- Create a histogram with the categories. Parse Catver.ini
+  # --- Create a histogram with the available categories based only in Catver.ini
   cat_filename = configuration.Catver;
   NARS.print_info('Parsing ' + cat_filename);
   categories_dic = {};
