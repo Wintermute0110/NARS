@@ -2422,11 +2422,11 @@ def do_list_categories():
   "Parses Catver.ini and prints the categories and how many games for each"
 
   __debug_do_list_categories = 0;
-  print_info('[Listing categories from Catver.ini]');
+  NARS.print_info('[Listing categories from Catver.ini]');
 
   # --- Create a histogram with the categories. Parse Catver.ini
   cat_filename = configuration.Catver;
-  print_info('Opening ' + cat_filename);
+  NARS.print_info('Parsing ' + cat_filename);
   categories_dic = {};
   main_categories_dic = {};
   final_categories_dic = {};
@@ -2435,7 +2435,7 @@ def do_list_categories():
   # 1 -> Reading categories
   # 2 -> Categories finished. STOP
   read_status = 0;
-  print_info('[Making categories histogram]');
+  NARS.print_info('[Making categories histogram]');
   for cat_line in f:
     stripped_line = cat_line.strip();
     if __debug_do_list_categories:
@@ -2469,10 +2469,10 @@ def do_list_categories():
         else:
           main_categories_dic[main_category] = 1;
 
-        # NOTE: Only use the main category for filtering.
+        # NOTE Only use the main category for filtering.
         final_category = fix_category_name(main_category, category);
 
-        # - Create final categories dictionary
+        # Create final categories dictionary
         if final_category in final_categories_dic: 
           final_categories_dic[final_category] += 1;
         else:
@@ -2484,8 +2484,8 @@ def do_list_categories():
       sys.exit(10);
   f.close();
 
-  # - Only print if very verbose
-  if log_level >= Log.vverb:
+  # --- Only print if very verbose
+  if NARS.log_level >= NARS.Log.vverb:
     # Sorting dictionaries, see
     # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
     sorted_propertiesDic = sorted(categories_dic.iteritems(), key=operator.itemgetter(1))
@@ -2496,49 +2496,53 @@ def do_list_categories():
     for key in sorted_propertiesDic:
       print_vverb('{:6d}'.format(key[1]) + '  ' + key[0]);
 
-  # - Only print if verbose
-  if log_level >= Log.verb:
+  # --- Only print if verbose
+  if NARS.log_level >= NARS.Log.verb:
     sorted_propertiesDic = sorted(main_categories_dic.iteritems(), key=operator.itemgetter(1))
     print_verb('\n[Main categories]');
     for key in sorted_propertiesDic:
       print_verb('{:6d}'.format(key[1]) + '  ' + key[0]);
 
-  # - By default only list final categories
-  sorted_propertiesDic = sorted(final_categories_dic.iteritems(), key=operator.itemgetter(1))
-  print_info('\n[Final (used) categories]');
-  for key in sorted_propertiesDic:
-    print_info('{:6d}'.format(key[1]) + '  ' + key[0]);
+  # --- By default only list final categories
+  # Want to sort final_categories_dic['category'] = integer by the integer
+  # This is only valid in Python 2
+#  sorted_propertiesDic = sorted(final_categories_dic.iteritems(), key=operator.itemgetter(1))
+  # This works on Python 3
+  sorted_histo = ((k, final_categories_dic[k]) for k in sorted(final_categories_dic, key=final_categories_dic.get, reverse=False))
+  NARS.print_info('[Final (used) categories]');
+  for k, v in sorted_histo:
+    NARS.print_info('{:6d}'.format(v) + '  ' + k);
 
 def do_list_drivers():    
   "Parses merged XML database and makes driver histogram and statistics"
 
-  print_info('[Listing MAME drivers]');
-  print_info('NOTE: clones are not included');
-  print_info('NOTE: mechanical are not included');
-  print_info('NOTE: devices are not included');
+  NARS.print_info('[Listing MAME drivers]');
+  NARS.print_info('NOTE: clones are not included');
+  NARS.print_info('NOTE: mechanical are not included');
+  NARS.print_info('NOTE: devices are not included');
 
   filename = configuration.MergedInfo_XML;
-  tree = read_MAME_merged_XML(filename);
+  tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # Do histogram
   drivers_histo_dic = {};
   root = tree.getroot();
-  for game_EL in root:
-    if game_EL.tag == 'game':
-      game_attrib = game_EL.attrib;
-      # If game is a clone don't include it in the histogram
-      if 'cloneof' in game_attrib:
+  for machine_EL in root:
+    if machine_EL.tag == 'machine':
+      machine_attrib = machine_EL.attrib;
+      # If machine is a clone don't include it in the histogram
+      if 'cloneof' in machine_attrib:
         continue;
-      # - If game is mechanical don't include it
-      if 'ismechanical' in game_attrib:
+      # - If machine is mechanical don't include it
+      if 'ismechanical' in machine_attrib:
         continue;
-      # - If game is device don't include it
-      if 'isdevice' in game_attrib:
+      # - If machine is device don't include it
+      if 'isdevice' in machine_attrib:
         continue;
 
       # --- Histogram
-      if 'sourcefile' in game_attrib:
-        driver_name = game_attrib['sourcefile'];
+      if 'sourcefile' in machine_attrib:
+        driver_name = machine_attrib['sourcefile'];
       else:
         driver_name = '__unknown__';
       if driver_name in drivers_histo_dic: 
@@ -2546,14 +2550,21 @@ def do_list_drivers():
       else:
         drivers_histo_dic[driver_name] = 1;
 
-  # - Print histogram
-  sorted_histo = sorted(drivers_histo_dic.iteritems(), key=operator.itemgetter(1))
-  print_info('[Final (used) drivers]');
-  for key in sorted_histo:
-    print_info('{:4d}'.format(key[1]) + '  ' + key[0]);
+  # --- Print histogram
+  # Valid in Python 2
+#  sorted_histo = sorted(drivers_histo_dic.iteritems(), key=operator.itemgetter(1))
+  # Valid in Python 3
+  sorted_histo = ((k, drivers_histo_dic[k]) for k in sorted(drivers_histo_dic, key=drivers_histo_dic.get, reverse=False))
+  NARS.print_info('[Final (used) drivers]');
+  num_drivers = 0
+  for k, v in sorted_histo:
+    NARS.print_info('{:4d}'.format(v) + '  ' + k);
+    num_drivers += 1
+
+  NARS.print_info('[Report]');
+  NARS.print_info('Number of drivers  ' + str(num_drivers))
 
 # See http://mamedev.org/source/src/emu/info.c.html, line 784
-#
 __debug_do_list_controls = 0;
 def do_list_controls():
   "Parses merged XML database and makes a controls histogram"
@@ -3103,8 +3114,7 @@ def do_printHelp():
 \033[31mlist-merged\033[0m             List every ROM set system in the merged MAME XML.
 \033[31mlist-categories\033[0m         Reads Catver.ini and makes a histogram of the categories.
 \033[31mlist-drivers\033[0m            Reads merged XML database and prints a histogram of the drivers.
-\033[31mlist-controls\033[0m           Reads merged XML database and prints a histogram of the game controls:
-                        buttons, players and input devices.
+\033[31mlist-controls\033[0m           Reads merged XML database and prints a histogram of the game controls.
 \033[31mlist-years\033[0m              Reads merged XML database and prints a histogram of the game release year.
 \033[31mcheck-filter <filter>\033[0m   Applies filters and checks you source directory for have and missing ROMs.
 \033[31mcopy <filter>\033[0m           Applies ROM filters and copies sourceDir into destDir.
