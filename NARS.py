@@ -1,6 +1,4 @@
-#!/usr/bin/python
 # NARS Advanced ROM Sorting
-
 # Copyright (c) 2014-2016 Wintermute0110 <wintermute0110@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,7 +20,15 @@
 # THE SOFTWARE.
 import sys
 import os
+
+# * ElementTree XML parser
 import xml.etree.ElementTree as ET
+
+# * This is supposed to be much faster than ElementTree
+#   See http://effbot.org/zone/celementtree.htm
+#   Tests with list-* commands indicate this 6x faster than ElementTree
+#   HOWEVER: the reduce command takes AGES checking the dependencies!!!
+import xml.etree.cElementTree as cET
 
 # -----------------------------------------------------------------------------
 # Global variables
@@ -36,18 +42,18 @@ def dumpclean(obj):
   if type(obj) == dict:
     for k, v in obj.items():
       if hasattr(v, '__iter__'):
-        print k
+        print(k)
         dumpclean(v)
       else:
-        print '%s : %s' % (k, v)
+        print('%s : %s' % (k, v))
   elif type(obj) == list:
     for v in obj:
       if hasattr(v, '__iter__'):
         dumpclean(v)
       else:
-        print v
+        print(v)
   else:
-      print obj
+      print(obj)
 
 # -----------------------------------------------------------------------------
 # Logging functions
@@ -85,7 +91,7 @@ def change_log_level(level):
 def pprint(level, print_str):
   # --- Write to console depending on verbosity
   if level <= log_level:
-    print print_str;
+    print(print_str)
 
   # --- Write to file
   if file_log:
@@ -190,16 +196,57 @@ def update_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
 # -----------------------------------------------------------------------------
 # XML functions
 # -----------------------------------------------------------------------------
-def XML_read_file(filename, infoString):
+def XML_read_file_ElementTree(filename, infoString):
   """Reads an XML file using Element Tree. Aborst if errors found"""
-  print infoString + " " + filename + "...",
+  print(infoString + " " + filename + "... ", end="")
   sys.stdout.flush()
   try:
     tree = ET.parse(filename)
   except IOError:
-    print '\n'
-    print_error('\033[31m[ERROR]\033[0m cannot find file ' + filename)
+    print('\n')
+    print('\033[31m[ERROR]\033[0m cannot find file ' + filename)
     sys.exit(10)
-  print 'done'
-  
+  print('done')
+  sys.stdout.flush()
+
   return tree
+
+# Reads merged MAME XML file.
+# Returns an ElementTree OR cElementTree object.
+def XML_read_file_cElementTree(filename, infoString):
+  """Reads merged MAME XML database and returns a [c]ElementTree object"""
+  print(infoString + " " + filename + "... ", end="")
+  sys.stdout.flush();
+  try:
+    # -- Use ElementTree
+    # tree = ET.parse(filename);
+    # -- Use cElementTree. Much faster but extremely slow for the reduce command.
+    tree = cET.parse(filename);
+  except IOError:
+    print('\n')
+    print('\033[31m[ERROR]\033[0m cannot find file ' + filename)
+    sys.exit(10)
+  print('done')
+  sys.stdout.flush()
+
+  return tree;
+
+# See http://norwied.wordpress.com/2013/08/27/307/
+def indent_ElementTree_XML(elem, level=0):
+  i = "\n" + level*" "
+  if len(elem):
+    if not elem.text or not elem.text.strip():
+      elem.text = i + " "
+    if not elem.tail or not elem.tail.strip():
+      elem.tail = i
+    for elem in elem:
+      indent_ElementTree_XML(elem, level+1)
+    if not elem.tail or not elem.tail.strip():
+      elem.tail = i
+  else:
+    if level and (not elem.tail or not elem.tail.strip()):
+      elem.tail = i
+
+# -----------------------------------------------------------------------------
+# Search engine and parser
+# -----------------------------------------------------------------------------

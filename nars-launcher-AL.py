@@ -1,7 +1,7 @@
-#!/usr/bin/python
-# XBMC ROM utilities - Advanced Launcher
+#!/usr/bin/python3
 
-# Copyright (c) 2014 Wintermute0110 <wintermute0110@gmail.com>
+# NARS Advanced ROM Sorting - Advanced Launcher
+# Copyright (c) 2014-2016 Wintermute0110 <wintermute0110@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,9 +25,8 @@ import argparse
 import xml.etree.ElementTree as ET
 
 # --- Global variables
-__software_version = '0.1.0';
-__config_configFileName = 'xru-launcher-AL-config.xml';
-__config_logFileName = 'xru-launcher-AL-log.txt';
+__config_configFileName = 'nars-launcher-AL-config.xml';
+__config_logFileName = 'nars-launcher-AL-log.txt';
 
 # --- Config file options global class (like a C struct)
 class ConfigFile:

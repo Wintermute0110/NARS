@@ -1,6 +1,6 @@
-#!/usr/bin/python
-# NARS Advanced ROM Sorting - Console ROMs
+#!/usr/bin/python3
 
+# NARS Advanced ROM Sorting - Console ROMs
 # Copyright (c) 2014-2016 Wintermute0110 <wintermute0110@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy

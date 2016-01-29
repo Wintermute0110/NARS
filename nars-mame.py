@@ -1,6 +1,6 @@
-#!/usr/bin/python
-# NARS Advanced ROM Sorting - Console ROMs
+#!/usr/bin/python3
 
+# NARS Advanced ROM Sorting - MAME
 # Copyright (c) 2014-2016 Wintermute0110 <wintermute0110@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -38,7 +38,7 @@ import xml.etree.cElementTree as cET
 # * ElementTree generated XML files are nasty looking (no end of lines)
 #   Minidom does a much better job
 # NOTE minidom seems to be VERY SLOOW
-from xml.dom import minidom
+# from xml.dom import minidom
 
 # * MAME XML is written by this file:
 #   http://www.mamedev.org/source/src/emu/info.c.html
@@ -607,7 +607,7 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
 def parse_File_Config():
   "Parses configuration file"
   NARS.print_info('[Parsing config file]');
-  tree = NARS.XML_read_file(__config_configFileName, "Reading configuration XML file")
+  tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
   root = tree.getroot();
 
   # --- Configuration object
@@ -1114,43 +1114,6 @@ def parse_catver_ini():
 
   return final_categories_dic;
 
-# See http://norwied.wordpress.com/2013/08/27/307/
-def indent_ElementTree_XML(elem, level=0):
-  i = "\n" + level*" "
-  if len(elem):
-    if not elem.text or not elem.text.strip():
-      elem.text = i + " "
-    if not elem.tail or not elem.tail.strip():
-      elem.tail = i
-    for elem in elem:
-      indent_ElementTree_XML(elem, level+1)
-    if not elem.tail or not elem.tail.strip():
-      elem.tail = i
-  else:
-    if level and (not elem.tail or not elem.tail.strip()):
-      elem.tail = i
-
-# Reads merged MAME XML file.
-# Returns an ElementTree OR cElementTree object.
-def read_MAME_merged_XML(filename):
-  "Reads merged MAME XML database and returns a [c]ElementTree object"
-
-  print "Parsing MAME merged XML file " + filename + "...",;
-  sys.stdout.flush();
-  try:
-    # -- Use ElementTree
-    # tree = ET.parse(filename);
-    # -- Use cElementTree. Much faster but extremely slow for the reduce command.
-    tree = cET.parse(filename);
-  except IOError:
-    print '\n';
-    print_error('[ERROR] cannot find file ' + filename);
-    sys.exit(10);
-  print ' done';
-  sys.stdout.flush();
-
-  return tree;
-
 # Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
 # do_update_artwork()), but not in the do_list_*() functions.
 #
@@ -1504,10 +1467,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug('Included ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
       # --- DEBUG info
       if __debug_apply_MAME_filters_Driver_tag:
-        print '[DEBUG] ----- Game = ' + key + ' -----';
-        print '[DEBUG] Driver list = ', sorted(driver_name_list);
-        print '[DEBUG] Filter = "' + driver_filter_expression + '"';
-        print '[DEBUG] boolean_result = ' + str(boolean_result);
+        print('[DEBUG] ----- Game = ' + key + ' -----')
+        print('[DEBUG] Driver list = ', sorted(driver_name_list))
+        print('[DEBUG] Filter = "' + driver_filter_expression + '"')
+        print('[DEBUG] boolean_result = ' + str(boolean_result))
     # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
@@ -1543,9 +1506,9 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug('Included ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
       # --- DEBUG info
       if __debug_apply_MAME_filters_Category_tag:
-        print '[DEBUG] Category list = ', sorted(categories_type_list);
-        print '[DEBUG] Filter = "' + categories_filter_expression + '"';
-        print '[DEBUG] boolean_result = ' + str(boolean_result);
+        print('[DEBUG] Category list = ', sorted(categories_type_list))
+        print('[DEBUG] Filter = "' + categories_filter_expression + '"')
+        print('[DEBUG] boolean_result = ' + str(boolean_result))
     # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
@@ -1581,10 +1544,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         print_debug('Included ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
       # --- DEBUG info
       if __debug_apply_MAME_filters_Controls_tag:
-        print '[DEBUG] ----- Game = ' + key + ' -----';
-        print '[DEBUG] Control list = ', sorted(controls_type_list);
-        print '[DEBUG] Filter = "' + controls_type_filter_expression + '"';
-        print '[DEBUG] boolean_result = ' + str(boolean_result);
+        print('[DEBUG] ----- Game = ' + key + ' -----')
+        print('[DEBUG] Control list = ', sorted(controls_type_list))
+        print('[DEBUG] Filter = "' + controls_type_filter_expression + '"')
+        print('[DEBUG] boolean_result = ' + str(boolean_result))
     # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
@@ -1608,8 +1571,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       buttons_str = romObject.buttons;
       buttons = int(buttons_str);
       if __debug_apply_MAME_filters_Buttons_tag:
-        print '[DEBUG] Buttons number = ' + buttons_str;
-        print '[DEBUG] Buttons filter = "' + button_filter_expression + '"';
+        print('[DEBUG] Buttons number = ' + buttons_str)
+        print('[DEBUG] Buttons filter = "' + button_filter_expression + '"')
       boolean_result = eval(button_filter_expression, globals(), locals());
 
       # If not all items are true, the game is NOT copied (filtered)
@@ -1641,8 +1604,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       players_str = romObject.players;
       players = int(players_str);
       if __debug_apply_MAME_filters_Players_tag:
-        print '[DEBUG] Players number = ' + players_str;
-        print '[DEBUG] Players filter = "' + players_filter_expression + '"';
+        print('[DEBUG] Players number = ' + players_str)
+        print('[DEBUG] Players filter = "' + players_filter_expression + '"')
       boolean_result = eval(players_filter_expression, globals(), locals());
 
       # If not all items are true, the game is NOT copied (filtered)
@@ -1694,8 +1657,8 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
           sys.exit(10);
         year = int(year_list[0]);
         if __debug_apply_MAME_filters_years_tag:
-          print '[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
-                ' / Filter = "' + year_filter_expression + '"';
+          print('[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
+                ' / Filter = "' + year_filter_expression + '"')
         boolean_result = eval(year_filter_expression, globals(), locals());
         # If not all items are true, the game is NOT copied (filtered)
         if not boolean_result:
@@ -1717,9 +1680,9 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
           for year_str in year_list:
             year = int(year_str);
             if __debug_apply_MAME_filters_years_tag:
-              print '[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
-                    ' / Filter = "' + year_filter_expression + '"';
-            boolean_result = eval(year_filter_expression, globals(), locals());
+              print('[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
+                    ' / Filter = "' + year_filter_expression + '"')
+            boolean_result = eval(year_filter_expression, globals(), locals())
             boolean_list.append(boolean_result);
           # Knowing the boolean results for the wildcard expansion, check if game
           # should be included or not.
@@ -1850,8 +1813,8 @@ def get_ROM_main_list(sourceDir):
       romObject.filename = file;
       romMainList_dict[thisFileName] = romObject;
       if __debug_get_ROM_main_list:
-        print romObject.name;
-        print romObject.filename;
+        print(romObject.name)
+        print(romObject.filename)
 
   return romMainList_dict;
 
@@ -1887,7 +1850,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     if hasattr(romObj, 'year'):
       sub_element.text = romObj.year;
     else:
-      print 'ROM has no year tag ' + rom_name;
+      print('ROM has no year tag ' + rom_name)
       sub_element.text = '????';
 
     # <publisher></publisher>
@@ -1895,7 +1858,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     if hasattr(romObj, 'manufacturer'):
       sub_element.text = romObj.manufacturer;
     else:
-      print 'ROM has no publisher tag ' + rom_name;
+      print('ROM has no publisher tag ' + rom_name)
       sub_element.text = 'Unknown';
 
     # <genre>Shooter / Flying Vertical</genre>
@@ -1903,7 +1866,7 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     if hasattr(romObj, 'category'):
       sub_element.text = romObj.category;
     else:
-      print 'ROM has no genre tag ' + rom_name;
+      print('ROM has no genre tag ' + rom_name)
       sub_element.text = 'Unknown';
 
     # <plot></plot>
@@ -2159,19 +2122,19 @@ def do_reduce_XML():
 
   if __debug_do_reduce_XML_dependencies:
     # --- Print list of BIOSes
-    print '[List of BIOSes]';
+    print('[List of BIOSes]')
     for biosName in bios_list:
-      print biosName;
+      print(biosName)
 
     # --- Print list of devices with ROM
-    print '[List of devices with ROMs]';
+    print('[List of devices with ROMs]')
     for deviceName in device_rom_list:
-      print deviceName;
+      print(deviceName)
 
     # --- Print list of ROMs with CHD
-    print '[List of game with disks]';
+    print('[List of game with disks]')
     for chdName in chd_list:
-      print chdName;
+      print(chdName)
 
   # --- Make list of dependencies
   device_depends_dic = {};
@@ -2185,7 +2148,7 @@ def do_reduce_XML():
         if 'cloneof' not in game_EL.attrib:
           parent_bios_depends_dic[game_EL.attrib['name']] = game_EL.attrib['romof'];
           if __debug_do_reduce_XML_dependencies:
-            print 'game = ' + game_EL.attrib['name'] + ' BIOS depends on ' + game_EL.attrib['romof'];
+            print('game = ' + game_EL.attrib['name'] + ' BIOS depends on ' + game_EL.attrib['romof'])
         # --- Case b) Parent should be checked
         else:
           # print 'game = ' + game_EL.attrib['name'] + ' is a clone a parent must be checked for BIOS dependencies';
@@ -2200,7 +2163,7 @@ def do_reduce_XML():
             # --- Check if this is in the list of devices with ROMs
             if game_child.attrib['name'] in device_rom_list:
               if __debug_do_reduce_XML_dependencies:
-                print 'game = ' + game_EL.attrib['name'] + ' device depends on ' + game_child.attrib['name'];
+                print('game = ' + game_EL.attrib['name'] + ' device depends on ' + game_child.attrib['name'])
               # --- Insert a device dependency in a list
               device_depends.append(game_child.attrib['name']);
           else:
@@ -2227,15 +2190,15 @@ def do_reduce_XML():
         if 'cloneof' not in game_EL.attrib:
           bios_depends_dic[game_EL.attrib['name']] = game_EL.attrib['romof'];
           if __debug_do_reduce_XML_dependencies:
-            print 'game = ' + game_EL.attrib['name'] + ' BIOS depends on ' + game_EL.attrib['romof'];
+            print('game = ' + game_EL.attrib['name'] + ' BIOS depends on ' + game_EL.attrib['romof'])
         # --- Case b) Parent should be checked
         else:
           # If parent is in this list then clone has a BIOS dependence
           if game_EL.attrib['cloneof'] in parent_bios_depends_dic:
             bios_depends_dic[game_EL.attrib['name']] = parent_bios_depends_dic[game_EL.attrib['cloneof']];
             if __debug_do_reduce_XML_dependencies:
-              print 'game = ' + game_EL.attrib['name'] + ' is a clone that BIOS depends on ' + \
-                    parent_bios_depends_dic[game_EL.attrib['cloneof']];
+              print('game = ' + game_EL.attrib['name'] + ' is a clone that BIOS depends on ' + \
+                    parent_bios_depends_dic[game_EL.attrib['cloneof']])
 
   # --- To save memory destroy variables now
   del tree;
@@ -2384,9 +2347,9 @@ def do_merge():
 def do_list_merged():
   "Short list of MAME XML file"
 
-  print_info('[Short listing of reduced MAME XML]');
+  NARS.print_info('[List reduced MAME XML]');
   filename = configuration.MergedInfo_XML;
-  tree = read_MAME_merged_XML(filename);
+  tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # Root element (Reduced MAME XML):
   root = tree.getroot();
@@ -2396,44 +2359,64 @@ def do_list_merged():
   num_clones = 0;
   num_samples = 0;
   num_devices = 0;
-  for game_EL in root:
-    if game_EL.tag == 'game':
+  num_BIOS = 0;
+  num_norunnable = 0;
+  for machine_EL in root:
+    if machine_EL.tag == 'machine':
       num_games += 1;
-      # Game attributes
-      game_attrib = game_EL.attrib;
-      print_info(game_attrib['name']);
+      # Machine attributes
+      machine_attrib = machine_EL.attrib;
+      NARS.print_info(machine_attrib['name']);
 
-      # Game attributes
-      if 'sourcefile' in game_attrib:
-        print_info('|-- driver = ' + game_attrib['sourcefile']);
-      if 'sampleof' in game_attrib:
+      # Machine attributes
+      if 'sourcefile' in machine_attrib:
+        NARS.print_info('-         driver   ' + machine_attrib['sourcefile']);
+      if 'sampleof' in machine_attrib:
         num_samples += 1;
-        print_info('|-- sampleof = ' + game_attrib['sampleof']);
-      if 'cloneof' in game_attrib:
+        NARS.print_info('-       sampleof   ' + machine_attrib['sampleof']);
+      if 'cloneof' in machine_attrib:
         num_clones += 1;
-        print_info('|-- cloneof = ' + game_attrib['cloneof']);
-      if 'isdevice' in game_attrib:
+        NARS.print_info('-        cloneof   ' + machine_attrib['cloneof']);
+      if 'isdevice' in machine_attrib:
         num_devices += 1;
-        print_info('|-- isdevice = ' + game_attrib['isdevice']);
+        NARS.print_info('-       isdevice   ' + machine_attrib['isdevice']);
+      if 'isbios' in machine_attrib:
+        num_BIOS += 1;
+        NARS.print_info('-         isbios   ' + machine_attrib['isbios']);
+      if 'runnable' in machine_attrib:
+        if machine_attrib['runnable'] == 'yes':
+          print('Found a machine with runnable="yes" attribute! Exiting...')
+          sys.exit(10)
+        else:
+          num_norunnable += 1;
+        NARS.print_info('-       runnable   ' + machine_attrib['runnable']);
+        
 
-      # Iterate through the children of a game
-      for game_child in game_EL:
-        if game_child.tag == 'description':
-          print_info('|-- description = ' + game_child.text);
-        elif game_child.tag == 'year':
-          print_info('|-- year = ' + game_child.text);
-        elif game_child.tag == 'manufacturer':
-          print_info('|-- manufacturer = ' + game_child.text);
-        elif game_child.tag == 'driver':
-          print_info('|-- driver status = ' + game_child.attrib['status']);
-        elif game_child.tag == 'category':
-          print_info('+-- category = ' + game_child.text);
+      # Iterate through the children of a machine
+      for machine_child in machine_EL:
+        if machine_child.tag == 'description':
+          NARS.print_info('--   description   ' + machine_child.text);
+        elif machine_child.tag == 'year':
+          NARS.print_info('--          year   ' + machine_child.text);
+        elif machine_child.tag == 'manufacturer':
+          NARS.print_info('--  manufacturer   ' + machine_child.text);
+        elif machine_child.tag == 'driver':
+          NARS.print_info('-- driver status   ' + machine_child.attrib['status']);
+        elif machine_child.tag == 'category':
+          NARS.print_info('--      category   ' + machine_child.text);
+#    else:
+#      NARS.print_info('Machine tag = ' + machine_EL.tag)
 
-  print_info('[Report]');
-  print_info('Number of games = ' + str(num_games));
-  print_info('Number of clones = ' + str(num_clones));
-  print_info('Number of games with samples = ' + str(num_samples));
-  print_info('Number of devices = ' + str(num_devices));
+  NARS.print_info('[Report]');
+  NARS.print_info('Number of machines     ' + str(num_games))
+  NARS.print_info('Number of clones       ' + str(num_clones))
+  NARS.print_info('Number of arcades      ' + str(-1))
+  NARS.print_info('Number of non-arcades  ' + str(-1))
+  NARS.print_info('Machines with samples  ' + str(num_samples))
+  NARS.print_info('Machines with CHDs     ' + str(-1))
+  NARS.print_info('Number of devices      ' + str(num_devices))
+  NARS.print_info('Number of BIOS         ' + str(num_BIOS))
+  NARS.print_info('Machines non-runnable  ' + str(num_norunnable))
 
 def do_list_categories():
   "Parses Catver.ini and prints the categories and how many games for each"
@@ -2456,11 +2439,11 @@ def do_list_categories():
   for cat_line in f:
     stripped_line = cat_line.strip();
     if __debug_do_list_categories:
-      print '"' + stripped_line + '"';
+      print('"' + stripped_line + '"')
     if read_status == 0:
       if stripped_line == '[Category]':
         if __debug_do_list_categories:
-          print 'Found [Category]';
+          print('Found [Category]')
         read_status = 1;
     elif read_status == 1:
       line_list = stripped_line.split("=");
@@ -2469,7 +2452,7 @@ def do_list_categories():
         continue;
       else:
         if __debug_do_list_categories:
-          print line_list;
+          print(line_list)
         category = line_list[1];
         if category in categories_dic:
           categories_dic[category] += 1;
@@ -2478,7 +2461,7 @@ def do_list_categories():
         # --- Sub-categories  
         sub_categories = category.split("/");
         if __debug_do_list_categories:
-          print sub_categories;
+          print(sub_categories)
         main_category = sub_categories[0].strip();
         second_category = sub_categories[0].strip();
         if main_category in main_categories_dic: 
@@ -2637,12 +2620,12 @@ def do_list_controls():
             input_players_dic = add_to_histogram(game_input_EL.attrib['players'], input_players_dic);
           else:
             if __debug_do_list_controls:
-              print(' no players');
+              print(' no players')
             input_buttons_dic = add_to_histogram('no players tag', input_buttons_dic);
 
           if 'tilt' in game_input_EL.attrib:
             if __debug_do_list_controls:
-              print(' tilt = ' + game_input_EL.attrib['tilt']);
+              print(' tilt = ' + game_input_EL.attrib['tilt'])
 
           # --- Iterate children
           control_child_found = 0;
@@ -2650,26 +2633,26 @@ def do_list_controls():
           for child in game_input_EL:
             control_child_found = 1;
             if __debug_do_list_controls:
-              print ' Children = ' + child.tag;
+              print(' Children = ' + child.tag)
 
             if 'type' in child.attrib:
               if __debug_do_list_controls:
-                print('  type = ' + child.attrib['type']);
+                print('  type = ' + child.attrib['type'])
               input_control_type_dic = add_to_histogram(child.attrib['type'].title(), input_control_type_dic);
               control_type_list.append(child.attrib['type']);
 
             if 'ways' in child.attrib:
               if __debug_do_list_controls:
-                print('  ways = ' + child.attrib['ways']);
+                print('  ways = ' + child.attrib['ways'])
               input_control_ways_dic = add_to_histogram(child.attrib['ways'], input_control_ways_dic);
 
             if 'ways2' in child.attrib:
               if __debug_do_list_controls:
-                print('  ways2 = ' + child.attrib['ways2']);
+                print('  ways2 = ' + child.attrib['ways2'])
 
             if 'ways3' in child.attrib:
               if __debug_do_list_controls:
-                print('  ways3 = ' + child.attrib['ways3']);
+                print('  ways3 = ' + child.attrib['ways3'])
 
           text_not_found = 'ButtonsOnly';
           if len(control_type_list) < 1:
@@ -2687,19 +2670,19 @@ def do_list_controls():
   sorted_histo = sorted(input_control_type_join_dic.iteritems(), key=operator.itemgetter(1))
   for key in sorted_histo:
     print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
-  print ' ';
+  print(' ')
 
   print_info('[Input - buttons histogram]');
   sorted_histo = sorted(input_buttons_dic.iteritems(), key=operator.itemgetter(1))
   for key in sorted_histo:
     print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
-  print ' ';
+  print(' ')
 
   print_info('[Input - players histogram]');
   sorted_histo = sorted(input_players_dic.iteritems(), key=operator.itemgetter(1))
   for key in sorted_histo:
     print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
-  print ' ';
+  print(' ')
 
   # print_info('[Input - control - ways histogram]');
   # sorted_histo = sorted(input_control_ways_dic.iteritems(), key=operator.itemgetter(1))
@@ -2769,7 +2752,7 @@ def do_list_years():
   sorted_histo = sorted(raw_years_dic.iteritems(), key=operator.itemgetter(1))
   for key in sorted_histo:
     print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
-  print ' ';
+  print(' ')
 
   print_info('[Release year histogram (trimmed)]');
   sorted_histo = sorted(years_dic.iteritems(), key=operator.itemgetter(1))
@@ -3020,7 +3003,7 @@ def do_check_Artwork(filterName):
   for rom_baseName in sorted(roms_destDir_list):
     print_info("<<  ROM  >> " + rom_baseName + ".zip");    
     if rom_baseName not in artwork_copy_dic:
-      print ' Not found';
+      print(' Not found')
     else:
       art_baseName = artwork_copy_dic[rom_baseName];
 
@@ -3031,26 +3014,26 @@ def do_check_Artwork(filterName):
       # - Has artwork been replaced?
       if rom_baseName != art_baseName:
         num_replaced += 1;
-        print ' Replaced   ' + art_baseName;
+        print(' Replaced   ' + art_baseName)
       else:
         num_original += 1;
-        print ' Original   ' + art_baseName;
+        print(' Original   ' + art_baseName)
 
       # - Have thumb
       if not os.path.isfile(thumb_Source_fullFileName):
         num_missing_thumbs += 1;
-        print ' Missing T  ' + art_baseName + '.png';
+        print(' Missing T  ' + art_baseName + '.png')
       else:
         num_have_thumbs += 1;
-        print ' Have T     ' + art_baseName + '.png';
+        print(' Have T     ' + art_baseName + '.png')
 
       # - Have fanart
       if not os.path.isfile(fanart_Source_fullFileName):
         num_missing_fanart += 1;
-        print ' Missing F  ' + art_baseName + '.png';
+        print(' Missing F  ' + art_baseName + '.png')
       else:
         num_have_fanart += 1;
-        print ' Have F     ' + art_baseName + '.png';
+        print(' Have F     ' + art_baseName + '.png')
 
   print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
   print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
@@ -3111,7 +3094,7 @@ def do_update_Artwork(filterName):
     clean_ArtWork_destDir(filter_config, artwork_copy_dic);
 
 def do_printHelp():
-  print """\033[32mUsage: nars-mame.py [options] <command> [filter]\033[0m
+  print("""\033[32mUsage: nars-mame.py [options] <command> [filter]\033[0m
 
 \033[32mCommands:\033[0m
 \033[31musage\033[0m                   Print usage information (this text)
@@ -3142,14 +3125,14 @@ def do_printHelp():
 \033[35m--cleanROMs\033[0m       Deletes ROMs in destDir not present in the filtered ROM list.
 \033[35m--generateNFO\033[0m     Generates NFO files with game information for the launchers.
 \033[35m--cleanNFO\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--cleanArtWork\033[0m    Deletes unknown Artowork in destination directories."""
+\033[35m--cleanArtWork\033[0m    Deletes unknown Artowork in destination directories.""")
 
 # -----------------------------------------------------------------------------
 # main function
 # -----------------------------------------------------------------------------
 def main(argv):
-  print '\033[36mNARS Advanced ROM Sorting - MAME edition\033[0m' + \
-        ' version ' + NARS.__software_version;
+  print('\033[36mNARS Advanced ROM Sorting - MAME edition\033[0m' + \
+        ' version ' + NARS.__software_version)
 
   # --- Command line parser
   parser = argparse.ArgumentParser()
