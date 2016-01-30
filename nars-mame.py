@@ -2655,6 +2655,40 @@ def do_list_years():
     NARS.print_info('{:5d}'.format(v) + '  ' + k)
 
 # ----------------------------------------------------------------------------
+def do_list_filters():
+  """List of configuration file"""
+
+  NARS.print_info('[Listing configuration file]')
+  tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Parsing configuration XML file")
+
+  # Iterate over XML root object
+  root = tree.getroot();
+  for root_child in root:
+    if root_child.tag == 'General':
+      NARS.print_info('<General configuration>')
+      # Iterate through children nodes
+      for root_child_node in root_child:
+        if root_child_node.tag == 'MAME_XML':
+          NARS.print_info('MAME_XML        ' + root_child_node.text)
+        elif root_child_node.tag == 'MAME_XML_redux':
+          NARS.print_info('MAME_XML_redux  ' + root_child_node.text)
+        elif root_child_node.tag == 'Catver':
+          NARS.print_info('Catver          ' + root_child_node.text)
+        elif root_child_node.tag == 'Merged_XML':
+          NARS.print_info('Merged_XML      ' + root_child_node.text)
+    elif root_child.tag == 'MAMEFilter':
+      NARS.print_info('<MAME filter>')
+      NARS.print_info('Name        ' + root_child.attrib['name'])
+      for root_child_node in root_child:
+        if root_child_node.tag == 'ROMsSource':
+          NARS.print_info('ROMsSource  ' + root_child_node.text);
+        elif root_child_node.tag == 'ROMsDest':
+          NARS.print_info('ROMsDest    ' + root_child_node.text);
+    else:
+      print('Tag with wrong name ' + root_child.tag)
+      sys.exit(10)
+
+# ----------------------------------------------------------------------------
 def do_checkFilter(filterName):
   "Applies filter and copies ROMs into destination directory"
 
@@ -2994,13 +3028,14 @@ def do_printHelp():
 \033[32mCommands:\033[0m
 \033[31musage\033[0m                   Print usage information (this text)
 \033[31mreduce-XML\033[0m              Takes MAME XML as input and writes an stripped XML.
-\033[31mmerge\033[0m                   Takes MAME XML (reduced) info file and Catver.ini a mergued XML.
+\033[31mmerge-XML\033[0m               Takes MAME XML (reduced) info file and Catver.ini a mergued XML.
 \033[31mlist-merged\033[0m             List every ROM set system in the merged MAME XML.
 \033[31mlist-categories\033[0m         Reads Catver.ini and makes a histogram of the categories.
 \033[31mlist-drivers\033[0m            Reads merged XML database and prints a histogram of the drivers.
 \033[31mlist-controls\033[0m           Reads merged XML database and prints a histogram of the game controls.
 \033[31mlist-years\033[0m              Reads merged XML database and prints a histogram of the game release year.
-\033[31mcheck-filter <filter>\033[0m   Applies filters and checks you source directory for have and missing ROMs.
+\033[31mlist-filters\033[0m            List filters defined in configuration file.
+\033[31mcheck <filter>\033[0m          Applies filters and checks you source directory for have and missing ROMs.
 \033[31mcopy <filter>\033[0m           Applies ROM filters and copies sourceDir into destDir.
 \033[31mupdate <filter>\033[0m         Like copy, but only copies files if file size is different.
 \033[31mcheck-chd <filter>\033[0m      Applies filters and checks you source directory for have and missing CHDs.
@@ -3031,24 +3066,17 @@ def main(argv):
   # --- Command line parser
   parser = argparse.ArgumentParser()
   parser.add_argument('-v', '--verbose', help="be verbose", action="count")
-  parser.add_argument('-l', '--log', help="log output to default file", \
-     action='store_true')
-  parser.add_argument('--logto', help="log output to specified file", \
-     nargs = 1)
-  parser.add_argument("--dryRun", help="don't modify any files", \
-     action="store_true")
-  parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", \
-     action="store_true")
-  parser.add_argument("--generateNFO", help="generate NFO files", \
-     action="store_true")
-  parser.add_argument("--cleanNFO", help="clean redundant NFO files", \
-     action="store_true")
-  parser.add_argument("--cleanArtWork", help="clean unknown ArtWork", \
-     action="store_true")
-  parser.add_argument("command", \
+  parser.add_argument('-l', '--log', help="log output to default file", action='store_true')
+  parser.add_argument('--logto', help="log output to specified file", nargs = 1)
+  parser.add_argument('--dryRun', help="don't modify any files", action="store_true")
+  parser.add_argument('--cleanROMs', help="clean destDir of unknown ROMs", action="store_true")
+  parser.add_argument('--generateNFO', help="generate NFO files", action="store_true")
+  parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
+  parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
+  parser.add_argument('command', \
      help="usage, reduce-XML, merge, list-merged, \
            list-categories, list-drivers, list-controls, list-years,\
-           check-filter, copy, update \
+           list-filters, check, copy, update \
            check-chd, copy-chd, update-chd \
            check-artwork, copy-artwork, update-artwork", nargs = 1)
   parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
@@ -3090,94 +3118,85 @@ def main(argv):
 
   # --- Positional arguments that don't require a filterName
   if command == 'reduce-XML':
-    do_reduce_XML();
-    sys.exit(0);
+    do_reduce_XML()
 
-  # Unofficial development command (for game dependencies)
-  elif command == 'reduce-XML-experimental':
-    do_reduce_XML_experimental();
-    sys.exit(0);
-
-  elif command == 'merge':
-    do_merge();
-    sys.exit(0);
+  elif command == 'merge-XML':
+    do_merge()
 
   elif command == 'list-merged':
-    do_list_merged();
-    sys.exit(0);
+    do_list_merged()
 
   elif command == 'list-categories':
-    do_list_categories();
-    sys.exit(0);
+    do_list_categories()
 
   elif command == 'list-drivers':
     do_list_drivers();
-    sys.exit(0);
 
   elif command == 'list-controls':
     do_list_controls();
-    sys.exit(0);
 
   elif command == 'list-years':
     do_list_years();
-    sys.exit(0);
 
-  elif command == 'check-filter':
+  elif command == 'list-filters':
+    do_list_filters()
+
+  elif command == 'check':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    do_checkFilter(args.filterName);
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    do_checkFilter(args.filterName)
 
   elif command == 'copy':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    do_update(args.filterName);
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    do_update(args.filterName)
 
   elif command == 'update':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    __prog_option_sync = 1;
-    do_update(args.filterName);  
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    __prog_option_sync = 1
+    do_update(args.filterName); 
 
   elif command == 'check-chd':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    do_check_CHD(args.filterName);
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    do_check_CHD(args.filterName)
 
   elif command == 'copy-chd':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    do_update_CHD(args.filterName);
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    do_update_CHD(args.filterName)
 
   elif command == 'update-chd':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    __prog_option_sync = 1;
-    do_update_CHD(args.filterName);
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    __prog_option_sync = 1
+    do_update_CHD(args.filterName)
 
   elif command == 'check-artwork':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    do_check_Artwork(args.filterName);
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    do_check_Artwork(args.filterName)
 
   elif command == 'copy-artwork':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    do_update_Artwork(args.filterName);
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    do_update_Artwork(args.filterName)
 
   elif command == 'update-artwork':
     if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required');
-      sys.exit(10);
-    __prog_option_sync = 1;
-    do_update_Artwork(args.filterName);
+      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+      sys.exit(10)
+    __prog_option_sync = 1
+    do_update_Artwork(args.filterName)
 
   else:
     NARS.print_error('Unrecognised command: ' + command)
@@ -3185,6 +3204,7 @@ def main(argv):
 
   sys.exit(0)
 
-# Execute script if called from command line ('no module' mode)
+# Execute main function if script called from command line (not imported 
+# as module)
 if __name__ == "__main__":
   main(sys.argv[1:])
