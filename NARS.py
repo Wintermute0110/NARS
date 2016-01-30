@@ -252,9 +252,6 @@ def indent_ElementTree_XML(elem, level=0):
 # Search engine and parser
 # -----------------------------------------------------------------------------
 # --- Global variables for parser ---
-# Parser search list
-# global parser_search_list;
-
 def set_parser_search_list(search_list):
   global parser_search_list;
   
