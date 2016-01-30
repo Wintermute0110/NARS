@@ -1036,8 +1036,16 @@ def get_game_year_information(year_srt):
 
   return game_info;
 
+# See http://stackoverflow.com/questions/15929233/writing-a-tokenizer-in-python
+# split words
+# def tokzr_WORD(txt): return ('WORD', re.findall(r'(?ms)\W*(\w+)', txt))
+def tokzr_WORD(txt): return re.findall(r'(?ms)\W*(\w+)', txt)
+
+# split sentences
+def tokzr_SENT(txt): return ('SENTENCE', re.findall(r'(?ms)\s*(.*?(?:\.|\?|!))', txt))
+
 def fix_category_name(main_category, category):
-  # -Rename some categories
+  # Rename some categories
   final_category = main_category;
   if category == 'System / BIOS':
     final_category = 'BIOS';
@@ -1053,17 +1061,29 @@ def fix_category_name(main_category, category):
     final_category = 'Fruit_Machines';
   elif main_category == 'Not Classified':
     final_category = 'Not_Classified';
+  # New categories from AntoPISA extended catver.ini (after MAME/MESS merge)
 
-  # - If there is *Mature* in any category or subcategory, then
-  #   the game belongs to the Mature category
-  if category.find('*Mature*') >= 0:
+  # If there are several words, all of them starting with upper case and
+  # separated by spaces, substitute the spaces by underscores to join them
+  # Ex: 'Aaa Bbb Ccc' -> 'Aaa_Bbb_Ccc'
+  # Lots of MESS categories in AntoPISA extended catver.ini are like that.
+  tokens = tokzr_WORD(main_category)
+#  print(repr(tokens) + ' ' + str(len(tokens)))
+  if len(tokens) > 1:
+    s = '_'
+#    print(s.join(tokens))
+    final_category = s.join(tokens)
+
+  # If there is *Mature* in any category or subcategory, then
+  # the game belongs to the Mature category
+  if category.find('*Mature*') >= 0 or category.find('* Mature *') >= 0:
     final_category = 'Mature';
 
   # Regular expression to catch ilegal characters in categories
-  # that may make the categories filter parser fail.
+  # that may make the categories filter parser to fail.
   result = re.search('[^\w_]+', final_category);
   if result is not None:
-    print_error('Ilegal character found in category "' + final_category + '"');
+    NARS.print_error('Ilegal character found in category "' + final_category + '"');
     sys.exit(10);
 
   return final_category
@@ -2490,32 +2510,36 @@ def do_list_categories():
 
   # --- Only print if very verbose
   if NARS.log_level >= NARS.Log.vverb:
+    # Want to sort categories_dic['category'] = integer by the integer
     # Sorting dictionaries, see
     # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
-    sorted_propertiesDic = sorted(categories_dic.iteritems(), key=operator.itemgetter(1))
+    # This is only valid in Python 2
+#    sorted_propertiesDic = sorted(categories_dic.iteritems(), key=operator.itemgetter(1))
+    # This works on Python 3
+    sorted_histo = ((k, categories_dic[k]) for k in sorted(categories_dic, key=categories_dic.get, reverse=False))
     # - DEBUG object dump
     # dumpclean(sorted_propertiesDic);
     # - Better print (only print if verbose)
-    print_vverb('\n[Raw categories]');
-    for key in sorted_propertiesDic:
-      print_vverb('{:6d}'.format(key[1]) + '  ' + key[0]);
+    NARS.print_vverb('[Raw categories]');
+    for k, v in sorted_histo:
+      NARS.print_verb('{:6d}'.format(v) + '  ' + k);
 
   # --- Only print if verbose
   if NARS.log_level >= NARS.Log.verb:
-    sorted_propertiesDic = sorted(main_categories_dic.iteritems(), key=operator.itemgetter(1))
-    print_verb('\n[Main categories]');
-    for key in sorted_propertiesDic:
-      print_verb('{:6d}'.format(key[1]) + '  ' + key[0]);
+    sorted_histo = ((k, main_categories_dic[k]) for k in sorted(main_categories_dic, key=main_categories_dic.get, reverse=False))
+    NARS.print_verb('[Main categories]');
+    for k, v in sorted_histo:
+      NARS.print_verb('{:6d}'.format(v) + '  ' + k);
 
   # --- By default only list final categories
-  # Want to sort final_categories_dic['category'] = integer by the integer
-  # This is only valid in Python 2
-#  sorted_propertiesDic = sorted(final_categories_dic.iteritems(), key=operator.itemgetter(1))
-  # This works on Python 3
   sorted_histo = ((k, final_categories_dic[k]) for k in sorted(final_categories_dic, key=final_categories_dic.get, reverse=False))
   NARS.print_info('[Final (used) categories]');
+  num_categories = 0
   for k, v in sorted_histo:
     NARS.print_info('{:6d}'.format(v) + '  ' + k);
+    num_categories += 1
+  NARS.print_info('[Report]');
+  NARS.print_info('Number of categories  ' + str(num_categories))
 
 def do_list_drivers():    
   "Parses merged XML database and makes driver histogram and statistics"
@@ -3184,9 +3208,9 @@ def main(argv):
   global __prog_option_sync;
 
   if args.verbose:
-    if args.verbose == 1:   change_log_level(Log.verb);
-    elif args.verbose == 2: change_log_level(Log.vverb);
-    elif args.verbose >= 3: change_log_level(Log.debug);
+    if args.verbose == 1:   NARS.change_log_level(NARS.Log.verb);
+    elif args.verbose == 2: NARS.change_log_level(NARS.Log.vverb);
+    elif args.verbose >= 3: NARS.change_log_level(NARS.Log.debug);
   if args.log:
     __prog_option_log = 1;
   if args.logto:
