@@ -1036,16 +1036,8 @@ def create_copy_list(romMain_list, filter_config):
 def do_list_filters():
   "List of configuration file"
 
-  NARS.print_info('[Listing configuration file]');
-  print("Reading configuration XML file " + __config_configFileName + "...",)
-  sys.stdout.flush();
-  try:
-    tree = ET.parse(__config_configFileName);
-  except IOError:
-    print('\n')
-    NARS.print_error('[ERROR] cannot find file ' + __config_configFileName);
-    sys.exit(10);
-  print('done')
+  NARS.print_info('[Listing configuration file]')
+  tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Parsing configuration XML file")
 
   # - This iterates through the collections
   root = tree.getroot();
@@ -1073,8 +1065,8 @@ def do_list_filters():
       elif collectionEL.tag == 'NoIntroDat' and collectionEL.text is not None:
         NARS.print_info('NoIntroDat      ' + collectionEL.text);
 
-    # - Test if all mandatory elements are there
-    # TODO: finish this
+    # Test if all mandatory elements are there
+    # TODO finish this
 
 def do_list_nointro(filterName):
   "List of NoIntro XML file"
