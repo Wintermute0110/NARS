@@ -1514,63 +1514,62 @@ def main(argv):
   # --- Positional arguments that don't require a romSetName
   if command == 'list-filters':
     do_list_filters()
-    sys.exit(0)
 
   elif command == 'list-nointro':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    do_list_nointro(args.romSetName);
+    do_list_nointro(args.romSetName)
 
   elif command == 'check-nointro':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    do_check_nointro(args.romSetName);
+    do_check_nointro(args.romSetName)
 
   elif command == 'list-tags':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    do_taglist(args.romSetName);
+    do_taglist(args.romSetName)
 
   elif command == 'check':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    do_checkFilter(args.romSetName);
+    do_checkFilter(args.romSetName)
 
   elif command == 'copy':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    do_update(args.romSetName);
+    do_update(args.romSetName)
 
   elif command == 'update':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    __prog_option_sync = 1;
-    do_update(args.romSetName);  
+    __prog_option_sync = 1
+    do_update(args.romSetName)
 
   elif command == 'check-artwork':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    do_checkArtwork(args.romSetName);
+    do_checkArtwork(args.romSetName)
 
   elif command == 'copy-artwork':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    do_update_artwork(args.romSetName);
+    do_update_artwork(args.romSetName)
 
   elif command == 'update-artwork':
     if args.romSetName == None:
       NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
       sys.exit(10)
-    __prog_option_sync = 1;
-    do_update_artwork(args.romSetName);  
+    __prog_option_sync = 1
+    do_update_artwork(args.romSetName)
 
   else:
     NARS.print_error('Unrecognised command ' + command)
