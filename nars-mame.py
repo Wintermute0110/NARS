@@ -219,7 +219,7 @@ def haveDir_or_abort(dirName, infoStr = None):
 
 # -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir):
-  print_info('[Copying ROMs into destDir]');
+  NARS.print_info('[Copying ROMs into destDir]');
 
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
@@ -229,23 +229,23 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
   for rom_copy_item in sorted(rom_list):
     # --- Update progress
     percentage = 100 * step / num_steps;
-    sys.stdout.write('{:3d}% '.format(percentage));
+    sys.stdout.write('{:2.0f}% '.format(percentage));
 
     # --- Copy file (this function succeeds or aborts program)
     romFileName = rom_copy_item + '.zip';
-    copy_ROM_file(romFileName, sourceDir, destDir);
+    NARS.copy_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run);
     num_copied_roms += 1;
-    print_info('<Copied> ' + romFileName);
+    NARS.print_info('<Copied> ' + romFileName);
     sys.stdout.flush();
 
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
 
 def update_ROM_list(rom_list, sourceDir, destDir):
-  print_info('[Updating ROMs into destDir]');
+  NARS.print_info('[Updating ROMs into destDir]');
 
   num_steps = len(rom_list);
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
@@ -258,28 +258,28 @@ def update_ROM_list(rom_list, sourceDir, destDir):
 
     # --- Copy file (this function succeeds or aborts program)
     romFileName = rom_copy_item + '.zip';
-    ret = update_ROM_file(romFileName, sourceDir, destDir);
+    ret = NARS.update_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run);
     if ret == 0:
       # On default verbosity level only report copied files
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:3.0f}% '.format(percentage));
       num_copied_roms += 1;
-      print_info('<Copied > ' + romFileName);
+      NARS.print_info('<Copied > ' + romFileName);
     elif ret == 1:
-      if log_level >= Log.verb:
-        sys.stdout.write('{:3d}% '.format(percentage));
+      if NARS.log_level >= NARS.Log.verb:
+        sys.stdout.write('{:3.0f}% '.format(percentage));
       num_updated_roms += 1;
-      print_verb('<Updated> ' + romFileName);
+      NARS.print_verb('<Updated> ' + romFileName);
     else:
-      print_error('Wrong value returned by update_ROM_file()');
+      NARS.print_error('Wrong value returned by update_ROM_file()');
       sys.exit(10);
     sys.stdout.flush()
 
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
-  print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
+  NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
 
 def copy_CHD_dic(chd_dic, sourceDir, destDir):
   print_info('[Copying CHDs into destDir]');
@@ -1645,7 +1645,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
 def create_copy_list(mame_filtered_dic, rom_main_list):
   "With list of filtered ROMs and list of source ROMs, create list of files to be copied"
 
-  print_info('[Creating list of ROMs to be copied/updated]');
+  NARS.print_info('[Creating list of ROMs to be copied/updated]');
   copy_list = [];
   num_added_roms = 0;
   if len(rom_main_list) == 0:
@@ -1657,17 +1657,17 @@ def create_copy_list(mame_filtered_dic, rom_main_list):
       if key_rom_name in rom_main_list:
         copy_list.append(key_rom_name);
         num_added_roms += 1;
-        print_verb('Added ROM ' + key_rom_name);
+        NARS.print_verb('Added ROM ' + key_rom_name);
       else:
-        print_info('Missing ROM ' + key_rom_name);
-  print_info('Added ' + str(num_added_roms) + ' ROMs');
+        NARS.print_info('Missing ROM ' + key_rom_name);
+  NARS.print_info('Added ' + str(num_added_roms) + ' ROMs');
 
   return copy_list;
 
 def create_copy_CHD_dic(mame_filtered_dic):
   "With list of filtered ROMs and, create list of CHDs to be copied"
 
-  print_info('[Creating list of CHDs to be copied/updated]');
+  NARS.print_info('[Creating list of CHDs to be copied/updated]');
   CHD_dic = {};
   num_added_CHDs = 0;
   for key in sorted(mame_filtered_dic):
@@ -1678,9 +1678,9 @@ def create_copy_CHD_dic(mame_filtered_dic):
         # CHD names may be different from ROM names
         CHD_dic[key] = CHD_depend;
         num_added_CHDs += 1;
-        print_info('Game ' + key.ljust(8) + ' depends on CHD    ' + \
-                    CHD_depend.ljust(11) + ' - Adding  to list');
-  print_info('Added ' + str(num_added_CHDs) + ' CHDs');
+        NARS.print_info('Game ' + key.ljust(8) + ' depends on CHD    ' + \
+                        CHD_depend.ljust(11) + ' - Adding  to list');
+  NARS.print_info('Added ' + str(num_added_CHDs) + ' CHDs');
 
   return CHD_dic;
 
@@ -2753,8 +2753,8 @@ def do_checkFilter(filterName):
 def do_update(filterName):
   "Applies filter and copies ROMs into destination directory"
 
-  print_info('[Copy/Update ROMs]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Copy/Update ROMs]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -2762,8 +2762,8 @@ def do_update(filterName):
   destDir = filter_config.destDir;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(sourceDir);
-  haveDir_or_abort(destDir);
+  NARS.have_dir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(destDir);
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML();
