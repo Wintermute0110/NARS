@@ -820,16 +820,9 @@ def get_Filter_Config(filterName):
 # A class to store the MAME parent/clone main list
 #
 class ROM:
-  # - Constructor. Parses the ROM file name and gets Tags and Base Name (name 
-  # with no tags).
+  # Constructor.
   def __init__(self, name):
     self.name = name; 
-
-def trim_list(input_list):
-  for index, item in enumerate(input_list):
-    input_list[index] = item.strip();
-
-  return input_list;
 
 def add_to_histogram(key, hist_dic):
   if key in hist_dic:
@@ -838,6 +831,26 @@ def add_to_histogram(key, hist_dic):
     hist_dic[key] = 1;
 
   return hist_dic;
+
+def trim_driver_string(driver_str):
+  # Check that string does not containg weird characters
+  pattern = re.compile(r'\\/,')
+  if pattern.findall(driver_str):
+    print('Driver string contains weird characters ' + driver_str)
+    sys.exit(10)
+
+  # If driver name ends in .c, for example cps1.c, then trim .c
+  if driver_str[-2:] == '.c':
+    old_driver_str = driver_str;
+    driver_str = old_driver_str[:len(old_driver_str)-2]
+
+  return driver_str
+
+def trim_list(input_list):
+  for index, item in enumerate(input_list):
+    input_list[index] = item.strip();
+
+  return input_list;
 
 # Wildcard expansion range
 min_year = 1970;
@@ -890,7 +903,8 @@ def get_game_year_information(year_srt):
   game_info = 1;
   if year_srt == '197?' or year_srt == '198?' or \
      year_srt == '199?' or year_srt == '200?' or \
-     year_srt == '19??' or year_srt == '????':
+     year_srt == '19??' or year_srt == '20??' or \
+     year_srt == '????':
     game_info = 2;
   elif not year_srt.isdigit():
     print_error('Unknown MAME year string "' + year_srt + '"');
@@ -900,11 +914,7 @@ def get_game_year_information(year_srt):
 
 # See http://stackoverflow.com/questions/15929233/writing-a-tokenizer-in-python
 # split words
-# def tokzr_WORD(txt): return ('WORD', re.findall(r'(?ms)\W*(\w+)', txt))
 def tokzr_WORD(txt): return re.findall(r'(?ms)\W*(\w+)', txt)
-
-# split sentences
-def tokzr_SENT(txt): return ('SENTENCE', re.findall(r'(?ms)\s*(.*?(?:\.|\?|!))', txt))
 
 def fix_category_name(main_category, category):
   # Rename some categories
@@ -923,8 +933,8 @@ def fix_category_name(main_category, category):
     final_category = 'Fruit_Machines';
   elif main_category == 'Not Classified':
     final_category = 'Not_Classified';
-  # New categories from AntoPISA extended catver.ini (after MAME/MESS merge)
 
+  # New categories from AntoPISA extended catver.ini (after MAME/MESS merge)
   # If there are several words, all of them starting with upper case and
   # separated by spaces, substitute the spaces by underscores to join them
   # Ex: 'Aaa Bbb Ccc' -> 'Aaa_Bbb_Ccc'
@@ -1323,16 +1333,16 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # --- Apply Driver filter
   NARS.print_info('<Driver filter>');
   __debug_apply_MAME_filters_Driver_tag = 0;
-  if filter_config.driver is not None and \
-     filter_config.driver is not '':
+  if filter_config.driver is not None and filter_config.driver is not '':
     driver_filter_expression = filter_config.driver;
     filtered_out_games = 0;
     mame_filtered_dic_temp = {};
     NARS.print_info('Filter = "' + driver_filter_expression + '"');
     for key in sorted(mame_filtered_dic):
       romObject = mame_filtered_dic[key];
-      driver_name_list = [];
-      driver_name_list.append(romObject.sourcefile);
+      driver_name_list = []
+      driver_str = trim_driver_string(romObject.sourcefile)
+      driver_name_list.append(driver_str)
       # --- Update search variable and call parser to evaluate expression
       NARS.set_parser_search_list(driver_name_list)
       boolean_result = NARS.parse_exec(driver_filter_expression);
@@ -1346,7 +1356,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # --- DEBUG info
       if __debug_apply_MAME_filters_Driver_tag:
         print('[DEBUG] ----- Game = ' + key + ' -----')
-        print('[DEBUG] Driver list = ', sorted(driver_name_list))
+        print('[DEBUG] Driver name list = ', sorted(driver_name_list))
         print('[DEBUG] Filter = "' + driver_filter_expression + '"')
         print('[DEBUG] boolean_result = ' + str(boolean_result))
     # --- Update game list
