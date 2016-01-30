@@ -814,148 +814,6 @@ def get_Filter_Config(filterName):
   print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
   sys.exit(20);
 
-# ----------------------------------------------------------------------------
-# Token objects
-# ----------------------------------------------------------------------------
-class literal_token:
-  def __init__(self, value):
-    self.value = value
-    self.id = "STRING"
-  def nud(self):
-    return self
-  # --- Actual implementation
-  def exec_token(self):
-    global parser_search_list;
-
-    return self.value in parser_search_list;
-
-def advance(id = None):
-  global token
-  if id and token.id != id:
-    raise SyntaxError("Expected %r" % id)
-  token = next()
-
-class operator_open_par_token:
-  lbp = 0
-  def __init__(self):
-    self.id = "OP ("
-  def nud(self):
-    expr = expression()
-    advance("OP )")
-    return expr
-
-class operator_close_par_token:
-  lbp = 0
-  def __init__(self):
-    self.id = "OP )"
-
-class operator_not_token:
-  lbp = 50
-  def __init__(self):
-    self.id = "OP NOT";
-  def nud(self):
-    self.first = expression(50)
-    return self
-  # --- Actual implementation
-  def exec_token(self):
-    return not self.first.exec_token();
-
-class operator_and_token:
-  lbp = 10
-  def __init__(self):
-    self.id = "OP AND";
-  def led(self, left):
-    self.first = left
-    self.second = expression(10)
-    return self
-  # --- Actual implementation
-  def exec_token(self):
-    return self.first.exec_token() and self.second.exec_token();
-
-class operator_or_token:
-  lbp = 10
-  def __init__(self):
-    self.id = "OP OR";
-  def led(self, left):
-    self.first = left
-    self.second = expression(10)
-    return self
-  # --- Actual implementation
-  def exec_token(self):
-    return self.first.exec_token() or self.second.exec_token();
-
-class end_token:
-  lbp = 0
-  def __init__(self):
-    self.id = "END TOKEN";
-
-# ----------------------------------------------------------------------------
-# Tokenizer
-# ----------------------------------------------------------------------------
-# jeffknupp.com/blog/2013/04/07/improve-your-python-yield-and-generators-explained/
-#
-# - If the body of the function contains a 'yield', then the function becames
-#   a generator function. Generator functions create generator iterators, also
-#   named "generators". Just remember that a generator is a special type of 
-#   iterator.
-#   To be considered an iterator, generators must define a few methods, one of 
-#   which is __next__(). To get the next value from a generator, we use the 
-#   same built-in function as for iterators: next().
-def tokenize(program):
-  # \s* -> Matches any number of blanks [ \t\n\r\f\v].
-  # (?:...) -> A non-capturing version of regular parentheses.
-  # \b -> Matches the empty string, but only at the beginning or end of a word.
-  for operator, string in re.findall("\s*(?:(and|or|not|\(|\))|([\w_]+))", program):
-    # print 'Tokenize >> Program -> "' + program + \
-    #       '", String -> "' + string + '", Operator -> "' + operator + '"\n';
-    if string:
-      yield literal_token(string)
-    elif operator == "and":
-      yield operator_and_token()
-    elif operator == "or":
-      yield operator_or_token()
-    elif operator == "not":
-      yield operator_not_token()
-    elif operator == "(":
-      yield operator_open_par_token()
-    elif operator == ")":
-      yield operator_close_par_token()
-    else:
-      raise SyntaxError("Unknown operator: %r" % operator)
-  yield end_token()
-
-# ----------------------------------------------------------------------------
-# Parser
-# Inspired by http://effbot.org/zone/simple-top-down-parsing.htm
-# ----------------------------------------------------------------------------
-def expression(rbp = 0):
-  global token
-  t = token
-  token = next()
-  left = t.nud()
-  while rbp < token.lbp:
-    t = token
-    token = next()
-    left = t.led(left)
-  return left
-
-def expression_exec(rbp = 0):
-  global token
-  t = token
-  token = next()
-  left = t.nud()
-  while rbp < token.lbp:
-    t = token
-    token = next()
-    left = t.led(left)
-  return left.exec_token()
-
-def parse_exec(program):
-  global token, next
-  next = tokenize(program).next
-  token = next()
-  return expression_exec()
-
 # -----------------------------------------------------------------------------
 # Misc functions
 # -----------------------------------------------------------------------------
@@ -1147,8 +1005,8 @@ def parse_MAME_merged_XML():
   "Parses a MAME merged XML and creates a parent/clone list"
 
   filename = configuration.MergedInfo_XML;
-  print_info('[Parsing MAME merged XML]');
-  tree = read_MAME_merged_XML(filename);
+  NARS.print_info('[Parsing MAME merged XML]');
+  tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
 
   # --- Raw list: literal information from the XML
   rom_raw_dict = {};
@@ -1157,14 +1015,14 @@ def parse_MAME_merged_XML():
   num_parents = 0;
   num_clones = 0;
   for game_EL in root:
-    if game_EL.tag == 'game':
+    if game_EL.tag == 'machine':
       num_games += 1;
 
       # --- Game attributes
       game_attrib = game_EL.attrib;
       romName = game_attrib['name'];
       romObject = ROM(romName);
-      print_debug('game = ' + romName);
+      NARS.print_debug('machine = ' + romName);
 
       # --- Check game attributes and create variables for filtering
       # Parent or clone
@@ -1172,7 +1030,7 @@ def parse_MAME_merged_XML():
         num_clones += 1;
         romObject.cloneof = game_attrib['cloneof'];
         romObject.isclone = 1;
-        print_debug(' Clone of = ' + game_attrib['cloneof']);
+        NARS.print_debug(' Clone of = ' + game_attrib['cloneof']);
       else:
         num_parents += 1;
         romObject.isclone = 0;
@@ -1198,13 +1056,13 @@ def parse_MAME_merged_XML():
       # In MAME 0.153b, when there is the attribute 'isdevice' there is also
       # 'runnable'. Also, if isdevice = yes => runnable = no
       if romObject.isdevice == 1 and romObject.runnable == 1:
-        print_error('Found a ROM which is device and runnable');
+        NARS.print_error('Found a ROM which is device and runnable');
         sys.exit(10);
       if 'isdevice' in game_attrib and 'runnable' not in game_attrib:
-        print_error('isdevice but NOT runnable');
+        NARS.print_error('isdevice but NOT runnable');
         sys.exit(10);
       if 'isdevice' not in game_attrib and 'runnable' in game_attrib:
-        print_error('NOT isdevice but runnable');
+        NARS.print_error('NOT isdevice but runnable');
         sys.exit(10);
 
       # Samples
@@ -1257,7 +1115,7 @@ def parse_MAME_merged_XML():
           # good games are perfectly emulated
           if 'status' in driver_attrib:
             romObject.driver_status = driver_attrib['status'];
-            print_debug(' Driver status = ' + driver_attrib['status']);
+            NARS.print_debug(' Driver status = ' + driver_attrib['status']);
           else:
             romObject.driver_status = 'unknown';
 
@@ -1310,9 +1168,9 @@ def parse_MAME_merged_XML():
       rom_raw_dict[romName] = romObject;
 
   del tree;
-  print_info('Total number of games = ' + str(num_games));
-  print_info('Number of parents = ' + str(num_parents));
-  print_info('Number of clones = ' + str(num_clones));
+  NARS.print_info('Total number of games = ' + str(num_games));
+  NARS.print_info('Number of parents = ' + str(num_parents));
+  NARS.print_info('Number of clones = ' + str(num_clones));
 
   # --- Create a parent-clone list
   # NOTE: a parent/clone hierarchy is not needed for MAME. In the ROM list
@@ -1326,14 +1184,11 @@ def parse_MAME_merged_XML():
 #
 def apply_MAME_filters(mame_xml_dic, filter_config):
   "Apply filters to main parent/clone dictionary"
-  print_info('[Applying MAME filters]');
-  print_info('NOTE: -vv if you want to see filters in action');
-
-  # Global variable for parser
-  global parser_search_list; # Parser search list
+  NARS.print_info('[Applying MAME filters]');
+  NARS.print_info('NOTE: -vv if you want to see filters in action');
 
   # --- Default filters: remove crap
-  print_info('<Main filter>');
+  NARS.print_info('<Main filter>');
   mainF_str_offset = 32;
   # What is "crap"?
   # a) devices <game isdevice="yes" runnable="no"> 
@@ -1344,13 +1199,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     romObject = mame_xml_dic[key];
     if romObject.isdevice:
       filtered_out_games += 1;
-      print_vverb('FILTERED ' + key);
+      NARS.print_vverb('FILTERED ' + key);
       continue;
     mame_filtered_dic[key] = mame_xml_dic[key];
-    print_debug('Included ' + key);
-  print_info('Default filter, removing devices'.ljust(mainF_str_offset) + \
-             ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-             ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_debug('Included ' + key);
+  NARS.print_info('Default filter, removing devices'.ljust(mainF_str_offset) + \
+                  ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                  ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
 
   # --- Apply MainFilter: NoClones
   # This is a special filter, and MUST be done first.
@@ -1362,17 +1217,17 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if not romObject.isclone:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key);
+        NARS.print_debug('Included ' + key);
       else:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key);
+        NARS.print_vverb('FILTERED ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Filtering out clones'.ljust(mainF_str_offset) + \
-               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Filtering out clones'.ljust(mainF_str_offset) + \
+                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants clone ROMs');
+    NARS.print_info('User wants clone ROMs');
 
   # --- Apply MainFilter: NoSamples
   if 'NoSamples' in filter_config.mainFilter:
@@ -1382,17 +1237,17 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if romObject.hasSamples:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key);
+        NARS.print_vverb('FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key);
+        NARS.print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Filtering out samples'.ljust(mainF_str_offset) + \
-               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Filtering out samples'.ljust(mainF_str_offset) + \
+                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants games with samples');
+    NARS.print_info('User wants games with samples');
 
   # --- Apply MainFilter: NoMechanical
   if 'NoMechanical' in filter_config.mainFilter:
@@ -1402,17 +1257,17 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if romObject.isMechanical:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key);
+        NARS.print_vverb('FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key);
+        NARS.print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Filtering out mechanical games'.ljust(mainF_str_offset) + \
-               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Filtering out mechanical games'.ljust(mainF_str_offset) + \
+                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants mechanical games');
+    NARS.print_info('User wants mechanical games');
 
   # --- Apply MainFilter: NoBIOS
   if 'NoBIOS' in filter_config.mainFilter:
@@ -1422,17 +1277,17 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if romObject.isBIOS:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key);
+        NARS.print_vverb('FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key);
+        NARS.print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Filtering out BIOS'.ljust(mainF_str_offset) + \
-               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Filtering out BIOS'.ljust(mainF_str_offset) + \
+                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants BIOS ROMs');
+    NARS.print_info('User wants BIOS ROMs');
 
   # --- Apply MainFilter: NoNonworking
   # http://www.mamedev.org/source/src/emu/info.c.html
@@ -1453,42 +1308,41 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       romObject = mame_filtered_dic[key];
       if romObject.driver_status == 'preliminary':
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key);
+        NARS.print_vverb('FILTERED ' + key);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key);
+        NARS.print_debug('Included ' + key);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Filtering out Non-Working games'.ljust(mainF_str_offset) + \
-               ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Filtering out Non-Working games'.ljust(mainF_str_offset) + \
+                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants Non-Working games');
+    NARS.print_info('User wants Non-Working games');
 
   # --- Apply Driver filter
-  print_info('<Driver filter>');
+  NARS.print_info('<Driver filter>');
   __debug_apply_MAME_filters_Driver_tag = 0;
   if filter_config.driver is not None and \
      filter_config.driver is not '':
     driver_filter_expression = filter_config.driver;
     filtered_out_games = 0;
     mame_filtered_dic_temp = {};
-    print_info('Filter = "' + driver_filter_expression + '"');
+    NARS.print_info('Filter = "' + driver_filter_expression + '"');
     for key in sorted(mame_filtered_dic):
       romObject = mame_filtered_dic[key];
       driver_name_list = [];
       driver_name_list.append(romObject.sourcefile);
-      # --- Update search variable
-      parser_search_list = driver_name_list;
-      # --- Call parser to evaluate expression
-      boolean_result = parse_exec(driver_filter_expression);
+      # --- Update search variable and call parser to evaluate expression
+      NARS.set_parser_search_list(driver_name_list)
+      boolean_result = NARS.parse_exec(driver_filter_expression);
       # --- Filter ROM or not
       if not boolean_result:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
+        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
+        NARS.print_debug('Included ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
       # --- DEBUG info
       if __debug_apply_MAME_filters_Driver_tag:
         print('[DEBUG] ----- Game = ' + key + ' -----')
@@ -1498,13 +1352,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants all drivers');
+    NARS.print_info('User wants all drivers');
 
   # --- Apply Categories filter
-  print_info('<Categories filter>');
+  NARS.print_info('<Categories filter>');
   __debug_apply_MAME_filters_Category_tag = 0;
   if hasattr(filter_config, 'categories') and \
              filter_config.categories is not None and \
@@ -1512,22 +1366,21 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     categories_filter_expression = filter_config.categories;
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
-    print_info('Filter = "' + categories_filter_expression + '"');
+    NARS.print_info('Filter = "' + categories_filter_expression + '"');
     for key in sorted(mame_filtered_dic):
       romObject = mame_filtered_dic[key];
       categories_type_list = [];
       categories_type_list.append(romObject.category);
-      # --- Update search variable
-      parser_search_list = categories_type_list;
-      # --- Call parser to evaluate expression
-      boolean_result = parse_exec(categories_filter_expression);
+      # --- Update search variable and call parser to evaluate expression
+      NARS.set_parser_search_list(categories_type_list)
+      boolean_result = NARS.parse_exec(categories_filter_expression);
       # --- Filter ROM or not
       if not boolean_result:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
+        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
+        NARS.print_debug('Included ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
       # --- DEBUG info
       if __debug_apply_MAME_filters_Category_tag:
         print('[DEBUG] Category list = ', sorted(categories_type_list))
@@ -1536,13 +1389,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants all categories');
+    NARS.print_info('User wants all categories');
 
   # --- Apply Controls filter
-  print_info('<Controls filter>');
+  NARS.print_info('<Controls filter>');
   __debug_apply_MAME_filters_Controls_tag = 0;
   if hasattr(filter_config, 'controls') and \
              filter_config.controls is not None and \
@@ -1550,22 +1403,21 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     controls_type_filter_expression = filter_config.controls;
     filtered_out_games = 0;
     mame_filtered_dic_temp = {};
-    print_info('Filter = "' + controls_type_filter_expression + '"');
+    NARS.print_info('Filter = "' + controls_type_filter_expression + '"');
     for key in sorted(mame_filtered_dic):
       # --- Some games may have two controls, so controls_type_list is a list
       romObject = mame_filtered_dic[key];
       controls_type_list = romObject.control_type;
-      # --- Update search variable
-      parser_search_list = controls_type_list;
-      # --- Call parser to evaluate expression
-      boolean_result = parse_exec(controls_type_filter_expression);
+      # --- Update search variable and call parser to evaluate expression
+      NARS.set_parser_search_list(controls_type_list)
+      boolean_result = NARS.parse_exec(controls_type_filter_expression);
       # --- Filter ROM or not
       if not boolean_result:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
+        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
+        NARS.print_debug('Included ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
       # --- DEBUG info
       if __debug_apply_MAME_filters_Controls_tag:
         print('[DEBUG] ----- Game = ' + key + ' -----')
@@ -1575,13 +1427,13 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     # --- Update game list
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants all controls');
+    NARS.print_info('User wants all controls');
 
   # --- Apply Buttons filter
-  print_info('<Buttons filter>');
+  NARS.print_info('<Buttons filter>');
   __debug_apply_MAME_filters_Buttons_tag = 0;
   if hasattr(filter_config, 'buttons_exp') and \
              filter_config.buttons_exp is not None and \
@@ -1589,7 +1441,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     button_filter_expression = filter_config.buttons_exp;
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
-    print_info('Filter = "' + button_filter_expression + '"');
+    NARS.print_info('Filter = "' + button_filter_expression + '"');
     for key in mame_filtered_dic:
       romObject = mame_filtered_dic[key];
       buttons_str = romObject.buttons;
@@ -1602,19 +1454,19 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # If not all items are true, the game is NOT copied (filtered)
       if not boolean_result:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key + ' buttons ' + buttons_str);
+        NARS.print_vverb('FILTERED ' + key + ' buttons ' + buttons_str);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key + ' buttons ' + buttons_str);
+        NARS.print_debug('Included ' + key + ' buttons ' + buttons_str);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants all buttons');
+    NARS.print_info('User wants all buttons');
 
   # --- Apply Players filter
-  print_info('<Players filter>');
+  NARS.print_info('<Players filter>');
   __debug_apply_MAME_filters_Players_tag = 0;
   if hasattr(filter_config, 'players_exp') and \
              filter_config.players_exp is not None and \
@@ -1622,7 +1474,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     players_filter_expression = filter_config.players_exp;
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
-    print_info('Filter = "' + players_filter_expression + '"');
+    NARS.print_info('Filter = "' + players_filter_expression + '"');
     for key in mame_filtered_dic:
       romObject = mame_filtered_dic[key];
       players_str = romObject.players;
@@ -1635,19 +1487,19 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
       # If not all items are true, the game is NOT copied (filtered)
       if not boolean_result:
         filtered_out_games += 1;
-        print_vverb('FILTERED ' + key + ' players ' + players_str);
+        NARS.print_vverb('FILTERED ' + key + ' players ' + players_str);
       else:
         mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        print_debug('Included ' + key + ' players ' + players_str);
+        NARS.print_debug('Included ' + key + ' players ' + players_str);
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants all players');
+    NARS.print_info('User wants all players');
 
   # --- Apply Years filter
-  print_info('<Year filter>');
+  NARS.print_info('<Year filter>');
   __debug_apply_MAME_filters_years_tag = 0;
   if hasattr(filter_config, 'year_exp') and \
              filter_config.year_exp is not None and \
@@ -1656,11 +1508,11 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     filtered_out_games = 0;
     year_filter_expression = filter_config.year_exp;
     year_YearExpansion = filter_config.year_YearExpansion;
-    print_info('Filter = "' + year_filter_expression + '"');
+    NARS.print_info('Filter = "' + year_filter_expression + '"');
     if year_YearExpansion:
-      print_info('Year expansion activated')
+      NARS.print_info('Year expansion activated')
     else:
-      print_info('Year expansion deactivated')
+      NARS.print_info('Year expansion deactivated')
     for key in sorted(mame_filtered_dic):
       romObject = mame_filtered_dic[key];
       # year is a string, convert to int
@@ -1677,7 +1529,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         # Convert number string to int (supports games like 1997?)
         year_list = trim_year_string(year_srt);
         if len(year_list) != 1:
-          print_error('Logical error filtering year (standard year)');
+          NARS.print_error('Logical error filtering year (standard year)');
           sys.exit(10);
         year = int(year_list[0]);
         if __debug_apply_MAME_filters_years_tag:
@@ -1687,10 +1539,10 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         # If not all items are true, the game is NOT copied (filtered)
         if not boolean_result:
           filtered_out_games += 1;
-          print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
+          NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
         else:
           mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-          print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
+          NARS.print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
 
       # Game needs expansion. If user activated this option expand wildcars and
       # then do filtering. If option not activated, discard game
@@ -1715,26 +1567,26 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
             print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
           else:
             filtered_out_games += 1;
-            print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
+            NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
         else:
           filtered_out_games += 1;
-          print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
+          NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
       else:
-        print_error('Wrong result returned by get_game_year_information() = ' + str(game_info));
+        NARS.print_error('Wrong result returned by get_game_year_information() = ' + str(game_info));
         sys.exit(10);
     # --- Update list of filtered games
     mame_filtered_dic = mame_filtered_dic_temp;
     del mame_filtered_dic_temp;
-    print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
+    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    print_info('User wants all years');
+    NARS.print_info('User wants all years');
 
   # --- ROM dependencies
   # Add ROMs (devices and BIOS) needed for other ROM to work.
   # Traverse the list of filtered games, and check if they have dependencies. If
   # so, add the dependencies to the filtered list.
-  print_info('[Adding ROM dependencies]');
+  NARS.print_info('[Adding ROM dependencies]');
   # NOTE: dictionaries cannot change size during iteration. Create auxiliary list.
   dependencies_ROM_list = {};
   for key in sorted(mame_filtered_dic):
@@ -1743,35 +1595,35 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
     if len(romObject.BIOS_depends):
       for BIOS_depend in romObject.BIOS_depends:
         if BIOS_depend not in mame_xml_dic:
-          print_error('[ERROR] ROM name not found in mame_xml_dic');
+          NARS.print_error('[ERROR] ROM name not found in mame_xml_dic');
           sys.exit(10);
         # Get ROM object from main, unfiltered dictionary
         BIOS_romObj = mame_xml_dic[BIOS_depend];
         # Only add dependency if not already in filtered list
         if BIOS_depend not in dependencies_ROM_list:
           dependencies_ROM_list[BIOS_depend] = BIOS_romObj;
-          print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
-                     BIOS_depend.ljust(11) + ' - Adding  to list');
+          NARS.print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
+                          BIOS_depend.ljust(11) + ' - Adding  to list');
         else:
-          print_verb('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
-                     BIOS_depend.ljust(11) + ' - Already on list');
+          NARS.print_verb('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
+                           BIOS_depend.ljust(11) + ' - Already on list');
 
     # - Device dependencies
     if len(romObject.device_depends):
       for device_depend in romObject.device_depends:
         if device_depend not in mame_xml_dic:
-          print_error('[ERROR] ROM name not found in mame_xml_dic');
+          NARS.print_error('[ERROR] ROM name not found in mame_xml_dic');
           sys.exit(10);
         # Get ROM object from main, unfiltered dictionary
         device_romObj = mame_xml_dic[device_depend];
         # Only add dependency if not already in filtered list
         if device_depend not in dependencies_ROM_list:
           dependencies_ROM_list[device_depend] = device_romObj;
-          print_info('Game ' + key.ljust(8) + ' depends on device ' + \
-                     device_depend.ljust(11) + ' - Adding  to list');
+          NARS.print_info('Game ' + key.ljust(8) + ' depends on device ' + \
+                          device_depend.ljust(11) + ' - Adding  to list');
         else:
-          print_verb('Game ' + key.ljust(8) + ' depends on device ' + \
-                     device_depend.ljust(11) + ' - Already on list');
+          NARS.print_verb('Game ' + key.ljust(8) + ' depends on device ' + \
+                          device_depend.ljust(11) + ' - Already on list');
 
   for key in dependencies_ROM_list:
     romObject = dependencies_ROM_list[key];
@@ -1827,7 +1679,7 @@ def get_ROM_main_list(sourceDir):
   __debug_get_ROM_main_list = 0;
 
   # --- Parse sourceDir ROM list and create main ROM list
-  print_info('[Reading ROMs in source directory]');
+  NARS.print_info('[Reading ROMs in source directory]');
   romMainList_dict = {};
   for file in os.listdir(sourceDir):
     if file.endswith(".zip"):
@@ -2377,7 +2229,7 @@ def do_list_merged():
 
   NARS.print_info('[List reduced MAME XML]');
   filename = configuration.MergedInfo_XML;
-  tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
+  tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
 
   # Root element (Reduced MAME XML):
   root = tree.getroot();
@@ -2806,8 +2658,8 @@ def do_list_years():
 def do_checkFilter(filterName):
   "Applies filter and copies ROMs into destination directory"
 
-  print_info('[Checking filter]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Checking filter]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -2815,8 +2667,8 @@ def do_checkFilter(filterName):
   destDir = filter_config.destDir;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(sourceDir);
-  haveDir_or_abort(destDir);
+  NARS.have_dir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(destDir);
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML();
@@ -2828,7 +2680,7 @@ def do_checkFilter(filterName):
   mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
 
   # --- Print list in alphabetical order
-  print_info('[Filtered game list]');
+  NARS.print_info('[Filtered game list]');
   missing_roms = 0;
   have_roms = 0;
   for key_main in sorted(mame_filtered_dic):
@@ -2844,13 +2696,13 @@ def do_checkFilter(filterName):
       have_roms += 1;
 
     # --- Print
-    print_info("<Game> " + romObject.name.ljust(8) + ' - ' + \
-               haveFlag.ljust(11) + ' - ' + romObject.description + ' ');
+    NARS.print_info("<Game> " + romObject.name.ljust(8) + ' - ' + \
+                    haveFlag.ljust(11) + ' - ' + romObject.description + ' ');
 
-  print_info('[Report]');
-  print_info('Number of filtered ROMs = ' + str(len(mame_filtered_dic)));
-  print_info('Number of have ROMs = ' + str(have_roms));
-  print_info('Number of missing ROMs = ' + str(missing_roms));
+  NARS.print_info('[Report]');
+  NARS.print_info('Number of filtered ROMs = ' + str(len(mame_filtered_dic)));
+  NARS.print_info('Number of have ROMs = ' + str(have_roms));
+  NARS.print_info('Number of missing ROMs = ' + str(missing_roms));
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir

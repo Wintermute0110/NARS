@@ -20,6 +20,7 @@
 # THE SOFTWARE.
 import sys
 import os
+import re
 
 # * ElementTree XML parser
 import xml.etree.ElementTree as ET
@@ -250,3 +251,151 @@ def indent_ElementTree_XML(elem, level=0):
 # -----------------------------------------------------------------------------
 # Search engine and parser
 # -----------------------------------------------------------------------------
+# --- Global variables for parser ---
+# Parser search list
+# global parser_search_list;
+
+def set_parser_search_list(search_list):
+  global parser_search_list;
+  
+  parser_search_list = search_list;
+
+# --- Token objects ---
+class literal_token:
+  def __init__(self, value):
+    self.value = value
+    self.id = "STRING"
+  def nud(self):
+    return self
+  # --- Actual implementation
+  def exec_token(self):
+    global parser_search_list;
+
+    return self.value in parser_search_list;
+
+def advance(id = None):
+  global token
+  if id and token.id != id:
+    raise SyntaxError("Expected %r" % id)
+  token = next()
+
+class operator_open_par_token:
+  lbp = 0
+  def __init__(self):
+    self.id = "OP ("
+  def nud(self):
+    expr = expression()
+    advance("OP )")
+    return expr
+
+class operator_close_par_token:
+  lbp = 0
+  def __init__(self):
+    self.id = "OP )"
+
+class operator_not_token:
+  lbp = 50
+  def __init__(self):
+    self.id = "OP NOT";
+  def nud(self):
+    self.first = expression(50)
+    return self
+  # --- Actual implementation
+  def exec_token(self):
+    return not self.first.exec_token();
+
+class operator_and_token:
+  lbp = 10
+  def __init__(self):
+    self.id = "OP AND";
+  def led(self, left):
+    self.first = left
+    self.second = expression(10)
+    return self
+  # --- Actual implementation
+  def exec_token(self):
+    return self.first.exec_token() and self.second.exec_token();
+
+class operator_or_token:
+  lbp = 10
+  def __init__(self):
+    self.id = "OP OR";
+  def led(self, left):
+    self.first = left
+    self.second = expression(10)
+    return self
+  # --- Actual implementation
+  def exec_token(self):
+    return self.first.exec_token() or self.second.exec_token();
+
+class end_token:
+  lbp = 0
+  def __init__(self):
+    self.id = "END TOKEN";
+
+# ----------------------------------------------------------------------------
+# Tokenizer
+# ----------------------------------------------------------------------------
+# jeffknupp.com/blog/2013/04/07/improve-your-python-yield-and-generators-explained/
+#
+# - If the body of the function contains a 'yield', then the function becames
+#   a generator function. Generator functions create generator iterators, also
+#   named "generators". Just remember that a generator is a special type of 
+#   iterator.
+#   To be considered an iterator, generators must define a few methods, one of 
+#   which is __next__(). To get the next value from a generator, we use the 
+#   same built-in function as for iterators: next().
+def tokenize(program):
+  # \s* -> Matches any number of blanks [ \t\n\r\f\v].
+  # (?:...) -> A non-capturing version of regular parentheses.
+  # \b -> Matches the empty string, but only at the beginning or end of a word.
+  for operator, string in re.findall("\s*(?:(and|or|not|\(|\))|([\w_]+))", program):
+    # print 'Tokenize >> Program -> "' + program + \
+    #       '", String -> "' + string + '", Operator -> "' + operator + '"\n';
+    if string:
+      yield literal_token(string)
+    elif operator == "and":
+      yield operator_and_token()
+    elif operator == "or":
+      yield operator_or_token()
+    elif operator == "not":
+      yield operator_not_token()
+    elif operator == "(":
+      yield operator_open_par_token()
+    elif operator == ")":
+      yield operator_close_par_token()
+    else:
+      raise SyntaxError("Unknown operator: %r" % operator)
+  yield end_token()
+
+# ----------------------------------------------------------------------------
+# Parser
+# Inspired by http://effbot.org/zone/simple-top-down-parsing.htm
+# ----------------------------------------------------------------------------
+def expression(rbp = 0):
+  global token
+  t = token
+  token = next()
+  left = t.nud()
+  while rbp < token.lbp:
+    t = token
+    token = next()
+    left = t.led(left)
+  return left
+
+def expression_exec(rbp = 0):
+  global token
+  t = token
+  token = next()
+  left = t.nud()
+  while rbp < token.lbp:
+    t = token
+    token = next()
+    left = t.led(left)
+  return left.exec_token()
+
+def parse_exec(program):
+  global token, next
+  next = tokenize(program).__next__
+  token = next()
+  return expression_exec()
