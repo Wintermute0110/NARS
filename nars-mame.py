@@ -1003,8 +1003,12 @@ def trim_year_string(raw_year_text):
     year_list = [str(x) for x in range(1990, 1999)];
   elif year_text == '200?':
     year_list = [str(x) for x in range(2000, 2009)];
-  # Full expansion: ????, 19??
-  elif year_text == '19??' or year_text == '????':
+  # Full expansion: ????, 19??, 20??
+  elif year_text == '19??':
+    year_list = [str(x) for x in range(min_year, 1999)];
+  elif year_text == '20??':
+    year_list = [str(x) for x in range(2000, max_year)];
+  elif year_text == '????':
     year_list = [str(x) for x in range(min_year, max_year)];
   # No expansion
   else:
@@ -2597,14 +2601,14 @@ __debug_do_list_controls = 0;
 def do_list_controls():
   "Parses merged XML database and makes a controls histogram"
 
-  print_info('[Listing MAME controls]');
-  print_info('NOTE: clones are not included');
-  print_info('NOTE: mechanical are not included');
-  print_info('NOTE: devices are not included');
+  NARS.print_info('[Listing MAME controls]');
+  NARS.print_info('NOTE: clones are not included');
+  NARS.print_info('NOTE: mechanical are not included');
+  NARS.print_info('NOTE: devices are not included');
 
   # filename = configuration.MergedInfo_XML;
-  filename = configuration.MAME_XML_redux;
-  tree = read_MAME_merged_XML(filename);
+  filename = configuration.MAME_XML_redux
+  tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # --- Histogram data
   input_buttons_dic = {};
@@ -2616,7 +2620,7 @@ def do_list_controls():
   # --- Do histogram
   root = tree.getroot();
   for game_EL in root:
-    if game_EL.tag == 'game':
+    if game_EL.tag == 'machine':
       game_attrib = game_EL.attrib;
 
       # - If game is a clone don't include it in the histogram
@@ -2705,46 +2709,46 @@ def do_list_controls():
             else:                          
               input_control_type_dic[text_not_found] = 1;
 
-  print_info('[Input - control - type histogram (per game)]');
-  sorted_histo = sorted(input_control_type_join_dic.iteritems(), key=operator.itemgetter(1))
-  for key in sorted_histo:
-    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  NARS.print_info('[Input - control - type histogram (per game)]')
+  sorted_histo = ((k, input_control_type_join_dic[k]) for k in sorted(input_control_type_join_dic, key=input_control_type_join_dic.get, reverse=False))
+  for k, v in sorted_histo:
+    NARS.print_info('{:5d}'.format(v) + '  ' + k)
   print(' ')
 
-  print_info('[Input - buttons histogram]');
-  sorted_histo = sorted(input_buttons_dic.iteritems(), key=operator.itemgetter(1))
-  for key in sorted_histo:
-    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  NARS.print_info('[Input - buttons histogram]')
+  sorted_histo = ((k, input_buttons_dic[k]) for k in sorted(input_buttons_dic, key=input_buttons_dic.get, reverse=False))
+  for k, v in sorted_histo:
+    if len(k) == 1:
+      NARS.print_info('{:5d}'.format(v) + '   ' + k + ' button/s')
+    elif len(k) == 2:
+      NARS.print_info('{:5d}'.format(v) + '  ' + k + ' button/s')
+    else:
+      print('len(buttons) error')
+      sys.exit(10)
   print(' ')
 
-  print_info('[Input - players histogram]');
-  sorted_histo = sorted(input_players_dic.iteritems(), key=operator.itemgetter(1))
-  for key in sorted_histo:
-    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  NARS.print_info('[Input - players histogram]')
+  sorted_histo = ((k, input_players_dic[k]) for k in sorted(input_players_dic, key=input_players_dic.get, reverse=False))
+  for k, v in sorted_histo:
+    NARS.print_info('{:5d}'.format(v) + '  ' + k + ' players')
   print(' ')
 
-  # print_info('[Input - control - ways histogram]');
-  # sorted_histo = sorted(input_control_ways_dic.iteritems(), key=operator.itemgetter(1))
-  # for key in sorted_histo:
-  #   print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
-  # print ' ';
-
-  print_info('[Input - control - type histogram]');
-  sorted_histo = sorted(input_control_type_dic.iteritems(), key=operator.itemgetter(1))
-  for key in sorted_histo:
-    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  NARS.print_info('[Input - control - type histogram]')
+  sorted_histo = ((k, input_control_type_dic[k]) for k in sorted(input_control_type_dic, key=input_control_type_dic.get, reverse=False))
+  for k, v in sorted_histo:
+    NARS.print_info('{:5d}'.format(v) + '  ' + k)
 
 def do_list_years():
   "Parses merged XML database and makes a controls histogram"
 
-  print_info('[Listing MAME controls]');
-  print_info('NOTE: clones are not included');
-  print_info('NOTE: mechanical are not included');
-  print_info('NOTE: devices are not included');
+  NARS.print_info('[Listing MAME controls]');
+  NARS.print_info('NOTE: clones are not included');
+  NARS.print_info('NOTE: mechanical are not included');
+  NARS.print_info('NOTE: devices are not included');
 
   # filename = configuration.MergedInfo_XML;
-  filename = configuration.MAME_XML_redux;
-  tree = read_MAME_merged_XML(filename);
+  filename = configuration.MAME_XML_redux
+  tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # --- Histogram data
   years_dic = {};
@@ -2753,7 +2757,7 @@ def do_list_years():
   # --- Do histogram
   root = tree.getroot();
   for game_EL in root:
-    if game_EL.tag == 'game':
+    if game_EL.tag == 'machine':
       game_attrib = game_EL.attrib;
 
       # - Remove crap
@@ -2787,16 +2791,16 @@ def do_list_years():
         years_dic = add_to_histogram('no year', years_dic);
         raw_years_dic = add_to_histogram('no year', raw_years_dic);
 
-  print_info('[Release year histogram (raw)]');
-  sorted_histo = sorted(raw_years_dic.iteritems(), key=operator.itemgetter(1))
-  for key in sorted_histo:
-    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  NARS.print_info('[Release year histogram (raw)]');
+  sorted_histo = ((k, raw_years_dic[k]) for k in sorted(raw_years_dic, key=raw_years_dic.get, reverse=False))
+  for k, v in sorted_histo:
+    NARS.print_info('{:5d}'.format(v) + '  ' + k)
   print(' ')
 
-  print_info('[Release year histogram (trimmed)]');
-  sorted_histo = sorted(years_dic.iteritems(), key=operator.itemgetter(1))
-  for key in sorted_histo:
-    print_info('{:5d}'.format(key[1]) + '  ' + key[0]);
+  NARS.print_info('[Release year histogram (trimmed)]');
+  sorted_histo = ((k, years_dic[k]) for k in sorted(years_dic, key=years_dic.get, reverse=False))
+  for k, v in sorted_histo:
+    NARS.print_info('{:5d}'.format(v) + '  ' + k)
 
 # ----------------------------------------------------------------------------
 def do_checkFilter(filterName):
