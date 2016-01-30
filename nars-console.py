@@ -398,14 +398,14 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
   for rom_copy_item in rom_copy_list:
     romFileName = rom_copy_item + '.png';
     if __debug_optimize_ArtWork:
-      print '<<Testing>> ', romFileName;
+      print('<<Testing>> ', romFileName)
     if os.path.isfile(thumbsSourceDir + romFileName):
       if __debug_optimize_ArtWork:
-        print ' Added      ', rom_copy_item;
+        print(' Added      ', rom_copy_item)
       artwork_copy_dic[rom_copy_item] = rom_copy_item;
     else:
       if __debug_optimize_ArtWork:
-        print ' NOT found  ', romFileName;
+        print(' NOT found  ', romFileName)
       # - Brute force check
       file = rom_copy_item + '.zip';
       pclone_list = [];
@@ -422,7 +422,7 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
         root, ext = os.path.splitext(file);
         if os.path.isfile(thumbsSourceDir + root + '.png'):
           if __debug_optimize_ArtWork:
-            print ' Added clone', root;
+            print(' Added clone', root)
           artwork_copy_dic[rom_copy_item] = root;
           break;
   
@@ -657,9 +657,9 @@ def extract_ROM_Properties_Raw(romFileName):
 
   # Debug print
   if __debug_propertyParsers:
-    print 'extract_ROM_Properties_Raw >> Property list';
-    print '\n'.join(romProperties_raw);
-    print '\n'
+    print('extract_ROM_Properties_Raw >> Property list')
+    print('\n'.join(romProperties_raw))
+    print('\n')
   
   return romProperties_raw;
 
@@ -678,7 +678,7 @@ def extract_ROM_Tags_All(romFileName):
     # Strip parentehsis
     property = property[1:-1];
     if __debug_propertyParsers:
-      print 'extract_ROM_Properties_All >> Property: ' + property;
+      print('extract_ROM_Properties_All >> Property: ' + property)
     
     match = re.search(",", property);
     if match:
@@ -686,7 +686,7 @@ def extract_ROM_Tags_All(romFileName):
       subProperties = re.findall("([^\,]*)", property);
       for subPropertie in subProperties:
         if __debug_propertyParsers:
-          print 'extract_ROM_Properties_All >> subPropertie: "' + subPropertie + '"';
+          print('extract_ROM_Properties_All >> subPropertie: "' + subPropertie + '"')
         # For some reason, this regular expresion search returns the matches and
         # also one empty string afterwards...
         # Non empty strings are "true", empty are "false"
@@ -695,15 +695,15 @@ def extract_ROM_Tags_All(romFileName):
           subPropertieOK = subPropertie.strip();
           romProperties_all.append(subPropertieOK);
           if __debug_propertyParsers:
-            print 'extract_ROM_Properties_All >> Added subPropertie: "' + subPropertieOK + '"';
+            print('extract_ROM_Properties_All >> Added subPropertie: "' + subPropertieOK + '"')
     else:
       romProperties_all.append(property);
 
   # Debug print
   if __debug_propertyParsers:
-    print 'extract_ROM_Properties_All >> Property list';
-    print '\n'.join(romProperties_all);
-    print '\n'
+    print('extract_ROM_Properties_All >> Property list')
+    print('\n'.join(romProperties_all))
+    print('\n')
   
   return romProperties_all;
 
@@ -713,9 +713,9 @@ def get_ROM_baseName(romFileName):
   rom_baseName = '';
   regSearch = re.search("[^\(\)]*", romFileName);
   if regSearch == None:
-    print 'Logical error';
-    sys.exit(10);
-  regExp_result = regSearch.group();
+    print('Logical error')
+    sys.exit(10)
+  regExp_result = regSearch.group()
   
   return regExp_result.strip();
   
@@ -782,14 +782,14 @@ def get_NoIntro_Main_list(filter_config):
       romName = game_attrib['name'];
       romObject = NoIntro_ROM(romName);
       if __debug_parse_NoIntro_XML_Config:
-        print 'Game = ' + romName;
+        print('Game = ' + romName)
 
       if 'cloneof' in game_attrib:
         num_clones += 1;
         romObject.cloneof = game_attrib['cloneof'];
         romObject.isclone = 1;
         if __debug_parse_NoIntro_XML_Config:
-          print ' Clone of = ' + game_attrib['cloneof'];
+          print(' Clone of = ' + game_attrib['cloneof'])
       else:
         num_parents += 1;
         romObject.isclone = 0;
@@ -829,10 +829,10 @@ def get_NoIntro_Main_list(filter_config):
           parentObj.hasClones = 1;
         parentObj.clone_list.append(key);
       else:
-        print 'Game "' + key + '"';
-        print 'Parent "' + gameObj.cloneof + '"';
-        print 'Parent ROM not found "' + gameObj.cloneof + '"';
-        sys.exit(10);
+        print('Game "' + key + '"')
+        print('Parent "' + gameObj.cloneof + '"')
+        print('Parent ROM not found "' + gameObj.cloneof + '"')
+        sys.exit(10)
     else:
       num_parents += 1;
 
@@ -877,9 +877,9 @@ def get_directory_Main_list(filter_config):
       romObject.baseName = get_ROM_baseName(file);
       romMainList_dict[file] = romObject;
       if __debug_sourceDir_ROM_scanner:
-        print "  ROM       '" + romObject.fileName + "'";
-        print "   baseName '" + romObject.baseName + "'";
-  NARS.print_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs');
+        print("  ROM       '" + romObject.fileName + "'")
+        print("   baseName '" + romObject.baseName + "'")
+  NARS.print_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs')
   
   # --- Create a parent/clone list based on the baseName of the ROM
   pclone_ROM_dict = {}; # Key is ROM basename
@@ -954,11 +954,11 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
 
   # --- DEBUG: print main ROM list wiht scores and include flags
   if __debug_main_ROM_list:
-    print "[DEBUG main ROM list scored]";
+    print("[DEBUG main ROM list scored]")
     for mainROM_obj in romMain_list:
-      print mainROM_obj.filenames;
-      print mainROM_obj.scores;
-      print mainROM_obj.include;
+      print(mainROM_obj.filenames)
+      print(mainROM_obj.scores)
+      print(mainROM_obj.include)
 
   # - Order the main List based on scores and include flags
   #   Don't remove excluded ROMs because they may be useful to copy
@@ -1037,15 +1037,15 @@ def do_list():
   "List of configuration file"
 
   NARS.print_info('[Listing configuration file]');
-  print "Reading configuration XML file " + __config_configFileName + "...",;
+  print("Reading configuration XML file " + __config_configFileName + "...",)
   sys.stdout.flush();
   try:
     tree = ET.parse(__config_configFileName);
   except IOError:
-    print '\n';
+    print('\n')
     NARS.print_error('[ERROR] cannot find file ' + __config_configFileName);
     sys.exit(10);
-  print 'done';
+  print('done')
 
   # - This iterates through the collections
   root = tree.getroot();
@@ -1350,7 +1350,7 @@ def do_checkArtwork(filterName):
   for rom_baseName in sorted(roms_destDir_list):
     NARS.print_info("<<  ROM  >> " + rom_baseName + ".zip");    
     if rom_baseName not in artwork_copy_dic:
-      print ' Not found';
+      print(' Not found')
     else:
       art_baseName = artwork_copy_dic[rom_baseName];
       
@@ -1361,26 +1361,26 @@ def do_checkArtwork(filterName):
       # - Has artwork been replaced?
       if rom_baseName != art_baseName:
         num_replaced += 1;
-        print ' Replaced   ' + art_baseName;
+        print(' Replaced   ' + art_baseName)
       else:
         num_original += 1;
-        print ' Original   ' + art_baseName;
+        print(' Original   ' + art_baseName)
 
       # - Have thumb
       if not os.path.isfile(thumb_Source_fullFileName):
         num_missing_thumbs += 1;
-        print ' Missing T  ' + art_baseName + '.png';
+        print(' Missing T  ' + art_baseName + '.png')
       else:
         num_have_thumbs += 1;
-        print ' Have T     ' + art_baseName + '.png';
+        print(' Have T     ' + art_baseName + '.png')
 
       # - Have fanart
       if not os.path.isfile(fanart_Source_fullFileName):
         num_missing_fanart += 1;
-        print ' Missing F  ' + art_baseName + '.png';
+        print(' Missing F  ' + art_baseName + '.png')
       else:
         num_have_fanart += 1;
-        print ' Have F     ' + art_baseName + '.png';
+        print(' Have F     ' + art_baseName + '.png')
 
   NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
   NARS.print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
@@ -1438,7 +1438,7 @@ def do_update_artwork(filterName):
     clean_ArtWork_destDir(filter_config, artwork_copy_dic);
 
 def do_printHelp():
-  print """\033[32mUsage: nars-console.py [options] <command> [romSetName]\033[0m
+  print("""\033[32mUsage: nars-console.py [options] <command> [romSetName]\033[0m
 
 \033[32mCommands:\033[0m
 \033[31musage\033[0m                   Print usage information (this text)
@@ -1461,14 +1461,14 @@ def do_printHelp():
 \033[35m--dryRun\033[0m           Don't modify destDir at all, just print the operations to be done.
 \033[35m--cleanROMs\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
 \033[35m--cleanNFO\033[0m         Deletes redundant NFO files in destination directory.
-\033[35m--cleanArtWork\033[0m     Deletes unknown artwork in destination."""
+\033[35m--cleanArtWork\033[0m     Deletes unknown artwork in destination.""")
 
 # -----------------------------------------------------------------------------
 # main function
 # -----------------------------------------------------------------------------
 def main(argv):
-  print '\033[36mNARS Advanced ROM Sorting - Console ROMs\033[0m' + \
-        ' version ' + NARS.__software_version;
+  print('\033[36mNARS Advanced ROM Sorting - Console ROMs\033[0m' + \
+        ' version ' + NARS.__software_version)
 
   # --- Command line parser
   parser = argparse.ArgumentParser()
