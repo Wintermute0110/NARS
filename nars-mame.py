@@ -2896,8 +2896,8 @@ def do_update_CHD(filterName):
 def do_check_Artwork(filterName):
   "Checks for missing artwork and prints a report"
 
-  print_info('[Check-ArtWork]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Check-ArtWork]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -2906,9 +2906,9 @@ def do_check_Artwork(filterName):
   fanartSourceDir = filter_config.fanartSourceDir;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(destDir);
-  haveDir_or_abort(thumbsSourceDir, 'thumbsSourceDir');
-  haveDir_or_abort(fanartSourceDir, 'fanartSourceDir');
+  NARS.have_dir_or_abort(destDir);
+  NARS.have_dir_or_abort(thumbsSourceDir);
+  NARS.have_dir_or_abort(fanartSourceDir);
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
@@ -2932,7 +2932,7 @@ def do_check_Artwork(filterName):
     artwork_copy_dic[rom] = rom;
 
   # --- Print list in alphabetical order
-  print_info('[Artwork report]');
+  NARS.print_info('[Artwork report]');
   num_original = 0;
   num_replaced = 0;
   num_have_thumbs = 0;
@@ -2940,7 +2940,7 @@ def do_check_Artwork(filterName):
   num_have_fanart = 0;
   num_missing_fanart = 0;
   for rom_baseName in sorted(roms_destDir_list):
-    print_info("<<  ROM  >> " + rom_baseName + ".zip");    
+    NARS.print_info("Game        " + rom_baseName + ".zip");    
     if rom_baseName not in artwork_copy_dic:
       print(' Not found')
     else:
@@ -2974,21 +2974,22 @@ def do_check_Artwork(filterName):
         num_have_fanart += 1;
         print(' Have F     ' + art_baseName + '.png')
 
-  print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
-  print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
-  print_info('Number of original ArtWork = ' + str(num_original));
-  print_info('Number of replaced ArtWork = ' + str(num_replaced));
-  print_info('Number of have Thumbs    = ' + str(num_have_thumbs));
-  print_info('Number of missing Thumbs = ' + str(num_missing_thumbs));
-  print_info('Number of have Fanart    = ' + str(num_have_fanart));
-  print_info('Number of missing Fanart = ' + str(num_missing_fanart));
+  NARS.print_info('[Report]')
+  NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
+  NARS.print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
+  NARS.print_info('Number of original ArtWork = ' + str(num_original));
+  NARS.print_info('Number of replaced ArtWork = ' + str(num_replaced));
+  NARS.print_info('Number of have Thumbs    = ' + str(num_have_thumbs));
+  NARS.print_info('Number of missing Thumbs = ' + str(num_missing_thumbs));
+  NARS.print_info('Number of have Fanart    = ' + str(num_have_fanart));
+  NARS.print_info('Number of missing Fanart = ' + str(num_missing_fanart));
 
 # ----------------------------------------------------------------------------
 def do_update_Artwork(filterName):
   "Reads ROM destDir and copies Artwork"
 
-  print_info('[Updating/copying ArtWork]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Updating/copying ArtWork]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -2997,9 +2998,9 @@ def do_update_Artwork(filterName):
   fanartSourceDir = filter_config.fanartSourceDir;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(destDir);
-  haveDir_or_abort(thumbsSourceDir);
-  haveDir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(destDir);
+  NARS.have_dir_or_abort(thumbsSourceDir);
+  NARS.have_dir_or_abort(fanartSourceDir);
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
