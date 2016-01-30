@@ -1033,7 +1033,7 @@ def create_copy_list(romMain_list, filter_config):
 # -----------------------------------------------------------------------------
 # Main body functions
 # -----------------------------------------------------------------------------
-def do_list():
+def do_list_filters():
   "List of configuration file"
 
   NARS.print_info('[Listing configuration file]');
@@ -1442,11 +1442,11 @@ def do_printHelp():
 
 \033[32mCommands:\033[0m
 \033[31musage\033[0m                   Print usage information (this text)
-\033[31mlist\033[0m                    List every ROM set system defined in the configuration file.
+\033[31mlist-filters\033[0m            List every filter defined in the configuration file.
 \033[31mlist-nointro <filter>\033[0m   List every ROM set system defined in the No-Intro DAT file.
 \033[31mcheck-nointro <filter>\033[0m  Checks the ROMs you have and reports missing ROMs.
 \033[31mlist-tags <filter>\033[0m      Scan the source directory and reports the tags found.
-\033[31mcheck-filter <filter>\033[0m   Applies ROM filters and prints a list of the scored ROMs.
+\033[31mcheck <filter>\033[0m          Applies ROM filters and prints a list of the scored ROMs.
 \033[31mcopy <filter>\033[0m           Applies ROM filters defined and copies ROMS from sourceDir into destDir.
 \033[31mupdate <filter>\033[0m         Like copy, but also delete unneeded ROMs in destDir.
 \033[31mcheck-artwork <filter>\033[0m  Reads the ROMs in destDir, checks if you have the corresponding artwork. 
@@ -1473,21 +1473,15 @@ def main(argv):
   # --- Command line parser
   parser = argparse.ArgumentParser()
   parser.add_argument('-v', '--verbose', help="be verbose", action="count")
-  parser.add_argument('-l', '--log', help="log output to default file", \
-     action='store_true')
-  parser.add_argument('--logto', help="log output to specified file", \
-     nargs = 1)
-  parser.add_argument("--dryRun", help="don't modify any files", \
-     action="store_true")
-  parser.add_argument("--cleanROMs", help="clean destDir of unknown ROMs", \
-     action="store_true")
-  parser.add_argument("--cleanNFO", help="clean redundant NFO files", \
-     action="store_true")
-  parser.add_argument("--cleanArtWork", help="clean unknown ArtWork", \
-     action="store_true")
-  parser.add_argument("command", \
-     help="usage, list, list-nointro, check-nointro, list-tags, \
-           check-filter, copy, update \
+  parser.add_argument('-l', '--log', help="log output to default file", action='store_true')
+  parser.add_argument('--logto', help="log output to specified file", nargs = 1)
+  parser.add_argument('--dryRun', help="don't modify any files", action="store_true")
+  parser.add_argument('--cleanROMs', help="clean destDir of unknown ROMs", action="store_true")
+  parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
+  parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
+  parser.add_argument('command', \
+     help="usage, list-filters, list-nointro, check-nointro, list-tags, \
+           check, copy, update \
            check-artwork, copy-artwork, update-artwork", nargs = 1)
   parser.add_argument("romSetName", help="ROM collection name", nargs='?')
   args = parser.parse_args();
@@ -1526,50 +1520,73 @@ def main(argv):
   configuration = parse_File_Config();
 
   # --- Positional arguments that don't require a romSetName
-  if command == 'list':
-    do_list();
-    sys.exit(0);
+  if command == 'list-filters':
+    do_list_filters()
+    sys.exit(0)
 
-  # --- Positional arguments that require a romSetName
-  if args.romSetName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m romSetName required');
-    sys.exit(10);
-
-  if command == 'list-nointro':
+  elif command == 'list-nointro':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     do_list_nointro(args.romSetName);
 
   elif command == 'check-nointro':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     do_check_nointro(args.romSetName);
 
   elif command == 'list-tags':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     do_taglist(args.romSetName);
 
-  elif command == 'check-filter':
+  elif command == 'check':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     do_checkFilter(args.romSetName);
 
   elif command == 'copy':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     do_update(args.romSetName);
 
   elif command == 'update':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     __prog_option_sync = 1;
     do_update(args.romSetName);  
 
   elif command == 'check-artwork':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     do_checkArtwork(args.romSetName);
 
   elif command == 'copy-artwork':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     do_update_artwork(args.romSetName);
 
   elif command == 'update-artwork':
+    if args.romSetName == None:
+      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
+      sys.exit(10)
     __prog_option_sync = 1;
     do_update_artwork(args.romSetName);  
 
   else:
-    print_error('Unrecognised command');
-    sys.exit(1);
+    NARS.print_error('Unrecognised command ' + command)
+    sys.exit(1)
 
-  sys.exit(0);
+  sys.exit(0)
 
-# No idea what's this...
+# Execute main function if script called from command line (not imported 
+# as module)
 if __name__ == "__main__":
   main(sys.argv[1:])
