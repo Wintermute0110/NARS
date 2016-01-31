@@ -2315,14 +2315,14 @@ def do_merge():
   root_output = ET.Element('mame');
   tree_output._setroot(root_output);
   NARS.print_info('[Parsing (reduced) MAME XML file]');
-  tree = NARS.XML_read_file_cElementTree(mame_redux_filename, "Reading merged XML file")
+  tree_input = NARS.XML_read_file_cElementTree(mame_redux_filename, "Reading merged XML file")
   
   # --- Traverse MAME XML input file ---
   NARS.print_info('[Merging MAME XML and categories]');
-  root = tree.getroot();
-  root_output.attrib = root.attrib; # Copy mame attributes in output XML
+  root_input = tree_input.getroot();
+  root_output.attrib = root_input.attrib; # Copy mame attributes in output XML
   num_no_category = 0
-  for machine_EL in root:
+  for machine_EL in root_input:
     if machine_EL.tag == 'machine':
       machine_output = ET.SubElement(root_output, 'machine');
       # Copy machine attributes in output XML
@@ -2343,38 +2343,40 @@ def do_merge():
           manufacturer_output.text = machine_child.text;
 
         if machine_child.tag == 'input':
-          # --- This information is not used yet. Don't add to the output
-          #     file to save some space.
-          input_output = ET.SubElement(machine_output, 'input');
-          input_output.attrib = machine_child.attrib; # Copy game attributes in output XML
-
+          # This information is not used yet. Don't add to the output
+          # file to save some space.
+          input_output = ET.SubElement(machine_output, 'input')
+          # Copy <input> attributes in output XML
+          input_output.attrib = machine_child.attrib
           # Traverse children
           for input_child in machine_child:
             if input_child.tag == 'control':
-              # --- This information is not used yet. Don't add to the output
-              #     file to save some space.
               control_output = ET.SubElement(input_output, 'control');
               control_output.attrib = input_child.attrib;
 
         if machine_child.tag == 'driver':
           driver_output = ET.SubElement(machine_output, 'driver');
-          # --- From here only attribute 'status' is used
+          # From here only attribute 'status' is used
           driver_attrib = {};
           driver_attrib['status'] = machine_child.attrib['status'];
           driver_output.attrib = driver_attrib;
 
-        # --- Dependencies
-        if machine_child.tag == 'device_depends':
-          device_depends_output = ET.SubElement(machine_output, 'device_depends');
-          device_depends_output.text = machine_child.text;
-
-        if machine_child.tag == 'bios_depends':
-          bios_depends_output = ET.SubElement(machine_output, 'bios_depends');
-          bios_depends_output.text = machine_child.text;
-
-        if machine_child.tag == 'chd_depends':
-          chd_depends_output = ET.SubElement(machine_output, 'chd_depends');
-          chd_depends_output.text = machine_child.text;
+        # Dependencies
+        if machine_child.tag == 'NARS':
+          NARS_output = ET.SubElement(machine_output, 'NARS');
+          # Copy <NARS> attributes in output XML
+          NARS_output.attrib = machine_child.attrib;
+          # Traverse children
+          for NARS_child in machine_child:
+            if NARS_child.tag == 'BIOS':
+              device_depends_output = ET.SubElement(NARS_output, 'BIOS');
+              device_depends_output.text = NARS_child.text;
+            if NARS_child.tag == 'Device':
+              bios_depends_output = ET.SubElement(NARS_output, 'Device');
+              bios_depends_output.text = NARS_child.text;
+            if NARS_child.tag == 'CHD':
+              chd_depends_output = ET.SubElement(NARS_output, 'CHD');
+              chd_depends_output.text = NARS_child.text;
 
       # --- Add category element
       game_name = machine_EL.attrib['name'];
@@ -2386,11 +2388,10 @@ def do_merge():
         num_no_category += 1
       category_output = ET.SubElement(machine_output, 'category');
       category_output.text = category;
-  NARS.print_info('[Report]');
-  NARS.print_info('Machines without category  ' + str(num_no_category));
 
-  # --- To save memory destroy variables now
-  del tree;
+  # To save memory destroy input variables now
+  del tree_input;
+  del root_input;
 
   # --- Write output file (don't use miniDOM, is sloow)
   # See http://norwied.wordpress.com/2013/08/27/307/
@@ -2398,6 +2399,11 @@ def do_merge():
   NARS.print_info('Output file ' + merged_filename);
   NARS.indent_ElementTree_XML(root_output);
   tree_output.write(merged_filename, xml_declaration=True, encoding='utf-8', method="xml")
+
+  # Print report
+  NARS.print_info('[Report]')
+  NARS.print_info('Machines without category  ' + str(num_no_category))
+  NARS.print_info('NOTE Machines with no category are assigned to cateogory Unknown')
 
 def do_list_merged():
   "Short list of MAME XML file"
