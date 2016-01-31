@@ -1755,127 +1755,223 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
   print_info('Generated ' + str(num_NFO_files) + ' NFO files');
 
 # -----------------------------------------------------------------------------
-# Main body functions
+# DEVICES
 # -----------------------------------------------------------------------------
-# IMPLEMENT ME SAX API can make the loading of XML much faster and MUCH LESS
-#              memory consuming.
-#
-# Dependency implementation: there are 3 types of dependencies: 
-# a) game that depends on a device and the device has a ROM.
-# b) game depends on a BIOS.
-# c) game depends on a CHD
+# RULE All device machines (isdevice="yes") are no runnable (runnable="no")
 #
 # Example of a device with a ROM ----------------------------------------------
-#  <game name="qsound" sourcefile="src/emu/sound/qsound.c" isdevice="yes" runnable="no">
-#    <description>Q-Sound</description>
-#    <rom name="qsound.bin" size="8192" crc="" sha1="" status="baddump" region="qsound" offset="0"/>
-#    <chip type="cpu" tag=":qsound" name="DSP16" clock="4000000"/>
-#    <sound channels="0"/>
-#  </game>
+# <machine name="qsound" sourcefile="src/emu/sound/qsound.c" isdevice="yes" runnable="no">
+#   <description>Q-Sound</description>
+#   <rom name="qsound.bin" size="8192" crc="" sha1="" status="baddump" region="qsound" offset="0"/>
+#   <chip type="cpu" tag=":qsound" name="DSP16" clock="4000000"/>
+#   <sound channels="0"/>
+# </machine>
 #
-# Example of a game that uses a device (with a ROM):
-#  <game name="dino" sourcefile="cps1.c">
-#    <description>Cadillacs and Dinosaurs (World 930201)</description>
-#    <year>1993</year>
-#    <manufacturer>Capcom</manufacturer>
-#    ...
-#    <device_ref name="qsound"/>
-#    <device_ref name="dsp16"/>
-#    ...
-#    <driver status="good" emulation="good" color="good" sound="good" graphic="good" savestate="supported"/>
-#  </game>
+# Example of a game that uses a device that has a ROM -------------------------
+# <machine name="dino" sourcefile="cps1.c">
+#   <description>Cadillacs and Dinosaurs (World 930201)</description>
+#   <year>1993</year>
+#   <manufacturer>Capcom</manufacturer>
+#   ...
+#   <device_ref name="qsound"/>
+#   <device_ref name="dsp16"/>
+#   ...
+#   <driver status="good" .../>
+# </machine>
 #
-# Example of a game that uses a BIOS:
-#  <game name="mslug" sourcefile="neogeo.c" romof="neogeo">
-#    <description>Metal Slug - Super Vehicle-001</description>
-#    <year>1996</year>
-#    <manufacturer>Nazca</manufacturer>
-#    <biosset name="euro" description="Europe MVS (Ver. 2)" default="yes"/>
-#    <biosset name="euro-s1" description="Europe MVS (Ver. 1)"/>
-#    ...
-#    <rom name="sp-s2.sp1" merge="sp-s2.sp1" bios="euro" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
-#    <rom name="sp-s.sp1" merge="sp-s.sp1" bios="euro-s1" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
-#    ...
-#  </game>
+# -----------------------------------------------------------------------------
+# BIOS
+# -----------------------------------------------------------------------------
+# Is there a difference between arcade BIOS and computer BIOS?
 #
 # Example of a BIOS game ------------------------------------------------------
-#  <game name="neogeo" sourcefile="neogeo.c" isbios="yes">
-#    <description>Neo-Geo</description>
-#    <year>1990</year>
-#    <manufacturer>SNK</manufacturer>
-#    <biosset name="euro" description="Europe MVS (Ver. 2)" default="yes"/>
-#    <biosset name="euro-s1" description="Europe MVS (Ver. 1)"/>
-#    ...
-#    <rom name="sp-s2.sp1" bios="euro" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
-#    <rom name="sp-s.sp1" bios="euro-s1" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
-#    ...
-#  </game>
+# <machine name="neogeo" sourcefile="neogeo.c" isbios="yes">
+#   <description>Neo-Geo</description>
+#   <year>1990</year>
+#   <manufacturer>SNK</manufacturer>
+#   <biosset name="euro" description="Europe MVS (Ver. 2)" default="yes"/>
+#   <biosset name="euro-s1" description="Europe MVS (Ver. 1)"/>
+#   ...
+#   <rom name="sp-s2.sp1" bios="euro" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
+#   <rom name="sp-s.sp1" bios="euro-s1" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
+#   ...
+# </machine>
 #
-# Example of a CHD game -------------------------------------------------------
-# See http://www.mameworld.info/easyemu/mameguide/mameguide-roms.html
-# Some games with CHDs:
+# Example of a game that uses a BIOS ------------------------------------------
+# <machine name="mslug" sourcefile="neogeo.c" romof="neogeo">
+#   <description>Metal Slug - Super Vehicle-001</description>
+#   <year>1996</year>
+#   <manufacturer>Nazca</manufacturer>
+#   <biosset name="euro" description="Europe MVS (Ver. 2)" default="yes"/>
+#   <biosset name="euro-s1" description="Europe MVS (Ver. 1)"/>
+#   ...
+#   <rom name="sp-s2.sp1" merge="sp-s2.sp1" bios="euro" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
+#   <rom name="sp-s.sp1" merge="sp-s.sp1" bios="euro-s1" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
+#   ...
+# </machine>
+#
+# -----------------------------------------------------------------------------
+# CHDs
+# -----------------------------------------------------------------------------
+# To see how to place CHDs into MAME ROM directory, see
+# http://www.mameworld.info/easyemu/mameguide/mameguide-roms.html
+#
+# Some arcade machines with CHDs:
 #  99bottles cdrom
-#  area51mx ide:0:hdd:image
-#  astron laserdisc
-#  astron laserdisc
-#  atronic cdrom
-#  av2mj1bb vhs
-#  av2mj2rg vhs
+#  area51mx  ide:0:hdd:image
+#  astron    laserdisc
+#  astron    laserdisc
+#  atronic   cdrom
+#  av2mj1bb  vhs
+#  av2mj2rg  vhs
 #  gdt-0010c gdrom
 #
-# Some games have a disk entry and no <device><extension name="chd"...
+# Some games have a <disk> tag and no <device><extension name="chd"...
 #  <disk name="astron" status="nodump" region="laserdisc" index="0" writable="no"/>
 #  <disk name="atronic" sha1="" region="cdrom" index="0" writable="no" optional="yes"/>
 #  <disk name="gdt-0010c" sha1="" status="baddump" region="gdrom" index="0" writable="no"/>
 #
-#  <game name="carnevil" sourcefile="seattle.c">
-#    <description>CarnEvil (v1.0.3)</description>
-#    <year>1998</year>
-#    <manufacturer>Midway Games</manufacturer>
-#    <disk name="carnevil" sha1="" region="ide:0:hdd:image" index="0" writable="yes"/>
-#    ...
-#    <driver status="good" emulation="good" color="good" sound="good" graphic="good" savestate="supported"/>
-#    <device type="harddisk" tag="ide:0:hdd:image">
-#      <instance name="harddisk" briefname="hard"/>
-#      <extension name="chd"/>
-#      <extension name="hd"/>
-#    </device>
-#  </game>
+# Example of a CHD machine ----------------------------------------------------
+# <machine name="carnevil" sourcefile="seattle.c">
+#   <description>CarnEvil (v1.0.3)</description>
+#   <year>1998</year>
+#   <manufacturer>Midway Games</manufacturer>
+#   <disk name="carnevil" sha1="" region="ide:0:hdd:image" index="0" writable="yes"/>
+#   ...
+#   <driver status="good" .../>
+#   <device type="harddisk" tag="ide:0:hdd:image">
+#     <instance name="harddisk" briefname="hard"/>
+#     <extension name="chd"/>
+#     <extension name="hd"/>
+#   </device>
+# </machine>
 #
-# Dependencies implementation -------------------------------------------------
-# To solve a) games that depend on a device that has a ROM:
-#   1) Traverse MAME XML and make a list of devices that have a ROM. A device has
-#      a ROM if there is a ROM tag inside the game object.
-#   2) Traverse MAME XML for games that are not devices. For every game, iterate
-#      over the <device_ref> list and check if "name" attribute is on the devices
-#      with ROM list. If found make a dependency (device_depends).
+# -----------------------------------------------------------------------------
+# MESS machines
+# -----------------------------------------------------------------------------
+# Since version 0.162 MESS was integrated in to MAME. The MAME XML list now has
+# arcade machines plus MESS console/computer machines information.
+#  Type A: $ mame <machine>
+#  Type B: $ mame <machine> <media> <game>
+# Most Type B MESS machines can be run with a Type A command. In that case, the
+# BIOS is run with no media loaded, for example: $ mame segacd, $ mame sms.
+# If a Type B MESS machine is run and requires a cartridge or other media, MAME
+# starts and the graphical interface asks for it. For example: $ mame 32x.
 #
-# To solve b) games that depend on a BIOS:
-#   Maybe the <game> attribute "romof" can be used to resolve BIOS dependencies!
+# Differentiating arcade (type a) from non-arcade (type b) is quite challenging,
+# and MAME developers do not want this differentiation to be clear. Tip by
+# Haze: most arcade machines have a coin slot. Most MESS stuff don't.
 #
-#   However, "cloneof" games also have "romof" field, for example
-#    <game name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
+# Example of a non-arcade machine with software list --------------------------
+# <machine name="genesis" sourcefile="megadriv.cpp">
+#   <description>Genesis (USA, NTSC)</description>
+#   <year>1989</year>
+#   <manufacturer>Sega</manufacturer>
+#   ...
+#   <device_ref name="software_list"/>
+#   ...
+#   <device type="cartridge" tag="mdslot" mandatory="1" interface="megadriv_cart">
+#     <instance name="cartridge" briefname="cart"/>
+#     <extension name="smd"/>
+#     <extension name="bin"/>
+#     <extension name="md"/>
+#     <extension name="gen"/>
+#   </device>
+#   <slot name="mdslot">
+#   </slot>
+#  <softwarelist name="megadriv" status="original" />
+# </machine>
 #
-#   What if a game is a clone and depends on a BIOS? For example
-#    <game name="mslug3" sourcefile="neogeo.c" romof="neogeo">
-#    <game name="mslug3b6" sourcefile="neogeo.c" cloneof="mslug3" romof="mslug3">
+# Example of a non-arcade machine without software list or BIOS ROM -----------
+# <machine name="pdp1" sourcefile="pdp1.cpp">
+#   <description>PDP-1</description>
+#   <year>1961</year>
+#   <manufacturer>Digital Equipment Corporation</manufacturer>
+#   ...
+#   <input players="2" buttons="3">
+#     <control type="joy" ways="2"/>
+#     <control type="trackball" minimum="0" maximum="255" sensitivity="100"/>
+#     <control type="keyboard"/>
+#   </input>
+#   ...
+#   <driver status="good" .../>
+#   <device type="punchtape" tag="readt">
+#     <instance name="punchtape1" briefname="ptap1"/>
+#     <extension name="tap"/>
+#     <extension name="rim"/>
+#   </device>
+#   ...
+# </machine>
 #
-#   1) Traverse MAME XML and make a list of BIOSes.
-#   2) Traverse MAME XML for standard games (no bios, no device) and check:
-#      a) game has "romof" attribute and not "cloneof" attribute, add a
-#         bios_depends dependency.
-#      b) game has a "romof" attribute and a "cloneof" attribute. In this case,
-#         the parent game should be checked for a) case.
+# Parent MESS machine with BIOS -----------------------------------------------
+# See also segacd2. A clone of segacd is megacd.
+# <machine name="segacd" sourcefile="megadriv.cpp">
+#   <description>Sega CD (USA, NTSC)</description>
+#   <year>1992</year>
+#   <manufacturer>Sega</manufacturer>
+#   <rom name="mpr-15045b.bin" size="131072" crc="c6d10268" sha1="..." .../>
+#   ...
+#   <device_ref name="software_list"/>
+#   ...
+#   <device type="cdrom" tag="cdrom" interface="scd_cdrom">
+#     <instance name="cdrom" briefname="cdrm"/>
+#     <extension name="chd"/>
+#     ...
+#     <extension name="iso"/>
+#   </device>
+#   <softwarelist name="segacd" status="original" />
+# </machine>
 #
-# To solve c) games that depend on CHD:
-#   A game has a CHD if it has a <disk> entry, and this entry has an attribute
-#   sha1 with checksum
+# -----------------------------------------------------------------------------
+# Dependencies implementation
+# -----------------------------------------------------------------------------
+# There are 3 types of dependencies: 
+#   a) machine that depends on a device and the device has a ROM.
+#   b) machine depends on a BIOS.
+#   c) machine depends on a CHD
 #
+# To solve a) games that depend on a device that has a ROM --------------------
+# Algorithm:
+# 1) Traverse MAME XML and make a list of devices that have a ROM. A device has
+#    a ROM if there is a <rom> tag inside the machine object.
+# 2) Traverse MAME XML for games that are not devices. For every machine, iterate
+#    over the <device_ref> list and check if "name" attribute is on the devices
+#    with ROM list. If found make a dependency (device_depends).
+#
+# To solve b) games that depend on a BIOS -------------------------------------
+# Maybe the <machine> attribute "romof" can be used to resolve BIOS dependencies!
+#
+# However, "cloneof" games also have "romof" field, for example
+#  <machine name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
+#
+# What if a machine is a clone and depends on a BIOS? For example
+#  <machine name="mslug3" sourcefile="neogeo.c" romof="neogeo">
+#  <machine name="mslug3b6" sourcefile="neogeo.c" cloneof="mslug3" romof="mslug3">
+#
+# Algorithm:
+# 1) Traverse MAME XML and make a list of BIOSes.
+# 2) Traverse MAME XML for standard games (no bios, no device) and check:
+#   a) machine has "romof" attribute and not "cloneof" attribute, add a
+#      bios_depends dependency.
+#   b) machine has a "romof" attribute and a "cloneof" attribute. In this case,
+#      the parent machine should be checked for a) case.
+#
+# To solve c) games that depend on CHD ----------------------------------------
+# Algorithm:
+# 1) A machine has a CHD if it has a <disk> entry, and this entry has an 
+#    attribute sha1 with checksum.
+#
+# -----------------------------------------------------------------------------
+# Separating arcade and non-arcade stuff
+# -----------------------------------------------------------------------------
+# Nothing implemented at the moment, since many MESS machines can be run as
+# Type A machines (example: $ mame segacd) and all the BIOS ROMs are in the
+# PD torrent 'MAME ROMs'.
 __debug_do_reduce_XML_dependencies = 0;
 def do_reduce_XML():
-  "Short list of MAME XML file (Experimental)"
+  """Strip out unused MAME XML information, and add ROM/CHD dependencies"""
 
-  NARS.print_info('[Reducing MAME XML game database]');
+  NARS.print_info('[Reducing MAME XML machine database]');
   input_filename = configuration.MAME_XML;
   output_filename = configuration.MAME_XML_redux;
 
@@ -1939,7 +2035,7 @@ def do_reduce_XML():
       # for key in machine_EL.attrib:
       #   print ' machine --', key, '->', machine_EL.attrib[key];
 
-      # --- Iterate through the children of a machine
+      # --- Iterate through the children tags of a machine
       for machine_child in machine_EL:
         if machine_child.tag == 'description':
           NARS.print_verb(' description = ' + machine_child.text);

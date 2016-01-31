@@ -33,8 +33,11 @@ import xml.etree.cElementTree as cET
 
 # ElementTree generated XML files are nasty looking (no end of lines).
 # Minidom does a much better job.
-# NOTE minidom seems to be VERY SLOOW.
+# NOTE minidom is VERY SLOW.
 # from xml.dom import minidom
+
+# NOTE SAX API can make the loading of XML much faster and MUCH LESS
+#      memory consuming.
 
 # -----------------------------------------------------------------------------
 # Global variables
