@@ -80,13 +80,13 @@ def copy_ArtWork_file(fileName, artName, sourceDir, destDir):
   if not os.path.isfile(sourceFullFilename):
     return 1;
 
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
+  NARS.print_debug(' Copying ' + sourceFullFilename);
+  NARS.print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print_debug("copy_ArtWork_file >> Error happened");
+      NARS.print_debug("copy_ArtWork_file >> Error happened");
 
   return 0;
 
@@ -114,17 +114,17 @@ def update_ArtWork_file(fileName, artName, sourceDir, destDir):
 
   # If sizes are equal Skip copy and return 1
   if sizeSource == sizeDest:
-    print_debug(' Updated ' + destFullFilename);
+    NARS.print_debug(' Updated ' + destFullFilename);
     return 2;
 
   # destFile does not exist or sizes are different, copy.
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
+  NARS.print_debug(' Copying ' + sourceFullFilename);
+  NARS.print_debug(' Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      print_debug("update_ArtWork_file >> Error happened");
+      NARS.print_debug("update_ArtWork_file >> Error happened");
 
   return 0
 
@@ -412,17 +412,11 @@ def delete_redundant_NFO(destDir):
   print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
-  print_info('[Copying ArtWork]');
+  NARS.print_info('[Copying ArtWork]');
   fanartSourceDir = filter_config.fanartSourceDir;
   fanartDestDir = filter_config.fanartDestDir;
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
-  
-  # --- Check that directories exist
-  haveDir_or_abort(thumbsSourceDir);
-  haveDir_or_abort(thumbsDestDir);
-  haveDir_or_abort(fanartSourceDir);
-  haveDir_or_abort(fanartDestDir);
   
   # --- Copy artwork
   num_steps = len(rom_copy_dic);
@@ -437,59 +431,53 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
 
     # --- Update progress
     percentage = 100 * step / num_steps;
-    sys.stdout.write('{:3d}% '.format(percentage));
+    sys.stdout.write('{:3.0f}% '.format(percentage));
 
     # --- Thumbs
     ret = copy_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
     if ret == 0:
       num_copied_thumbs += 1;
-      print_info('<Copied Thumb  > ' + art_baseName);
+      NARS.print_info('<Copied Thumb  > ' + art_baseName);
     elif ret == 1:
       num_missing_thumbs += 1;
-      print_info('<Missing Thumb > ' + art_baseName);
+      NARS.print_info('<Missing Thumb > ' + art_baseName);
     else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
-      sys.exit(10);
+      NARS.print_error('Wrong value returned by copy_ArtWork_file()')
+      sys.exit(10)
 
     # --- Update progress
     percentage = 100 * step / num_steps;
-    sys.stdout.write('{:3d}% '.format(percentage));
+    sys.stdout.write('{:3.0f}% '.format(percentage));
 
     # --- Fanart
     ret = copy_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
     if ret == 0:
       num_copied_fanart += 1;
-      print_info('<Copied Fanart > ' + art_baseName);
+      NARS.print_info('<Copied Fanart > ' + art_baseName);
     elif ret == 1:
       num_missing_fanart += 1;
-      print_info('<Missing Fanart> ' + art_baseName);
+      NARS.print_info('<Missing Fanart> ' + art_baseName);
     else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
+      NARS.print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
 
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
-  print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
-  print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
-  print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
+  NARS.print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
+  NARS.print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
+  NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
 
 def update_ArtWork_list(filter_config, rom_copy_dic):
-  print_info('[Updating ArtWork]');
+  NARS.print_info('[Updating ArtWork]');
   
   thumbsSourceDir = filter_config.thumbsSourceDir;
   thumbsDestDir = filter_config.thumbsDestDir;
   fanartSourceDir = filter_config.fanartSourceDir;
   fanartDestDir = filter_config.fanartDestDir;
 
-  # --- Check that directories exist
-  haveDir_or_abort(thumbsSourceDir);
-  haveDir_or_abort(thumbsDestDir);
-  haveDir_or_abort(fanartSourceDir);
-  haveDir_or_abort(fanartDestDir);
-  
   # --- Copy/update artwork
   num_steps = len(rom_copy_dic);
   step = 0;
@@ -510,54 +498,54 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     ret = update_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
     if ret == 0:
       # On default verbosity level only report copied files
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:3.0f}% '.format(percentage));
       num_copied_thumbs += 1;
-      print_info('<Copied  Thumb > ' + art_baseName);
+      NARS.print_info('<Copied  Thumb > ' + art_baseName);
     elif ret == 1:
       # Also report missing artwork
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:3.0f}% '.format(percentage));
       num_missing_thumbs += 1;
-      print_info('<Missing Thumb > ' + art_baseName);
+      NARS.print_info('<Missing Thumb > ' + art_baseName);
     elif ret == 2:
-      if log_level >= Log.verb:
-        sys.stdout.write('{:3d}% '.format(percentage));
+      if NARS.log_level >= NARS.Log.verb:
+        sys.stdout.write('{:3.0f}% '.format(percentage));
       num_updated_thumbs += 1;
-      print_verb('<Updated Thumb > ' + art_baseName);
+      NARS.print_verb('<Updated Thumb > ' + art_baseName);
     else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
-      sys.exit(10);
+      NARS.print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10)
 
     # --- Fanart
     ret = update_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
     if ret == 0:
       # Also report missing artwork
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:3.0f}% '.format(percentage));
       num_copied_fanart += 1;
-      print_info('<Copied  Fanart> ' + art_baseName);
+      NARS.print_info('<Copied  Fanart> ' + art_baseName);
     elif ret == 1:
       # Also report missing artwork
       sys.stdout.write('{:3d}% '.format(percentage));
       num_missing_fanart += 1;
-      print_info('<Missing Fanart> ' + art_baseName);
+      NARS.print_info('<Missing Fanart> ' + art_baseName);
     elif ret == 2:
-      if log_level >= Log.verb:
-        sys.stdout.write('{:3d}% '.format(percentage));
+      if NARS.log_level >= NARS.Log.verb:
+        sys.stdout.write('{:3.0f}% '.format(percentage));
       num_updated_fanart += 1;
-      print_verb('<Updated Fanart> ' + art_baseName);
+      NARS.print_verb('<Updated Fanart> ' + art_baseName);
     else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
+      NARS.print_error('Wrong value returned by copy_ArtWork_file()');
       sys.exit(10);
 
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
-  print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs));
-  print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
-  print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
-  print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart));
-  print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
+  NARS.print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs));
+  NARS.print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
+  NARS.print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
+  NARS.print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart));
+  NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
 
 def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
   print_info('[Cleaning ArtWork]');
@@ -648,10 +636,10 @@ def parse_File_Config():
         filter_class.name = root_child.attrib['name'];
         NARS.print_debug(' name = ' + filter_class.name);
 
-        # --- By default things are None, which means user didn't
-        #     wrote them in config file.
-        # NOTE: if we have the tag but no text is written, then 
-        #       filter_child.text will be None. Take this into account.
+        # By default things are None, which means user didn't
+        # wrote them in config file.
+        # NOTE if we have the tag but no text is written, then 
+        #      filter_child.text will be None. Take this into account.
         filter_class.sourceDir = None;
         filter_class.destDir = None;
         filter_class.destDir_CHD = None;
@@ -2996,11 +2984,15 @@ def do_update_Artwork(filterName):
   destDir = filter_config.destDir;
   thumbsSourceDir = filter_config.thumbsSourceDir;
   fanartSourceDir = filter_config.fanartSourceDir;
+  thumbsDestDir = filter_config.thumbsDestDir;
+  fanartDestDir = filter_config.fanartDestDir;
 
   # --- Check for errors, missing paths, etc...
   NARS.have_dir_or_abort(destDir);
   NARS.have_dir_or_abort(thumbsSourceDir);
   NARS.have_dir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(thumbsDestDir);
+  NARS.have_dir_or_abort(fanartDestDir);
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
