@@ -24,10 +24,8 @@
 # --- Import stuff
 import sys, os, re, shutil
 import operator, argparse
+import xml.etree.ElementTree as ET # ElementTree XML parser
 import NARS
-
-# MAME XML is written by this file:
-# http://www.mamedev.org/source/src/emu/info.c.html
 
 # --- Global variables ---
 __config_configFileName = 'nars-mame-config.xml';
@@ -1753,6 +1751,9 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
   print_info('Generated ' + str(num_NFO_files) + ' NFO files');
 
 # -----------------------------------------------------------------------------
+# MAME XML is written by this file:
+# http://www.mamedev.org/source/src/emu/info.c.html
+# -----------------------------------------------------------------------------
 # DEVICES
 # -----------------------------------------------------------------------------
 # RULE All device machines (isdevice="yes") are no runnable (runnable="no")
@@ -1929,9 +1930,8 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # A) All device machines (isdevice="yes") are no runnable (runnable="no")
 #
 # Warnings (program does not stop if triggered):
-# A) Warn if machine depends on more than 1 BIOS.
-# B) Warn if machine depends on more than 1 device with ROMs.
-# C) Warn if machine depends on mora than 1 CHD.
+# A) Warn if machine depends on more than 1 device with ROMs.
+# B) Warn if machine depends on mora than 1 CHD.
 #
 # -----------------------------------------------------------------------------
 # Dependencies implementation
@@ -1962,14 +1962,16 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #  <machine name="mslug3" sourcefile="neogeo.c" romof="neogeo">
 #  <machine name="mslug3b6" sourcefile="neogeo.c" cloneof="mslug3" romof="mslug3">
 #
+# NOTE BIOS dependencies are unique.
+#
 # Algorithm:
 # 1) Traverse MAME XML and make a list of BIOS machines.
 #    A BIOS machines has the attribute <machine isbios="yes">
 # 2) Traverse MAME XML for standard games (no bios, no device) and check:
-#   a) machine has "romof" attribute and not "cloneof" attribute, add a
-#      dependency bios_depends.
-#   b) machine has a "romof" attribute and a "cloneof" attribute. In this case,
-#      the parent machine should be checked for a) case.
+#   a) machine has "romof" attribute and not "cloneof" attribute.
+#      Add a dependency bios_depends.
+#   b) machine has a "romof" attribute and a "cloneof" attribute.
+#      In this case, the parent machine should be checked for a) case.
 #
 # To solve c) games that depend on CHD ----------------------------------------
 # Algorithm:
@@ -1988,11 +1990,13 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # Tags created by NARS to be used by the filters
 # -----------------------------------------------------------------------------
 # <NARS>
-#  <BIOS_dep>bios1</BIOS_dep>
-#  <Device_dep>device1</Device_dep>
-#  <CHD_dep>chd1</CHD_dep>
-#  <CHD_dep>chd2</CHD_dep>
+#  <BIOS>bios1</BIOS>
+#  <Device>device1</Device>
+#  <Device>device1</Device>
+#  <CHD>chd1</CHD>
+#  <CHD>chd2</CHD>
 # </NARS>
+__debug_do_reduce_XML_print_lists = 0;
 __debug_do_reduce_XML_dependencies = 0;
 def do_reduce_XML():
   """Strip out unused MAME XML information, and add ROM/CHD dependencies"""
@@ -2009,18 +2013,23 @@ def do_reduce_XML():
   # --- Read MAME XML input file ---
   NARS.print_info('Reading MAME XML game database...');
   NARS.print_info('NOTE: this will take a looong time...');
-  tree = NARS.XML_read_file(input_filename, "Parsing MAME XML file");
+  tree_input = NARS.XML_read_file_ElementTree(input_filename, "Parsing MAME XML file");
 
-  # --- Dependencies variables
-  device_rom_list = [];
+  # List of machines which are BIOS, have devices with ROMS, or have CHDs.
+  # Checking if a list has an element is SLOW. This lists will be transformed
+  # into sets for quicker access.
+  # List can have repeated elements, sets have unique elements
+  # Sets and dictionaries using hashing.
+  # See http://stackoverflow.com/questions/513882/python-list-vs-dict-for-look-up-table
   bios_list = [];
+  device_rom_list = [];
   chd_list = [];
 
   # --- Traverse MAME XML input file ---
   # Root element:
   # <mame build="0.153 (Apr  7 2014)" debug="no" mameconfig="10">
-  root = tree.getroot();
-  root_output.attrib = root.attrib; # Copy mame attributes in output XML
+  root_input = tree_input.getroot();
+  root_output.attrib = root_input.attrib; # Copy mame attributes in output XML
 
   # Child elements we want to keep in the reduced XML:
   # NOTE since the mergue of MAME and MESS, <game> has been substituded by
@@ -2033,16 +2042,16 @@ def do_reduce_XML():
   #   <year>1981</year>
   #   <manufacturer>Sega</manufacturer>
   # ...
-  #   <display tag="screen" type="raster" rotate="270" width="256" height="224" refresh="59.998138" pixclock="5156000" htotal="328" hbend="0" hbstart="256" vtotal="262" vbend="0" vbstart="224" />
+  #   <display tag="screen" type="raster" rotate="270" width="256" height="224" .../>
   # ...
   #   <input players="2" buttons="1" coins="2" service="yes">
   #     <control type="joy" ways="4"/>
   #   </input>
   # ...
-  #   <driver status="imperfect" emulation="good" color="good" sound="imperfect" graphic="good" savestate="unsupported"/>
+  #   <driver status="imperfect" .../>
   # </machine>
   NARS.print_info('[Reducing MAME XML database]');
-  for machine_EL in root:
+  for machine_EL in root_input:
     isdevice_flag = 0;
     if machine_EL.tag == 'machine':
       NARS.print_verb('[Machine]');
@@ -2094,7 +2103,7 @@ def do_reduce_XML():
 
         # --- CHDs (disks)
         if machine_child.tag == 'disk':
-          # print machine_child.attrib['name'], machine_child.attrib['region'];
+          # print(machine_child.attrib['name'], machine_child.attrib['region'])
           if 'name' in machine_child.attrib and 'sha1' in machine_child.attrib:
             chd_list.append(machine_child.attrib['name']);
 
@@ -2103,112 +2112,171 @@ def do_reduce_XML():
           if machine_child.tag == 'rom':
             device_rom_list.append(game_output.attrib['name']);
 
-  if __debug_do_reduce_XML_dependencies:
-    # --- Print list of BIOSes
+  # Transform lists into sets for quick membership testing. See comments above.
+  bios_set = set(bios_list)
+  device_rom_set = set(device_rom_list)
+  chd_set = set(chd_list)
+
+  if __debug_do_reduce_XML_print_lists:
     print('[List of BIOSes]')
-    for biosName in bios_list:
+    for biosName in bios_set:
       print(biosName)
-
-    # --- Print list of devices with ROM
     print('[List of devices with ROMs]')
-    for deviceName in device_rom_list:
+    for deviceName in device_rom_set:
       print(deviceName)
-
-    # --- Print list of ROMs with CHD
-    print('[List of game with disks]')
-    for chdName in chd_list:
+    print('[List of machines with disks]')
+    for chdName in chd_set:
       print(chdName)
 
-  # --- Make list of dependencies
+  # --- Make list of dependencies ---
+  # Dependencies can be more than 1. Also, quick indexing by name is required
+  # use a dictionary)
+  # depends_dic = { machine_name : [device/bios/chd, device/bios/chd, ...], 
+  #                 machine_name : [device/bios/chd, device/bios/chd, ...], 
+  #                 ...
+  #               }
   device_depends_dic = {};
-  parent_bios_depends_dic = {};
   chd_depends_dic = {};
+  parent_bios_depends_dic = {};
   NARS.print_info('[Checking ROM dependencies (1st pass)]');
-  for game_EL in root:
-    if game_EL.tag == 'game':
-      if 'romof' in game_EL.attrib:
-        # --- Case a)
-        if 'cloneof' not in game_EL.attrib:
-          parent_bios_depends_dic[game_EL.attrib['name']] = game_EL.attrib['romof'];
+  for machine_EL in root_input:
+    if machine_EL.tag == 'machine':
+      machine_name = machine_EL.attrib['name']
+      if 'romof' in machine_EL.attrib:
+        # BIOS depends case a)
+        if 'cloneof' not in machine_EL.attrib:
+          parent_bios_depends_dic[machine_name] = machine_EL.attrib['romof'];
           if __debug_do_reduce_XML_dependencies:
-            print('game = ' + game_EL.attrib['name'] + ' BIOS depends on ' + game_EL.attrib['romof'])
-        # --- Case b) Parent should be checked
+            print('machine ' + '{:>12}'.format(machine_name) + ' BIOS depends on ' + \
+                  machine_EL.attrib['romof'] + ' (1st pass)')
+        # BIOS depends Case b) Parent should be checked
         else:
-          # print 'game = ' + game_EL.attrib['name'] + ' is a clone a parent must be checked for BIOS dependencies';
+          # print 'game = ' + machine_name + ' is a clone a parent must be checked for BIOS dependencies';
           pass
 
-      # --- Check for device dependencies
-      # --- Check for CHD dependencies
-      device_depends = [];
-      for game_child in game_EL:
+      # Machine child tags
+      # --- Check for device with ROMs dependencies and CHD dependencies ---
+      # BIOS dependencies are unique. However, device and CHD with dependencies
+      # can be multiple. Create lists with all the dependencies, and then insert
+      # that list into the dictionary as value.
+      device_depends_list = [];
+      chd_depends_list = [];
+      for game_child in machine_EL:
+        # Check for devices
         if game_child.tag == 'device_ref':
           if 'name' in game_child.attrib:
-            # --- Check if this is in the list of devices with ROMs
-            if game_child.attrib['name'] in device_rom_list:
+            device_ref_name = game_child.attrib['name']
+            # Check if device this is in the list of devices with ROMs
+            if device_ref_name in device_rom_set:
               if __debug_do_reduce_XML_dependencies:
-                print('game = ' + game_EL.attrib['name'] + ' device depends on ' + game_child.attrib['name'])
-              # --- Insert a device dependency in a list
-              device_depends.append(game_child.attrib['name']);
+                print('machine ' + '{:>12}'.format(machine_name) + \
+                      ' device depends on ' + device_ref_name)
+              device_depends_list.append(device_ref_name);
           else:
             print_error('device_ref has no name attribute!');
             sys.exit(10);
-        # CHDs
+        # Check for CHDs
         elif game_child.tag == 'disk':
           if 'sha1' in game_child.attrib:
-            # CAREFUL: disk name (CHD) is not necessary the same as the ROM name
-            # If a game has more than 1 disk, this will produce a key error.
-            chd_depends_dic[game_EL.attrib['name']] = game_child.attrib['name'];
+            chd_name = game_child.attrib['name']
+            if __debug_do_reduce_XML_dependencies:
+              print('machine ' + '{:>12}'.format(machine_name) + \
+                    ' depends on CHD ' + chd_name)
+            chd_depends_list.append(chd_name)
 
-      # --- If device dependency list is not empty, insert a <device_depends>
-      #     tag.
-      if len(device_depends) > 0:
-        device_depends_dic[game_EL.attrib['name']] = device_depends;
+      # If device dependency list is not empty, insert a new entry in the
+      # dictionary of dependencies.
+      num_device_depends = len(device_depends_list)
+      num_CHD_depends = len(chd_depends_list)
+      if num_device_depends > 0:
+        device_depends_dic[machine_name] = device_depends_list
+      if num_CHD_depends > 0:
+        chd_depends_dic[machine_name] = chd_depends_list
+      if __debug_do_reduce_XML_dependencies:
+        if num_device_depends > 1:
+          print('machine ' + '{:>12}'.format(machine_name) + ' depends on ' + \
+                str(num_device_depends) + ' devices with ROM')
+        if num_CHD_depends > 1:
+          print('machine ' + '{:>12}'.format(machine_name) + ' depends on ' + \
+                str(num_CHD_depends) + ' CHDs')
+    else:
+      print('Found a no <machine> tag ' + machine_EL.tag)
+      sys.exit(10)
 
-  NARS.print_info('[Checking ROM dependencies (2nd pass)]')
   bios_depends_dic = {};
-  for game_EL in root:
-    if game_EL.tag == 'game':
-      if 'romof' in game_EL.attrib:
-        # --- Case a)
-        if 'cloneof' not in game_EL.attrib:
-          bios_depends_dic[game_EL.attrib['name']] = game_EL.attrib['romof'];
+  NARS.print_info('[Checking ROM dependencies (2nd pass)]')
+  for machine_EL in root_input:
+    if machine_EL.tag == 'machine':
+      machine_name = machine_EL.attrib['name']
+      if 'romof' in machine_EL.attrib:
+        chd_depends_list = []
+        # BIOS depends case a)
+        if 'cloneof' not in machine_EL.attrib:
+          chd_depends_list.append(machine_EL.attrib['romof'])
+          bios_depends_dic[machine_name] = chd_depends_list
           if __debug_do_reduce_XML_dependencies:
-            print('game = ' + game_EL.attrib['name'] + ' BIOS depends on ' + game_EL.attrib['romof'])
-        # --- Case b) Parent should be checked
+            print('machine = ' + '{:>12}'.format(machine_name) + \
+                  ' BIOS depends on ' + machine_EL.attrib['romof'])
+        # BIOS depends case b) Parent should be checked
         else:
           # If parent is in this list then clone has a BIOS dependence
-          if game_EL.attrib['cloneof'] in parent_bios_depends_dic:
-            bios_depends_dic[game_EL.attrib['name']] = parent_bios_depends_dic[game_EL.attrib['cloneof']];
+          if machine_EL.attrib['cloneof'] in parent_bios_depends_dic:
+            chd_depends_list.append(parent_bios_depends_dic[machine_EL.attrib['cloneof']])
+            bios_depends_dic[machine_name] = chd_depends_list
             if __debug_do_reduce_XML_dependencies:
-              print('game = ' + game_EL.attrib['name'] + ' is a clone that BIOS depends on ' + \
-                    parent_bios_depends_dic[game_EL.attrib['cloneof']])
+              print('machine = ' + '{:>12}'.format(machine_name) + \
+                    ' is a clone that BIOS depends on ' + chd_depends_list[0])
+    else:
+      print('Found a no <machine> tag ' + machine_EL.tag)
+      sys.exit(10)
 
   # --- To save memory destroy variables now
-  del tree;
-  del root;
+  del tree_input;
+  del root_input;
 
   # --- Incorporate dependencies into output XML
   NARS.print_info('[Merging ROM dependencies in output XML]')
-  for game_EL in root_output:
-    if game_EL.tag == 'game':
-      game_name = game_EL.attrib['name'];
-      if game_name in bios_depends_dic:
-        # values of bios_depends_dic are strings
-        bios_depends_tag = ET.SubElement(game_EL, 'bios_depends');
-        bios_depends_tag.text = bios_depends_dic[game_name];
+  for machine_EL in root_output:
+    if machine_EL.tag == 'machine':
+      machine_name = machine_EL.attrib['name'];
+      has_bios    = machine_name in bios_depends_dic
+      has_devices = machine_name in device_depends_dic
+      has_CHDs    = machine_name in chd_depends_dic
+      if has_bios or has_devices or has_CHDs:
+        # Create tag <NARS>
+        NARS_element = ET.SubElement(machine_EL, 'NARS')
+        if has_bios:
+          # values of bios_depends_dic are list of strings, even if only 1 element
+          bios_list = bios_depends_dic[machine_name]
+          if len(bios_list) > 1:
+            print('[ERROR] Machine ' + '{:>12}'.format(machine_name) + ' depends on more than 1 BIOS')
+            sys.exit(10)
+          for bios_name in bios_list:
+            bios_depends_tag = ET.SubElement(NARS_element, 'BIOS')
+            bios_depends_tag.text = bios_name
 
-      if game_name in device_depends_dic:
-        # values of device_depends_dic are lists
-        # There may be duplicate devices in the list (game has two devices of
-        # the same kind). Remove duplicates to improve later processing.
-        # http://stackoverflow.com/questions/7961363/python-removing-duplicates-in-lists
-        device_depends_tag = ET.SubElement(game_EL, 'device_depends');
-        device_depends_tag.text = ",".join(set(device_depends_dic[game_name]));
+        if has_devices:
+          devices_list = device_depends_dic[machine_name]
+          devices_set = set(devices_list)
+          if len(devices_set) != len(devices_list):
+            print('[WARNING] machine ' + '{:>12}'.format(machine_name) + \
+                  ' len(devices_set) != len(devices_list)')
+          for device_unique_name in devices_set:
+            device_depends_tag = ET.SubElement(NARS_element, 'Device')
+            device_depends_tag.text = device_unique_name
 
-      if game_name in chd_depends_dic:
-        # values of bios_depends_dic are strings
-        chd_depends_tag = ET.SubElement(game_EL, 'chd_depends');
-        chd_depends_tag.text = chd_depends_dic[game_name];
+        if has_CHDs:
+          CHD_list = chd_depends_dic[machine_name]
+          CHD_set = set(CHD_list)
+          if len(CHD_set) != len(CHD_list):
+            print('[WARNING] machine ' + '{:>12}'.format(machine_name) + \
+                  ' len(CHD_set) != len(CHD_list)')
+          for CHD_unique_name in CHD_set:
+            CHD_depends_tag = ET.SubElement(NARS_element, 'CHD')
+            CHD_depends_tag.text = CHD_unique_name
+    else:
+      print('Found a no <machine> tag ' + machine_EL.tag)
+      sys.exit(10)
 
   # --- Pretty print XML output using miniDOM
   # See http://broadcast.oreilly.com/2010/03/pymotw-creating-xml-documents.html
@@ -2227,7 +2295,7 @@ def do_reduce_XML():
   # See http://norwied.wordpress.com/2013/08/27/307/
   NARS.print_info('[Writing output file]');
   NARS.print_info('Writing reduced XML file ' + output_filename);
-  indent_ElementTree_XML(root_output);
+  NARS.indent_ElementTree_XML(root_output);
   tree_output.write(output_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
 def do_merge():
