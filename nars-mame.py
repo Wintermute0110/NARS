@@ -790,7 +790,29 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
 # -----------------------------------------------------------------------------
 # Misc functions
 # -----------------------------------------------------------------------------
-# A class to store the MAME parent/clone main list
+# A class to store the MAME machine information.
+# ROM.name            string  machine name (<machine name="">)
+# ROM.cloneof         string  clone name (<machine cloneof="">)
+# ROM.isclone         bool
+# ROM.isdevice        bool
+# ROM.runnable        bool
+# ROM.sampleof        string 
+# ROM.hasSamples      bool
+# ROM.isMechanical    bool
+# ROM.isBIOS          bool
+# ROM.sourcefile      string
+# ROM.driver_status   string
+# ROM.category        string
+# ROM.buttons         string
+# ROM.players         string
+# ROM.coins           string
+# ROM.control_type    string_list
+# ROM.BIOS_depends    string_list
+# ROM.device_depends  string_list
+# ROM.CHD_depends     string_list
+# ROM.description     string
+# ROM.year            string
+# ROM.manufacturer    string
 class ROM:
   def __init__(self, name):
     self.name = name; 
@@ -980,8 +1002,9 @@ def parse_catver_ini():
 # Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
 # do_update_artwork()), but not in the do_list_*() functions.
 #
-# Returns a dictionary with key the (unique) ROM name and value a ROM object with
-# all the ROM information from the XML.
+# Returns dictionary rom_raw_dict with key the (unique) ROM name and value a 
+# ROM object with fields:
+# ROM.
 def parse_MAME_merged_XML():
   "Parses a MAME merged XML and creates a parent/clone list"
 
@@ -1074,15 +1097,16 @@ def parse_MAME_merged_XML():
 
       # Game driver
       if 'sourcefile' in game_attrib:
-        # Remove the trail '.c' from driver name
-        driverName = game_attrib['sourcefile'];
-        driverName = driverName[:-2];
+        driverName = game_attrib['sourcefile']
+        # Remove the trailing '.c' or '.cpp' from driver name
+        if driverName[-2:] == '.c':     driverName = driverName[:-2]
+        elif driverName[-4:] == '.cpp': driverName = driverName[:-4]
         romObject.sourcefile = driverName;
       else:
         # sourcefile (driver) defaults to unknown
         romObject.sourcefile = 'unknown';
 
-      # --- Parse child tags
+      # --- Parse machine child tags ---
       romObject.device_depends = [];
       romObject.BIOS_depends = [];
       for child_game in game_EL:
@@ -1104,15 +1128,7 @@ def parse_MAME_merged_XML():
         elif child_game.tag == 'category':
           romObject.category = child_game.text;
 
-        # - Dependencies
-        elif child_game.tag == 'device_depends':
-          romObject.device_depends = child_game.text.split(",");
-        elif child_game.tag == 'bios_depends':
-          romObject.BIOS_depends = child_game.text.split(",");
-        elif child_game.tag == 'chd_depends':
-          romObject.CHD_depends = child_game.text.split(",");
-
-        # - Controls
+        # --- Controls ---
         elif child_game.tag == 'input':
           control_attrib = child_game.attrib;
           if 'buttons' in control_attrib:
@@ -1126,8 +1142,12 @@ def parse_MAME_merged_XML():
           else:
             romObject.players = None;
 
-          # - Traverse input node for control child nodes
-          # NOTE: a game may have more than one control (joystick, dial, ...)
+          if 'coins' in control_attrib:
+            romObject.coins = control_attrib['coins'];
+          else:
+            romObject.coins = None;
+
+          # NOTE a game may have more than one control (joystick, dial, ...)
           romObject.control_type = [];
           for control in child_game:
             if control.tag == 'control':
@@ -1136,6 +1156,19 @@ def parse_MAME_merged_XML():
 
           if len(romObject.control_type) < 1:
             romObject.control_type.append('ButtonsOnly');
+
+        # --- Dependencies ---
+        elif child_game.tag == 'NARS':
+          romObject.BIOS_depends = []
+          romObject.device_depends = []
+          romObject.CHD_depends = []
+          for NARS_tag in child_game:
+            if NARS_tag.tag == 'BIOS':
+              romObject.BIOS_depends.append(NARS_tag.text)
+            elif NARS_tag.tag == 'Device':
+              romObject.device_depends.append(NARS_tag.text)
+            elif NARS_tag.tag == 'CHD':
+              romObject.CHD_depends.append(NARS_tag.text)
 
         # - Copy information to generate NFO files
         elif child_game.tag == 'description':
