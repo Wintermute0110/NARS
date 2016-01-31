@@ -1107,8 +1107,10 @@ def parse_MAME_merged_XML():
         romObject.sourcefile = 'unknown';
 
       # --- Parse machine child tags ---
-      romObject.device_depends = [];
-      romObject.BIOS_depends = [];
+      # Add fields that may not be present in XML. Avoid AttributeError exceptions
+      romObject.BIOS_depends = []
+      romObject.device_depends = []
+      romObject.CHD_depends = []
       for child_game in game_EL:
         # - Driver status
         if child_game.tag == 'driver':
@@ -1600,12 +1602,12 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
   # Add ROMs (devices and BIOS) needed for other ROM to work.
   # Traverse the list of filtered games, and check if they have dependencies. If
   # so, add the dependencies to the filtered list.
-  NARS.print_info('[Adding ROM dependencies]');
+  NARS.print_info('[Adding BIOS/device ROM dependencies]');
   # NOTE: dictionaries cannot change size during iteration. Create auxiliary list.
   dependencies_ROM_list = {};
   for key in sorted(mame_filtered_dic):
     romObject = mame_filtered_dic[key];
-    # - BIOS dependencies
+    # --- BIOS dependencies ---
     if len(romObject.BIOS_depends):
       for BIOS_depend in romObject.BIOS_depends:
         if BIOS_depend not in mame_xml_dic:
@@ -1621,8 +1623,7 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
         else:
           NARS.print_verb('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
                            BIOS_depend.ljust(11) + ' - Already on list');
-
-    # - Device dependencies
+    # --- Device dependencies ---
     if len(romObject.device_depends):
       for device_depend in romObject.device_depends:
         if device_depend not in mame_xml_dic:
@@ -2907,50 +2908,74 @@ def do_checkFilter(filterName):
   "Applies filter and copies ROMs into destination directory"
 
   NARS.print_info('[Checking filter]');
-  NARS.print_info('Filter name = ' + filterName);
+  NARS.print_info('Filter name = ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
-  sourceDir = filter_config.sourceDir;
-  destDir = filter_config.destDir;
+  filter_config = get_Filter_Config(filterName)
+  sourceDir = filter_config.sourceDir
+  destDir = filter_config.destDir
+  sourceDir_CHD = filter_config.destDir_CHD
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir);
-  NARS.have_dir_or_abort(destDir);
+  NARS.have_dir_or_abort(sourceDir)
+  NARS.have_dir_or_abort(destDir)
+  NARS.have_dir_or_abort(sourceDir_CHD)
 
   # --- Get MAME parent/clone dictionary --------------------------------------
-  mame_xml_dic = parse_MAME_merged_XML();
+  mame_xml_dic = parse_MAME_merged_XML()
 
   # --- Create main ROM list in sourceDir -------------------------------------
-  rom_main_list = get_ROM_main_list(sourceDir);
+  rom_main_list = get_ROM_main_list(sourceDir)
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config)
 
   # --- Print list in alphabetical order
   NARS.print_info('[Filtered game list]');
-  missing_roms = 0;
-  have_roms = 0;
+  missing_roms = 0
+  have_roms = 0
+  missing_CHD = have_CHD = 0
+  have_CHD = 0
+  num_CHD = 0
   for key_main in sorted(mame_filtered_dic):
-    romObject = mame_filtered_dic[key_main];
+    romObject = mame_filtered_dic[key_main]
 
-    # --- Check if file exists (maybe it does not exist for No-Intro lists)
-    sourceFullFilename = sourceDir + romObject.name + '.zip';
+    # --- Check if ROM file exists ---
+    sourceFullFilename = sourceDir + romObject.name + '.zip'
     haveFlag = 'Have ROM';
     if not os.path.isfile(sourceFullFilename):
-      missing_roms += 1;
-      haveFlag = 'Missing ROM';
+      missing_roms += 1
+      haveFlag = 'Missing ROM'
     else:
-      have_roms += 1;
+      have_roms += 1
 
-    # --- Print
-    NARS.print_info("<Game> " + romObject.name.ljust(8) + ' - ' + \
-                    haveFlag.ljust(11) + ' - ' + romObject.description + ' ');
+    # --- Print ROM have/missing status ---
+    NARS.print_info("<Game> " + romObject.name.ljust(12) + \
+                    ' - ' + haveFlag.ljust(11) + \
+                    ' - ROM ' + romObject.name + '.zip')
+
+    # --- Check if CHD exists ---
+    if len(romObject.CHD_depends) > 0:
+      for CHD_file in romObject.CHD_depends:
+        num_CHD += 1
+        CHDFullFilename = sourceDir_CHD + '/' + romObject.name + '/' + CHD_file + '.chd'
+        haveFlag = 'Have CHD'
+        if not os.path.isfile(sourceFullFilename):
+          missing_CHD += 1
+          haveFlag = 'Missing CHD'
+        else:
+          have_CHD += 1
+        NARS.print_info("<Game> " + romObject.name.ljust(12) + \
+                        ' - ' + haveFlag.ljust(11) + \
+                        ' - CHD ' + romObject.name + '/' + CHD_file + '.chd')
 
   NARS.print_info('[Report]');
-  NARS.print_info('Number of filtered ROMs = ' + str(len(mame_filtered_dic)));
-  NARS.print_info('Number of have ROMs = ' + str(have_roms));
-  NARS.print_info('Number of missing ROMs = ' + str(missing_roms));
+  NARS.print_info('Filtered ROMs ' + str(len(mame_filtered_dic)));
+  NARS.print_info('Have ROMs     ' + str(have_roms));
+  NARS.print_info('Missing ROMs  ' + str(missing_roms));
+  NARS.print_info('Total CHDs    ' + str(num_CHD));
+  NARS.print_info('Have CHDs     ' + str(have_CHD));
+  NARS.print_info('Missing CHDs  ' + str(missing_CHD));
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
@@ -2996,62 +3021,6 @@ def do_update(filterName):
   # --- Delete NFO files of ROMs not present in the destination directory.
   if __prog_option_clean_NFO:
     delete_redundant_NFO(destDir);
-
-# ----------------------------------------------------------------------------
-def do_check_CHD(filterName):
-  "Applies filter and copies ROMs into destination directory"
-
-  NARS.print_info('[Checking CHDs]');
-  NARS.print_info('Filter name = ' + filterName);
-
-  # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
-  sourceDir = filter_config.sourceDir;
-  destDir = filter_config.destDir;
-  sourceDir_CHD = filter_config.destDir_CHD;
-
-  # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir);
-  NARS.have_dir_or_abort(destDir);
-  NARS.have_dir_or_abort(sourceDir_CHD);
-
-  # --- Get MAME parent/clone dictionary --------------------------------------
-  mame_xml_dic = parse_MAME_merged_XML();
-
-  # --- Create main ROM list in sourceDir -------------------------------------
-  rom_main_list = get_ROM_main_list(sourceDir);
-
-  # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
-
-  # --- Create list of CHDs and samples needed --------------------------------
-  CHD_dic = create_copy_CHD_dic(mame_filtered_dic);
-  # samples_list = create_copy_samples_list(mame_filtered_dic);
-
-  # --- Print list in alphabetical order
-  NARS.print_info('[Filtered game list]');
-  missing_roms = 0;
-  have_roms = 0;
-  for key_main in sorted(mame_filtered_dic):
-    romObject = mame_filtered_dic[key_main];
-
-    # --- Check if CHD exists (maybe it does not exist for No-Intro lists)
-    sourceFullFilename = sourceDir + romObject.name + '.zip';
-    haveFlag = 'Have ROM';
-    if not os.path.isfile(sourceFullFilename):
-      missing_roms += 1;
-      haveFlag = 'Missing ROM';
-    else:
-      have_roms += 1;
-
-    # --- Print
-    NARS.print_info("<Game> " + romObject.name.ljust(8) + ' - ' + \
-                    haveFlag.ljust(11) + ' - ' + romObject.description + ' ');
-
-  NARS.print_info('[Report]');
-  NARS.print_info('Number of filtered ROMs = ' + str(len(mame_filtered_dic)));
-  NARS.print_info('Number of have ROMs = ' + str(have_roms));
-  NARS.print_info('Number of missing ROMs = ' + str(missing_roms));
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
@@ -3257,7 +3226,6 @@ def do_printHelp():
 \033[31mcheck <filter>\033[0m          Applies filters and checks you source directory for have and missing ROMs.
 \033[31mcopy <filter>\033[0m           Applies ROM filters and copies sourceDir into destDir.
 \033[31mupdate <filter>\033[0m         Like copy, but only copies files if file size is different.
-\033[31mcheck-chd <filter>\033[0m      Applies filters and checks you source directory for have and missing CHDs.
 \033[31mcopy-chd <filter>\033[0m       WRITE ME.
 \033[31mupdate-chd <filter>\033[0m     WRITE ME.
 \033[31mcheck-artwork <filter>\033[0m  Checks if you have the artwork.
@@ -3298,7 +3266,7 @@ def main(argv):
      help="usage, reduce-XML, merge, list-merged, \
            list-categories, list-drivers, list-controls, list-years,\
            list-filters, check, copy, update \
-           check-chd, copy-chd, update-chd \
+           copy-chd, update-chd \
            check-artwork, copy-artwork, update-artwork", nargs = 1)
   parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
   args = parser.parse_args();
@@ -3382,12 +3350,6 @@ def main(argv):
       sys.exit(10)
     __prog_option_sync = 1
     do_update(args.filterName); 
-
-  elif command == 'check-chd':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    do_check_CHD(args.filterName)
 
   elif command == 'copy-chd':
     if args.filterName == None:
