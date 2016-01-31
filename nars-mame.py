@@ -793,9 +793,7 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
 # Misc functions
 # -----------------------------------------------------------------------------
 # A class to store the MAME parent/clone main list
-#
 class ROM:
-  # Constructor.
   def __init__(self, name):
     self.name = name; 
 
@@ -1820,16 +1818,18 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #  99bottles cdrom
 #  area51mx  ide:0:hdd:image
 #  astron    laserdisc
-#  astron    laserdisc
 #  atronic   cdrom
-#  av2mj1bb  vhs
 #  av2mj2rg  vhs
-#  gdt-0010c gdrom
+#  avalnc13 gdrom
 #
-# Some games have a <disk> tag and no <device><extension name="chd"...
-#  <disk name="astron" status="nodump" region="laserdisc" index="0" writable="no"/>
-#  <disk name="atronic" sha1="" region="cdrom" index="0" writable="no" optional="yes"/>
-#  <disk name="gdt-0010c" sha1="" status="baddump" region="gdrom" index="0" writable="no"/>
+# Some machines have a <disk> tag only:
+#  99bottles <disk name="99bottles" sha1="..." region="cdrom" .../>
+#  atronic <disk name="atronic" sha1="..." region="cdrom" ./>
+#  avalnc13 <disk name="gdt-0010c" sha1="..." region="gdrom" .../>
+#  astron <disk name="astron" status="nodump" region="laserdisc" .../>
+#
+# Other machines have a <disk> tag and a <device> tag
+#  carnevil
 #
 # Example of a CHD machine ----------------------------------------------------
 # <machine name="carnevil" sourcefile="seattle.c">
@@ -1923,6 +1923,17 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # </machine>
 #
 # -----------------------------------------------------------------------------
+# Checks and warnings
+# -----------------------------------------------------------------------------
+# Checks (program stops if triggered):
+# A) All device machines (isdevice="yes") are no runnable (runnable="no")
+#
+# Warnings (program does not stop if triggered):
+# A) Warn if machine depends on more than 1 BIOS.
+# B) Warn if machine depends on more than 1 device with ROMs.
+# C) Warn if machine depends on mora than 1 CHD.
+#
+# -----------------------------------------------------------------------------
 # Dependencies implementation
 # -----------------------------------------------------------------------------
 # There are 3 types of dependencies: 
@@ -1932,15 +1943,18 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #
 # To solve a) games that depend on a device that has a ROM --------------------
 # Algorithm:
-# 1) Traverse MAME XML and make a list of devices that have a ROM. A device has
-#    a ROM if there is a <rom> tag inside the machine object.
-# 2) Traverse MAME XML for games that are not devices. For every machine, iterate
-#    over the <device_ref> list and check if "name" attribute is on the devices
-#    with ROM list. If found make a dependency (device_depends).
+# 1) Traverse MAME XML and make a list of devices that have a ROM.
+#    A device is defined as a <machine> with isdevice="yes" attribute.
+#    A device has a ROM if there is a <rom> tag inside the machine object.
+# 2) Traverse MAME XML for games that are not devices (isdevice="yes" or no
+#    attribute).
+#    For every non-device machine, iterate over the <device_ref name="example"> 
+#    tags and check if device "name" attribute is on the list of devices
+#    that have a ROM. 
+#    If found, make a device dependency (device_depends).
 #
 # To solve b) games that depend on a BIOS -------------------------------------
-# Maybe the <machine> attribute "romof" can be used to resolve BIOS dependencies!
-#
+# Maybe the <machine> attribute "romof" can be used to resolve BIOS dependencies.
 # However, "cloneof" games also have "romof" field, for example
 #  <machine name="005" sourcefile="segag80r.c" sampleof="005" cloneof="10yard" romof="10yard">
 #
@@ -1949,17 +1963,19 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #  <machine name="mslug3b6" sourcefile="neogeo.c" cloneof="mslug3" romof="mslug3">
 #
 # Algorithm:
-# 1) Traverse MAME XML and make a list of BIOSes.
+# 1) Traverse MAME XML and make a list of BIOS machines.
+#    A BIOS machines has the attribute <machine isbios="yes">
 # 2) Traverse MAME XML for standard games (no bios, no device) and check:
 #   a) machine has "romof" attribute and not "cloneof" attribute, add a
-#      bios_depends dependency.
+#      dependency bios_depends.
 #   b) machine has a "romof" attribute and a "cloneof" attribute. In this case,
 #      the parent machine should be checked for a) case.
 #
 # To solve c) games that depend on CHD ----------------------------------------
 # Algorithm:
-# 1) A machine has a CHD if it has a <disk> entry, and this entry has an 
-#    attribute sha1 with checksum.
+# 1) A machine has a CHD dependency chd_depends if it has a <disk> entry, 
+#    and this entry has an attribute sha1 with checksum. Note that one machine
+#    may depend on several CHDs.
 #
 # -----------------------------------------------------------------------------
 # Separating arcade and non-arcade stuff
@@ -1967,6 +1983,16 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # Nothing implemented at the moment, since many MESS machines can be run as
 # Type A machines (example: $ mame segacd) and all the BIOS ROMs are in the
 # PD torrent 'MAME ROMs'.
+#
+# -----------------------------------------------------------------------------
+# Tags created by NARS to be used by the filters
+# -----------------------------------------------------------------------------
+# <NARS>
+#  <BIOS_dep>bios1</BIOS_dep>
+#  <Device_dep>device1</Device_dep>
+#  <CHD_dep>chd1</CHD_dep>
+#  <CHD_dep>chd2</CHD_dep>
+# </NARS>
 __debug_do_reduce_XML_dependencies = 0;
 def do_reduce_XML():
   """Strip out unused MAME XML information, and add ROM/CHD dependencies"""
