@@ -22,14 +22,19 @@ import sys
 import os
 import re
 
-# * ElementTree XML parser
+# ElementTree XML parser
 import xml.etree.ElementTree as ET
 
-# * This is supposed to be much faster than ElementTree
-#   See http://effbot.org/zone/celementtree.htm
-#   Tests with list-* commands indicate this 6x faster than ElementTree
-#   HOWEVER: the reduce command takes AGES checking the dependencies!!!
+# This is supposed to be much faster than ElementTree
+# See http://effbot.org/zone/celementtree.htm
+# Tests with list-* commands indicate this 6x faster than ElementTree
+# HOWEVER: the reduce command takes AGES checking the dependencies!!!
 import xml.etree.cElementTree as cET
+
+# ElementTree generated XML files are nasty looking (no end of lines).
+# Minidom does a much better job.
+# NOTE minidom seems to be VERY SLOOW.
+# from xml.dom import minidom
 
 # -----------------------------------------------------------------------------
 # Global variables

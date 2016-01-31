@@ -26,33 +26,12 @@ import sys, os, re, shutil
 import operator, argparse
 import NARS
 
-# * ElementTree XML parser
-import xml.etree.ElementTree as ET
+# MAME XML is written by this file:
+# http://www.mamedev.org/source/src/emu/info.c.html
 
-# * This is supposed to be much faster than ElementTree
-#   See http://effbot.org/zone/celementtree.htm
-#   Tests with list-* commands indicate this 6x faster than ElementTree
-#   HOWEVER: the reduce command takes AGES checking the dependencies!!!
-import xml.etree.cElementTree as cET
-
-# * ElementTree generated XML files are nasty looking (no end of lines)
-#   Minidom does a much better job
-# NOTE minidom seems to be VERY SLOOW
-# from xml.dom import minidom
-
-# * MAME XML is written by this file:
-#   http://www.mamedev.org/source/src/emu/info.c.html
-
-# * Global variables
+# --- Global variables ---
 __config_configFileName = 'nars-mame-config.xml';
 __config_logFileName = 'nars-mame-log.txt';
-
-# --- Config file options global class (like a C struct)
-class ConfigFile:
-  pass
-class ConfigFileFilter:
-  pass
-configuration = ConfigFile();
 
 # --- Program options (from command line)
 __prog_option_log = 0;
@@ -62,7 +41,18 @@ __prog_option_clean_ROMs = 0;
 __prog_option_generate_NFO = 0;
 __prog_option_clean_NFO = 0;
 __prog_option_clean_ArtWork = 0;
+__prog_option_clean_CHD = 0;
 __prog_option_sync = 0;
+
+# -----------------------------------------------------------------------------
+# Configuration file
+# -----------------------------------------------------------------------------
+# --- Config file options global class (like a C struct) ---
+class ConfigFile:
+  pass
+class ConfigFileFilter:
+  pass
+configuration = ConfigFile();
 
 # -----------------------------------------------------------------------------
 # Filesystem interaction functions
@@ -282,16 +272,16 @@ def update_ROM_list(rom_list, sourceDir, destDir):
   NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
 
 def copy_CHD_dic(chd_dic, sourceDir, destDir):
-  print_info('[Copying CHDs into destDir]');
+  NARS.print_info('[Copying CHDs into destDir]');
 
   # * If user did not configure CHDs source directory then do nothing
   if sourceDir == None or sourceDir == '':
-    print_info('CHD source directory not configured');
-    print_info('Skipping CHD copy');
+    NARS.print_info('CHD source directory not configured');
+    NARS.print_info('Skipping CHD copy');
     return
 
   if not os.path.exists(sourceDir):
-    print_error('CHD source directory not found ' + sourceDir)
+    NARS.print_error('CHD source directory not found ' + sourceDir)
     sys.exit(10);
 
   # * Copy CHDs
@@ -322,21 +312,21 @@ def copy_CHD_dic(chd_dic, sourceDir, destDir):
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied CHDs ' + '{:6d}'.format(num_copied_CHDs));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied CHDs ' + '{:6d}'.format(num_copied_CHDs));
 
 def update_CHD_dic(chd_dic, sourceDir, destDir):
-  print_info('[Updating CHDs into destDir]');
+  NARS.print_info('[Updating CHDs into destDir]');
 
   # * If user did not configure CHDs source directory then do nothing
   if sourceDir == None or sourceDir == '':
-    print_info('CHD source directory not configured');
-    print_info('Skipping CHD copy');
+    NARS.print_info('CHD source directory not configured');
+    NARS.print_info('Skipping CHD copy');
     return
 
   if not os.path.exists(sourceDir):
-    print_error('CHD source directory not found ' + sourceDir)
-    sys.exit(10);
+    NARS.print_error('CHD source directory not found ' + sourceDir)
+    sys.exit(10)
 
   num_steps = len(chd_dic);
   step = 0; # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
@@ -351,34 +341,34 @@ def update_CHD_dic(chd_dic, sourceDir, destDir):
     ret = update_CHD_file(chd_copy_key, chdFileName, sourceDir, destDir);
     if ret == 0:
       # On default verbosity level only report copied files
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:3.0f}% '.format(percentage));
       num_copied_CHDs += 1;
-      print_info('<Copied > ' + chd_copy_key + '/' + chdFileName);
+      NARS.print_info('<Copied > ' + chd_copy_key + '/' + chdFileName);
     elif ret == 1:
       if log_level >= Log.verb:
-        sys.stdout.write('{:3d}% '.format(percentage));
+        sys.stdout.write('{:3.0f}% '.format(percentage));
       num_updated_CHDs += 1;
-      print_verb('<Updated> ' + chd_copy_key + '/' + chdFileName);
+      NARS.print_verb('<Updated> ' + chd_copy_key + '/' + chdFileName);
     elif ret == 2:
-      sys.stdout.write('{:3d}% '.format(percentage));
-      print_info('<Missing> ' + chd_copy_key + '/' + chdFileName);
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      NARS.print_info('<Missing> ' + chd_copy_key + '/' + chdFileName);
     elif ret == -1:
-      sys.stdout.write('{:3d}% '.format(percentage));
-      print_info('<ERROR  > ' + chd_copy_key + '/' + chdFileName);
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      NARS.print_info('<ERROR  > ' + chd_copy_key + '/' + chdFileName);
     else:
-      print_error('Wrong value returned by update_ROM_file()');
+      NARS.print_error('Wrong value returned by update_ROM_file()');
       sys.exit(10);
     sys.stdout.flush()
 
     # --- Update progress
     step += 1;
 
-  print_info('[Report]');
-  print_info('Copied ROMs ' + '{:6d}'.format(num_copied_CHDs));
-  print_info('Updated ROMs ' + '{:5d}'.format(num_updated_CHDs));
+  NARS.print_info('[Report]');
+  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_CHDs));
+  NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_CHDs));
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
-  print_info('[Cleaning ROMs in ROMsDest]');
+  NARS.print_info('[Cleaning ROMs in ROMsDest]');
 
   # --- Delete ROMs present in destDir not present in the filtered list
   rom_main_list = [];
@@ -394,10 +384,10 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
       delete_ROM_file(file, destDir);
       print_info('<Deleted> ' + file);
 
-  print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
+  NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs');
 
 def delete_redundant_NFO(destDir):
-  print_info('[Deleting redundant NFO files]');
+  NARS.print_info('[Deleting redundant NFO files]');
   num_deletedNFO_files = 0;
   for file in os.listdir(destDir):
     if file.endswith(".nfo"):
@@ -799,8 +789,8 @@ def get_Filter_Config(filterName):
     if key == filterName:
       return configuration.filter_dic[key];
   
-  print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
-  sys.exit(20);
+  NARS.print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
+  sys.exit(20)
 
 # -----------------------------------------------------------------------------
 # Misc functions
@@ -2785,8 +2775,8 @@ def do_update(filterName):
 def do_check_CHD(filterName):
   "Applies filter and copies ROMs into destination directory"
 
-  print_info('[Checking CHDs]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Checking CHDs]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -2795,9 +2785,9 @@ def do_check_CHD(filterName):
   sourceDir_CHD = filter_config.destDir_CHD;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(sourceDir);
-  haveDir_or_abort(destDir);
-  haveDir_or_abort(sourceDir_CHD);
+  NARS.have_dir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(destDir);
+  NARS.have_dir_or_abort(sourceDir_CHD);
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML();
@@ -2813,7 +2803,7 @@ def do_check_CHD(filterName):
   # samples_list = create_copy_samples_list(mame_filtered_dic);
 
   # --- Print list in alphabetical order
-  print_info('[Filtered game list]');
+  NARS.print_info('[Filtered game list]');
   missing_roms = 0;
   have_roms = 0;
   for key_main in sorted(mame_filtered_dic):
@@ -2829,21 +2819,21 @@ def do_check_CHD(filterName):
       have_roms += 1;
 
     # --- Print
-    print_info("<Game> " + romObject.name.ljust(8) + ' - ' + \
-               haveFlag.ljust(11) + ' - ' + romObject.description + ' ');
+    NARS.print_info("<Game> " + romObject.name.ljust(8) + ' - ' + \
+                    haveFlag.ljust(11) + ' - ' + romObject.description + ' ');
 
-  print_info('[Report]');
-  print_info('Number of filtered ROMs = ' + str(len(mame_filtered_dic)));
-  print_info('Number of have ROMs = ' + str(have_roms));
-  print_info('Number of missing ROMs = ' + str(missing_roms));
+  NARS.print_info('[Report]');
+  NARS.print_info('Number of filtered ROMs = ' + str(len(mame_filtered_dic)));
+  NARS.print_info('Number of have ROMs = ' + str(have_roms));
+  NARS.print_info('Number of missing ROMs = ' + str(missing_roms));
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
 def do_update_CHD(filterName):
   "Applies filter and copies ROMs into destination directory"
 
-  print_info('[Copy/Update CHDs]');
-  print_info('Filter name = ' + filterName);
+  NARS.print_info('[Copy/Update CHDs]');
+  NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName);
@@ -2852,9 +2842,9 @@ def do_update_CHD(filterName):
   sourceDir_CHD = filter_config.destDir_CHD;
 
   # --- Check for errors, missing paths, etc...
-  haveDir_or_abort(sourceDir);
-  haveDir_or_abort(destDir);
-  haveDir_or_abort(sourceDir_CHD);
+  NARS.have_dir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(destDir);
+  NARS.have_dir_or_abort(sourceDir_CHD);
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML();
@@ -2877,7 +2867,7 @@ def do_update_CHD(filterName):
     copy_CHD_dic(CHD_dic, sourceDir_CHD, destDir);
 
   # If --cleanCHDs is on then delete unknown CHD and directories.
-  if __prog_option_clean_CHDs:
+  if __prog_option_clean_CHD:
     clean_CHDs_destDir(destDir, CHD_dic);
 
 # ----------------------------------------------------------------------------
@@ -3057,7 +3047,8 @@ def do_printHelp():
 \033[35m--cleanROMs\033[0m       Deletes ROMs in destDir not present in the filtered ROM list.
 \033[35m--generateNFO\033[0m     Generates NFO files with game information for the launchers.
 \033[35m--cleanNFO\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--cleanArtWork\033[0m    Deletes unknown Artowork in destination directories.""")
+\033[35m--cleanArtWork\033[0m    Deletes unknown Artowork in destination directories.
+\033[35m--cleanCHD\033[0m        Deletes unknown CHDs in destination directory.""")
 
 # -----------------------------------------------------------------------------
 # main function
@@ -3076,6 +3067,7 @@ def main(argv):
   parser.add_argument('--generateNFO', help="generate NFO files", action="store_true")
   parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
   parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
+  parser.add_argument('--cleanCHD', help="clean unknown CHDs", action="store_true")
   parser.add_argument('command', \
      help="usage, reduce-XML, merge, list-merged, \
            list-categories, list-drivers, list-controls, list-years,\
@@ -3092,6 +3084,7 @@ def main(argv):
   global __prog_option_generate_NFO;
   global __prog_option_clean_NFO;
   global __prog_option_clean_ArtWork;
+  global __prog_option_clean_CHD;
   global __prog_option_sync;
 
   if args.verbose:
@@ -3103,11 +3096,12 @@ def main(argv):
   if args.logto:
     __prog_option_log = 1;
     __prog_option_log_filename = args.logto[0];
-  if args.dryRun:      __prog_option_dry_run = 1;
-  if args.cleanROMs:   __prog_option_clean_ROMs = 1;
-  if args.generateNFO: __prog_option_generate_NFO = 1;
+  if args.dryRun:       __prog_option_dry_run = 1;
+  if args.cleanROMs:    __prog_option_clean_ROMs = 1;
+  if args.generateNFO:  __prog_option_generate_NFO = 1;
   if args.cleanNFO:     __prog_option_clean_NFO = 1;
   if args.cleanArtWork: __prog_option_clean_ArtWork = 1;
+  if args.cleanCHD:     __prog_option_clean_CHD = 1;
 
   # --- Positional arguments that don't require parsing of the config file
   command = args.command[0];
