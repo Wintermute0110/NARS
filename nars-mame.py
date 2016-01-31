@@ -45,7 +45,7 @@ __prog_option_clean_CHD = 0;
 __prog_option_sync = 0;
 
 # -----------------------------------------------------------------------------
-# Configuration file
+# Configuration file stuff
 # -----------------------------------------------------------------------------
 # --- Config file options global class (like a C struct) ---
 class ConfigFile:
@@ -53,6 +53,216 @@ class ConfigFile:
 class ConfigFileFilter:
   pass
 configuration = ConfigFile();
+
+def parse_File_Config():
+  "Parses configuration file"
+  NARS.print_info('[Parsing config file]');
+  tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
+  root = tree.getroot();
+
+  # --- Configuration object
+  configFile = ConfigFile();
+  configFile.MAME_XML = '';
+  configFile.MAME_XML_redux = '';
+  configFile.Catver = '';
+  configFile.MergedInfo_XML = '';
+  configFile.filter_dic = {};
+
+  # --- Parse general options
+  general_tag_found = 0;
+  for root_child in root:
+    if root_child.tag == 'General':
+      general_tag_found = 1;
+      for general_child in root_child:
+        if general_child.tag == 'MAME_XML':
+          configFile.MAME_XML = general_child.text;
+        elif general_child.tag == 'MAME_XML_redux':
+          configFile.MAME_XML_redux = general_child.text;
+        elif general_child.tag == 'Catver':
+          configFile.Catver = general_child.text;
+        elif general_child.tag == 'Merged_XML':
+          configFile.MergedInfo_XML = general_child.text;
+        else:
+          NARS.print_error('Unrecognised tag "' + general_child.tag + '" inside <General>');
+          sys.exit(10);
+  if not general_tag_found:
+    NARS.print_error('Configuration error. <General> tag not found');
+    sys.exit(10);
+
+  # --- Parse filters
+  for root_child in root:
+    if root_child.tag == 'MAMEFilter':
+      NARS.print_debug('<MAMEFilter>');
+      if 'name' in root_child.attrib:
+        filter_class = ConfigFileFilter();
+        filter_class.name = root_child.attrib['name'];
+        NARS.print_debug(' name = ' + filter_class.name);
+
+        # By default things are None, which means user didn't
+        # wrote them in config file.
+        # NOTE if we have the tag but no text is written, then 
+        #      filter_child.text will be None. Take this into account.
+        filter_class.sourceDir = None;
+        filter_class.destDir = None;
+        filter_class.destDir_CHD = None;
+        filter_class.fanartSourceDir = None;
+        filter_class.fanartDestDir = None;
+        filter_class.thumbsSourceDir = None;
+        filter_class.thumbsDestDir = None;
+        filter_class.mainFilter = None;
+        filter_class.driver = None;
+        filter_class.machineType = None;
+        filter_class.categories = None;
+        filter_class.controls = None;
+        filter_class.buttons_exp = None;
+        filter_class.players_exp = None;
+        filter_class.year_exp = None;
+        filter_class.year_YearExpansion = 0;
+        sourceDirFound = 0;
+        destDirFound = 0;
+        for filter_child in root_child:
+          if filter_child.tag == 'ROMsSource':
+            NARS.print_debug(' ROMsSource = ' + filter_child.text);
+            sourceDirFound = 1;
+            # - Make sure all directory names end in slash
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.sourceDir = tempDir;
+
+          elif filter_child.tag == 'ROMsDest':
+            NARS.print_debug(' ROMsDest = ' + filter_child.text);
+            destDirFound = 1;
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.destDir = tempDir;
+
+          elif filter_child.tag == 'CHDsSource':
+            NARS.print_debug(' CHDsSource = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.destDir_CHD = tempDir;
+
+          elif filter_child.tag == 'FanartSource':
+            NARS.print_debug(' FanartSource = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.fanartSourceDir = tempDir;
+
+          elif filter_child.tag == 'FanartDest':
+            NARS.print_debug(' FanartDest = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.fanartDestDir = tempDir;
+
+          elif filter_child.tag == 'ThumbsSource':
+            NARS.print_debug(' ThumbsSource = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.thumbsSourceDir = tempDir;
+
+          elif filter_child.tag == 'ThumbsDest':
+            NARS.print_debug(' ThumbsDest = ' + filter_child.text);
+            tempDir = filter_child.text;
+            if tempDir[-1] != '/': tempDir = tempDir + '/';
+            filter_class.thumbsDestDir = tempDir;
+
+          elif filter_child.tag == 'MainFilter':
+            text_string = filter_child.text;
+            if text_string != None:
+              NARS.print_debug(' MainFilter = ' + text_string);
+              filter_class.mainFilter = trim_list(text_string.split(","));
+            else:
+              filter_class.mainFilter = '';
+
+          elif filter_child.tag == 'Driver':
+            text_string = filter_child.text;
+            if text_string != None:
+              NARS.print_debug(' Driver = ' + text_string);
+              filter_class.driver = text_string;
+            else:
+              filter_class.driver = '';
+
+          elif filter_child.tag == 'Categories':
+            text_string = filter_child.text;
+            if text_string != None:
+              NARS.print_debug(' Categories = ' + text_string);
+              filter_class.categories = text_string;
+            else:
+              filter_class.categories = '';
+
+          elif filter_child.tag == 'Controls':
+            text_string = filter_child.text;
+            if text_string != None:
+              NARS.print_debug(' Controls = ' + text_string);
+              filter_class.controls = text_string;
+            else:
+              filter_class.controls = '';
+
+          elif filter_child.tag == 'Buttons':
+            text_string = filter_child.text;
+            if text_string != None:
+              NARS.print_debug(' Buttons = ' + text_string);
+              filter_class.buttons_exp = text_string;
+            else:
+              filter_class.buttons_exp = '';
+
+          elif filter_child.tag == 'Players':
+            text_string = filter_child.text;
+            if text_string != None:
+              NARS.print_debug(' Players = ' + text_string);
+              filter_class.players_exp = text_string;
+            else:
+              filter_class.players_exp = '';
+
+          elif filter_child.tag == 'Years':
+            text_string = filter_child.text;
+            if text_string != None:
+              NARS.print_debug(' Years = ' + text_string);
+              filter_class.year_exp = text_string;
+            else:
+              filter_class.year_exp = '';
+
+          elif filter_child.tag == 'YearsOpts':
+            text_string = filter_child.text;
+            if text_string != None:
+              NARS.print_debug(' YearsOpts = ' + text_string);
+              yearOpts_list = trim_list(text_string.split(","));
+              for option in yearOpts_list:
+                # Only one option supported at the moment
+                if option == 'YearExpansion':
+                  filter_class.year_YearExpansion = 1;
+                else:
+                  NARS.print_error('Unknown option ' + option + 'inside <YearsOpts>');
+                  sys.exit(10);
+
+          else:
+            NARS.print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
+            sys.exit(10);
+
+        # - Check for errors in this filter
+        if not sourceDirFound:
+          NARS.print_error('ROMsSource directory not found in config file');
+          sys.exit(10);
+        if not destDirFound:
+          NARS.print_error('ROMsDest directory not found in config file');
+          sys.exit(10);
+
+        # - Aggregate filter to configuration main variable
+        configFile.filter_dic[filter_class.name] = filter_class;
+      else:
+        NARS.print_error('<MAMEFilter> tag does not have name attribute');
+        sys.exit(10);
+  
+  return configFile;
+
+def get_Filter_Config(filterName):
+  "Returns the configuration filter object given the filter name"
+  for key in configuration.filter_dic:
+    if key == filterName:
+      return configuration.filter_dic[key];
+  
+  NARS.print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
+  sys.exit(20)
 
 # -----------------------------------------------------------------------------
 # Filesystem interaction functions
@@ -578,219 +788,6 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
   # --- Report
   print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
   print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
-
-# -----------------------------------------------------------------------------
-# Configuration file functions
-# -----------------------------------------------------------------------------
-def parse_File_Config():
-  "Parses configuration file"
-  NARS.print_info('[Parsing config file]');
-  tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
-  root = tree.getroot();
-
-  # --- Configuration object
-  configFile = ConfigFile();
-  configFile.MAME_XML = '';
-  configFile.MAME_XML_redux = '';
-  configFile.Catver = '';
-  configFile.MergedInfo_XML = '';
-  configFile.filter_dic = {};
-
-  # --- Parse general options
-  general_tag_found = 0;
-  for root_child in root:
-    if root_child.tag == 'General':
-      general_tag_found = 1;
-      for general_child in root_child:
-        if general_child.tag == 'MAME_XML':
-          configFile.MAME_XML = general_child.text;
-        elif general_child.tag == 'MAME_XML_redux':
-          configFile.MAME_XML_redux = general_child.text;
-        elif general_child.tag == 'Catver':
-          configFile.Catver = general_child.text;
-        elif general_child.tag == 'Merged_XML':
-          configFile.MergedInfo_XML = general_child.text;
-        else:
-          NARS.print_error('Unrecognised tag "' + general_child.tag + '" inside <General>');
-          sys.exit(10);
-  if not general_tag_found:
-    NARS.print_error('Configuration error. <General> tag not found');
-    sys.exit(10);
-
-  # --- Parse filters
-  for root_child in root:
-    if root_child.tag == 'MAMEFilter':
-      NARS.print_debug('<MAMEFilter>');
-      if 'name' in root_child.attrib:
-        filter_class = ConfigFileFilter();
-        filter_class.name = root_child.attrib['name'];
-        NARS.print_debug(' name = ' + filter_class.name);
-
-        # By default things are None, which means user didn't
-        # wrote them in config file.
-        # NOTE if we have the tag but no text is written, then 
-        #      filter_child.text will be None. Take this into account.
-        filter_class.sourceDir = None;
-        filter_class.destDir = None;
-        filter_class.destDir_CHD = None;
-        filter_class.fanartSourceDir = None;
-        filter_class.fanartDestDir = None;
-        filter_class.thumbsSourceDir = None;
-        filter_class.thumbsDestDir = None;
-        filter_class.mainFilter = None;
-        filter_class.driver = None;
-        filter_class.machineType = None;
-        filter_class.categories = None;
-        filter_class.controls = None;
-        filter_class.buttons_exp = None;
-        filter_class.players_exp = None;
-        filter_class.year_exp = None;
-        filter_class.year_YearExpansion = 0;
-        sourceDirFound = 0;
-        destDirFound = 0;
-        for filter_child in root_child:
-          if filter_child.tag == 'ROMsSource':
-            NARS.print_debug(' ROMsSource = ' + filter_child.text);
-            sourceDirFound = 1;
-            # - Make sure all directory names end in slash
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.sourceDir = tempDir;
-
-          elif filter_child.tag == 'ROMsDest':
-            NARS.print_debug(' ROMsDest = ' + filter_child.text);
-            destDirFound = 1;
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.destDir = tempDir;
-
-          elif filter_child.tag == 'CHDsSource':
-            NARS.print_debug(' CHDsSource = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.destDir_CHD = tempDir;
-
-          elif filter_child.tag == 'FanartSource':
-            NARS.print_debug(' FanartSource = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.fanartSourceDir = tempDir;
-
-          elif filter_child.tag == 'FanartDest':
-            NARS.print_debug(' FanartDest = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.fanartDestDir = tempDir;
-
-          elif filter_child.tag == 'ThumbsSource':
-            NARS.print_debug(' ThumbsSource = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.thumbsSourceDir = tempDir;
-
-          elif filter_child.tag == 'ThumbsDest':
-            NARS.print_debug(' ThumbsDest = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.thumbsDestDir = tempDir;
-
-          elif filter_child.tag == 'MainFilter':
-            text_string = filter_child.text;
-            if text_string != None:
-              NARS.print_debug(' MainFilter = ' + text_string);
-              filter_class.mainFilter = trim_list(text_string.split(","));
-            else:
-              filter_class.mainFilter = '';
-
-          elif filter_child.tag == 'Driver':
-            text_string = filter_child.text;
-            if text_string != None:
-              NARS.print_debug(' Driver = ' + text_string);
-              filter_class.driver = text_string;
-            else:
-              filter_class.driver = '';
-
-          elif filter_child.tag == 'Categories':
-            text_string = filter_child.text;
-            if text_string != None:
-              NARS.print_debug(' Categories = ' + text_string);
-              filter_class.categories = text_string;
-            else:
-              filter_class.categories = '';
-
-          elif filter_child.tag == 'Controls':
-            text_string = filter_child.text;
-            if text_string != None:
-              NARS.print_debug(' Controls = ' + text_string);
-              filter_class.controls = text_string;
-            else:
-              filter_class.controls = '';
-
-          elif filter_child.tag == 'Buttons':
-            text_string = filter_child.text;
-            if text_string != None:
-              NARS.print_debug(' Buttons = ' + text_string);
-              filter_class.buttons_exp = text_string;
-            else:
-              filter_class.buttons_exp = '';
-
-          elif filter_child.tag == 'Players':
-            text_string = filter_child.text;
-            if text_string != None:
-              NARS.print_debug(' Players = ' + text_string);
-              filter_class.players_exp = text_string;
-            else:
-              filter_class.players_exp = '';
-
-          elif filter_child.tag == 'Years':
-            text_string = filter_child.text;
-            if text_string != None:
-              NARS.print_debug(' Years = ' + text_string);
-              filter_class.year_exp = text_string;
-            else:
-              filter_class.year_exp = '';
-
-          elif filter_child.tag == 'YearsOpts':
-            text_string = filter_child.text;
-            if text_string != None:
-              NARS.print_debug(' YearsOpts = ' + text_string);
-              yearOpts_list = trim_list(text_string.split(","));
-              for option in yearOpts_list:
-                # Only one option supported at the moment
-                if option == 'YearExpansion':
-                  filter_class.year_YearExpansion = 1;
-                else:
-                  NARS.print_error('Unknown option ' + option + 'inside <YearsOpts>');
-                  sys.exit(10);
-
-          else:
-            NARS.print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
-            sys.exit(10);
-
-        # - Check for errors in this filter
-        if not sourceDirFound:
-          NARS.print_error('ROMsSource directory not found in config file');
-          sys.exit(10);
-        if not destDirFound:
-          NARS.print_error('ROMsDest directory not found in config file');
-          sys.exit(10);
-
-        # - Aggregate filter to configuration main variable
-        configFile.filter_dic[filter_class.name] = filter_class;
-      else:
-        NARS.print_error('<MAMEFilter> tag does not have name attribute');
-        sys.exit(10);
-  
-  return configFile;
-
-def get_Filter_Config(filterName):
-  "Returns the configuration filter object given the filter name"
-  for key in configuration.filter_dic:
-    if key == filterName:
-      return configuration.filter_dic[key];
-  
-  NARS.print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
-  sys.exit(20)
 
 # -----------------------------------------------------------------------------
 # Misc functions
