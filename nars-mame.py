@@ -2785,79 +2785,63 @@ configuration = parse_File_Config();
 # --- Positional arguments that don't require a filterName
 if command == 'reduce-XML':
   do_reduce_XML()
-
 elif command == 'merge-XML':
   do_merge()
-
 elif command == 'list-merged':
   do_list_merged()
-
 elif command == 'list-categories':
   do_list_categories()
-
 elif command == 'list-drivers':
   do_list_drivers();
-
 elif command == 'list-controls':
   do_list_controls();
-
 elif command == 'list-years':
   do_list_years();
-
 elif command == 'list-filters':
   do_list_filters()
-
 elif command == 'check':
   if args.filterName == None:
     NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
     sys.exit(10)
   do_checkFilter(args.filterName)
-
 elif command == 'copy':
   if args.filterName == None:
     NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
     sys.exit(10)
   do_update(args.filterName)
-
 elif command == 'update':
   if args.filterName == None:
     NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
     sys.exit(10)
   __prog_option_sync = 1
   do_update(args.filterName); 
-
 elif command == 'copy-chd':
   if args.filterName == None:
     NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
     sys.exit(10)
   do_update_CHD(args.filterName)
-
 elif command == 'update-chd':
   if args.filterName == None:
     NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
     sys.exit(10)
   __prog_option_sync = 1
   do_update_CHD(args.filterName)
-
 elif command == 'check-artwork':
   if args.filterName == None:
     NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
     sys.exit(10)
   do_check_Artwork(args.filterName)
-
 elif command == 'copy-artwork':
   if args.filterName == None:
     NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
     sys.exit(10)
   do_update_Artwork(args.filterName)
-
 elif command == 'update-artwork':
   if args.filterName == None:
     NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
     sys.exit(10)
   __prog_option_sync = 1
   do_update_Artwork(args.filterName)
-
 else:
   NARS.print_error('Unrecognised command: ' + command)
   sys.exit(1)
