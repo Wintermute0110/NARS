@@ -269,76 +269,15 @@ def haveDir_or_abort(dirName, infoStr = None):
   if infoStr == None:
     if dirName == None:
       print_error('\033[31m[ERROR]\033[0m Directory not configured');
-      sys.exit(10);
+      sys.exit(10)
   else:
     if dirName == None:
       print_error('\033[31m[ERROR]\033[0m Directory ' + infoStr + ' not configured');
-      sys.exit(10);
+      sys.exit(10)
 
   if not os.path.isdir(dirName):
     print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
-    sys.exit(10);
-
-# Returns:
-#  0 - ArtWork file found in sourceDir and copied
-#  1 - ArtWork file not found in sourceDir
-# NOTE: be careful, maybe artwork should be when copied to match ROM name
-#       if artwork was subtituted.
-def copy_ArtWork_file(fileName, artName, sourceDir, destDir):
-  sourceFullFilename = sourceDir + artName + '.png';
-  destFullFilename = destDir + fileName + '.png';
-
-  # Maybe artwork does not exist... Then do nothing
-  if not os.path.isfile(sourceFullFilename):
-    return 1;
-
-  NARS.print_debug(' Copying ' + sourceFullFilename);
-  NARS.print_debug(' Into    ' + destFullFilename);
-  if not __prog_option_dry_run:
-    try:
-      shutil.copy(sourceFullFilename, destFullFilename)
-    except EnvironmentError:
-      NARS.print_debug("copy_ArtWork_file >> Error happened");
-
-  return 0;
-
-# Returns:
-#  0 - ArtWork file found in sourceDir and copied
-#  1 - ArtWork file not found in sourceDir
-#  2 - ArtWork file found in sourceDir and destDir, same size so not copied
-# NOTE: be careful, maybe artwork should be when copied to match ROM name
-#       if artwork was subtituted.
-def update_ArtWork_file(fileName, artName, sourceDir, destDir):
-  sourceFullFilename = sourceDir + artName + '.png';
-  destFullFilename = destDir + fileName + '.png';
-  
-  existsSource = os.path.isfile(sourceFullFilename);
-  existsDest = os.path.isfile(destFullFilename);
-  # --- Maybe artwork does not exist... Then do nothing
-  if not os.path.isfile(sourceFullFilename):
-    return 1;
-
-  sizeSource = os.path.getsize(sourceFullFilename);
-  if existsDest:
-    sizeDest = os.path.getsize(destFullFilename);
-  else:
-    sizeDest = -1;
-
-  # If sizes are equal Skip copy and return 1
-  if sizeSource == sizeDest:
-    NARS.print_debug(' Updated ' + destFullFilename);
-    return 2;
-
-  # destFile does not exist or sizes are different, copy.
-  NARS.print_debug(' Copying ' + sourceFullFilename);
-  NARS.print_debug(' Into    ' + destFullFilename);
-  if not __prog_option_dry_run:
-    try:
-      shutil.copy(sourceFullFilename, destFullFilename)
-    except EnvironmentError:
-      NARS.print_debug("update_ArtWork_file >> Error happened");
-
-  return 0
+    sys.exit(10)
 
 # -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir):
@@ -467,74 +406,6 @@ def copy_CHD_dic(CHD_dic, sourceDir, destDir):
   NARS.print_info('Missing CHDs ' + '{:4d}'.format(num_missing_CHD));
   NARS.print_info('Copy errors  ' + '{:4d}'.format(num_errors));
 
-# Delete ROMs present in destDir not present in the filtered list
-# 1) Make a list of .zip files in destDir
-# 2) Delete all .zip files of games no in the filtered list
-def clean_ROMs_destDir(rom_copy_dic, destDir):
-  NARS.print_info('[Cleaning ROMs in ROMsDest]')
-
-  rom_main_list = [];
-  for file in os.listdir(destDir):
-    if file.endswith(".zip"):
-      rom_main_list.append(file);
-
-  num_cleaned_roms = 0;
-  for file in sorted(rom_main_list):
-    basename, ext = os.path.splitext(file); # Remove extension
-    if basename not in rom_copy_dic:
-      num_cleaned_roms += 1;
-      NARS.delete_ROM_file(file, destDir, __prog_option_dry_run);
-      NARS.print_info('<Deleted> ' + file);
-
-  NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
-
-# Delete CHDs in destDir not in the filtered list
-# 1) Scan directories in destDir
-# 2) Check if directory is a machine name in filtered list.
-# 3) If not, deleted directory with contents inside.
-__DEBUG_clean_CHDs_destDir = 0
-def clean_CHDs_destDir(CHD_dic, destDir):
-  NARS.print_info('[Cleaning ROMs in ROMsDest]')
-
-  # directories_dic = { 'machine' : 'CHD_destDirectory'}
-  directories_dic = {};
-  for file in os.listdir(destDir):
-    # if __DEBUG_clean_CHDs_destDir: print('listdir entry {0}'.format(file))
-    CHD_dir_full_name = destDir + file;
-    if os.path.isdir(CHD_dir_full_name):
-      if __DEBUG_clean_CHDs_destDir: print('Directory {0}'.format(CHD_dir_full_name))
-      directories_dic[file] = CHD_dir_full_name
-  
-  num_deleted_dirs = 0
-  num_deleted_CHD = 0
-  for CHD_dir_name in sorted(directories_dic):
-    CHD_dir_full_name = directories_dic[CHD_dir_name]
-    if CHD_dir_name not in CHD_dic:
-      num_CHD = NARS.delete_CHD_directory(CHD_dir_full_name, __prog_option_dry_run)
-      num_deleted_dirs += 1
-      num_deleted_CHD += num_CHD
-      NARS.print_info('<Deleted> ' + CHD_dir_full_name)
-    else:
-      if __DEBUG_clean_CHDs_destDir: print('CHD_dir_name {0} in filtered list'.format(CHD_dir_name))
-
-  NARS.print_info('Deleted directories  ' + str(num_deleted_dirs))
-  NARS.print_info('Deleted CHDs         ' + str(num_deleted_CHD))
-
-def clean_NFO_destDir(destDir):
-  NARS.print_info('[Deleting redundant NFO files]');
-  num_deletedNFO_files = 0;
-  for file in os.listdir(destDir):
-    if file.endswith(".nfo"):
-      # Chech if there is a corresponding ROM for this NFO file
-      thisFileName, thisFileExtension = os.path.splitext(file);
-      romFileName_temp = thisFileName + '.zip';
-      if not NARS.exists_ROM_file(romFileName_temp, destDir):
-        NARS.delete_ROM_file(file, destDir, __prog_option_dry_run);
-        num_deletedNFO_files += 1
-        NARS.print_info('<Deleted NFO> ' + file)
-
-  NARS.print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
-
 def copy_ArtWork_list(filter_config, rom_copy_dic):
   NARS.print_info('[Copying ArtWork]');
   fanartSourceDir = filter_config.fanartSourceDir;
@@ -623,6 +494,74 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
   NARS.print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart))
   NARS.print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart))
   NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart))
+
+# Delete ROMs present in destDir not present in the filtered list
+# 1) Make a list of .zip files in destDir
+# 2) Delete all .zip files of games no in the filtered list
+def clean_ROMs_destDir(rom_copy_dic, destDir):
+  NARS.print_info('[Cleaning ROMs in ROMsDest]')
+
+  rom_main_list = [];
+  for file in os.listdir(destDir):
+    if file.endswith(".zip"):
+      rom_main_list.append(file);
+
+  num_cleaned_roms = 0;
+  for file in sorted(rom_main_list):
+    basename, ext = os.path.splitext(file); # Remove extension
+    if basename not in rom_copy_dic:
+      num_cleaned_roms += 1;
+      NARS.delete_ROM_file(file, destDir, __prog_option_dry_run);
+      NARS.print_info('<Deleted> ' + file);
+
+  NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
+
+# Delete CHDs in destDir not in the filtered list
+# 1) Scan directories in destDir
+# 2) Check if directory is a machine name in filtered list.
+# 3) If not, deleted directory with contents inside.
+__DEBUG_clean_CHDs_destDir = 0
+def clean_CHDs_destDir(CHD_dic, destDir):
+  NARS.print_info('[Cleaning ROMs in ROMsDest]')
+
+  # directories_dic = { 'machine' : 'CHD_destDirectory'}
+  directories_dic = {};
+  for file in os.listdir(destDir):
+    # if __DEBUG_clean_CHDs_destDir: print('listdir entry {0}'.format(file))
+    CHD_dir_full_name = destDir + file;
+    if os.path.isdir(CHD_dir_full_name):
+      if __DEBUG_clean_CHDs_destDir: print('Directory {0}'.format(CHD_dir_full_name))
+      directories_dic[file] = CHD_dir_full_name
+  
+  num_deleted_dirs = 0
+  num_deleted_CHD = 0
+  for CHD_dir_name in sorted(directories_dic):
+    CHD_dir_full_name = directories_dic[CHD_dir_name]
+    if CHD_dir_name not in CHD_dic:
+      num_CHD = NARS.delete_CHD_directory(CHD_dir_full_name, __prog_option_dry_run)
+      num_deleted_dirs += 1
+      num_deleted_CHD += num_CHD
+      NARS.print_info('<Deleted> ' + CHD_dir_full_name)
+    else:
+      if __DEBUG_clean_CHDs_destDir: print('CHD_dir_name {0} in filtered list'.format(CHD_dir_name))
+
+  NARS.print_info('Deleted directories  ' + str(num_deleted_dirs))
+  NARS.print_info('Deleted CHDs         ' + str(num_deleted_CHD))
+
+def clean_NFO_destDir(destDir):
+  NARS.print_info('[Deleting redundant NFO files]');
+  num_deletedNFO_files = 0;
+  for file in os.listdir(destDir):
+    if file.endswith(".nfo"):
+      # Chech if there is a corresponding ROM for this NFO file
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      romFileName_temp = thisFileName + '.zip';
+      if not NARS.exists_ROM_file(romFileName_temp, destDir):
+        NARS.delete_ROM_file(file, destDir, __prog_option_dry_run);
+        num_deletedNFO_files += 1
+        NARS.print_info('<Deleted NFO> ' + file)
+
+  NARS.print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
 
 def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
   NARS.print_info('[Cleaning ArtWork]');

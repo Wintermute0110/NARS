@@ -135,12 +135,10 @@ def print_debug(print_str):
 # -----------------------------------------------------------------------------
 # This function either succeeds or aborts the program. Check if file exists
 # before calling this.
-def delete_ROM_file(fileName, dir, __prog_option_dry_run):
-  fullFilename = dir + fileName;
-
+def delete_file(file_path, __prog_option_dry_run):
   if not __prog_option_dry_run:
     try:
-      os.remove(fullFilename);
+      os.remove(file_path);
     except EnvironmentError:
       print_debug("delete_ROM_file >> Error happened")
 
@@ -177,45 +175,43 @@ def delete_CHD_directory(CHD_dir, __prog_option_dry_run):
 
   return num_CHD
 
-def exists_ROM_file(fileName, dir):
-  fullFilename = dir + fileName;
+def exists_file(file_path, dir):
+  return os.path.isfile(file_path);
 
-  return os.path.isfile(fullFilename);
-
-def have_dir_or_abort(dirName):
+# if dirName is None, that means user did not configured it
+def have_dir_or_abort(dirName, infoStr):
   if dirName == None:
-    print_error('\033[31m[ERROR]\033[0m Directory name = None');
-    sys.exit(10);
-  else:
-    print_info('Checking directory ' + dirName)
+    print_error('\033[31m[ERROR]\033[0m Directory ' + infoStr + ' not configured.')
+    print_error('\033[31m[ERROR]\033[0m Add tag ' + infoStr + ' to configuration file.')
+    sys.exit(10)
 
   if not os.path.isdir(dirName):
-    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
-    sys.exit(10);
+    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + infoStr + ' = ' + dirName)
+    sys.exit(10)
 
-# -----------------------------------------------------------------------------
-# Filesystem helper functions
-# -----------------------------------------------------------------------------
+# Make sure directory name is OK.
+# a) dirName end with '/'. If not, add it.
+def sanitize_dir_name(dirName):
+  
+  return dirName
+
 # Returns:
 #  0  File copied, no error
 #  2  Source file missing
 # -1  Copy error (exception)
-def copy_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
-  sourceFullFilename = sourceDir + fileName;
-  destFullFilename = destDir + fileName;
+def copy_file(source_path, dest_path, __prog_option_dry_run):
+  print_debug('Copying ' + source_path);
+  print_debug('Into    ' + dest_path);
 
-  print_debug('Copying ' + sourceFullFilename);
-  print_debug('Into    ' + destFullFilename);
-
-  existsSource = os.path.isfile(sourceFullFilename);
+  existsSource = os.path.isfile(source_path)
   if not existsSource:
     return 2
 
   if not __prog_option_dry_run:
     try:
-      shutil.copy(sourceFullFilename, destFullFilename)
+      shutil.copy(source_path, dest_path)
     except EnvironmentError:
-      print_debug("copy_ROM_file >> Error happened");
+      print_debug("copy_file >> EnvironmentError exception")
       return -1
 
   return 0
@@ -225,18 +221,15 @@ def copy_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
 #  1  File not copied (updated)
 #  2  Source file missing
 # -1  Copy/Stat error (exception)
-def update_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
-  sourceFullFilename = sourceDir + fileName;
-  destFullFilename = destDir + fileName;
-
-  existsSource = os.path.isfile(sourceFullFilename);
-  existsDest = os.path.isfile(destFullFilename);
+def update_file(source_path, dest_path, __prog_option_dry_run):
+  existsSource = os.path.isfile(source_path);
+  existsDest = os.path.isfile(dest_path);
   if not existsSource:
     return 2
 
-  sizeSource = os.path.getsize(sourceFullFilename);
+  sizeSource = os.path.getsize(source_path);
   if existsDest:
-    sizeDest = os.path.getsize(destFullFilename);
+    sizeDest = os.path.getsize(dest_path);
   else:
     sizeDest = -1
 
@@ -245,15 +238,343 @@ def update_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
     return 1
 
   # destFile does not exist or sizes are different, copy.
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
+  print_debug(' Copying ' + source_path);
+  print_debug(' Into    ' + dest_path);
   if not __prog_option_dry_run:
     try:
-      shutil.copy(sourceFullFilename, destFullFilename)
+      shutil.copy(source_path, dest_path)
     except EnvironmentError:
       print_debug("update_ROM_file >> Error happened");
 
   return 0
+
+# -----------------------------------------------------------------------------
+# Filesystem helper functions
+# -----------------------------------------------------------------------------
+def copy_ROM_list(rom_list, sourceDir, destDir):
+  print_info('[Copying ROMs into destDir]');
+
+  num_steps = len(rom_list);
+  step = 0 # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
+  num_roms = 0
+  num_copied_roms = 0
+  num_updated_roms = 0
+  num_missing_roms = 0
+  num_errors = 0
+  for rom_copy_item in sorted(rom_list):
+    romFileName = rom_copy_item + '.zip';
+    num_roms += 1
+    if __prog_option_sync:
+      ret = update_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run)
+    else:
+      ret = copy_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run)
+    # On default verbosity level only report copied files and errors
+    percentage = 100 * step / num_steps
+    if ret == 0:
+      num_copied_roms += 1;
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      print_info('<Copied > ' + romFileName);
+    elif ret == 1:
+      num_updated_roms += 1;
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3.0f}% '.format(percentage));
+      print_verb('<Updated> ' + romFileName);
+    elif ret == 2:
+      num_missing_roms += 1;
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      print_info('<Missing> ' + romFileName);
+    elif ret == -1:
+      num_errors += 1;
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      print_info('<ERROR  > ' + romFileName);
+    else:
+      print_error('Wrong value returned by update_ROM_file()')
+      sys.exit(10)
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]');
+  print_info('Total CHDs   ' + '{:4d}'.format(num_roms));
+  print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_roms));
+  print_info('Update CHDs  ' + '{:4d}'.format(num_updated_roms));
+  print_info('Missing CHDs ' + '{:4d}'.format(num_missing_roms));
+  print_info('Copy errors  ' + '{:4d}'.format(num_errors));
+
+#
+# CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
+#
+__debug_copy_CHD_dic = 0
+def copy_CHD_dic(CHD_dic, sourceDir, destDir):
+  print_info('[Copying CHDs into destDir]');
+
+  # If user did not configure CHDs source directory then do nothing
+  if sourceDir == None or sourceDir == '':
+    print_info('CHD source directory not configured');
+    print_info('Skipping CHD copy');
+    return
+
+  if not os.path.exists(sourceDir):
+    print_error('CHD source directory not found ' + sourceDir)
+    sys.exit(10);
+
+  # --- Copy CHDs ---
+  num_steps = len(CHD_dic);
+  step = 0 # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
+  num_CHD = 0
+  num_copied_CHD = 0
+  num_updated_CHD = 0
+  num_missing_CHD = 0
+  num_errors = 0
+  for machine_name in sorted(CHD_dic):
+    # Check if CHD directory exists. If not, create it. Abort if creation fails.
+    chdSourceDir = sourceDir + machine_name + '/'
+    chdDestDir = destDir + machine_name + '/'
+    if __debug_copy_CHD_dic: print('CHD dir = {0}\n'.format(chdDestDir))
+    if not os.path.isdir(chdDestDir):
+      if __debug_copy_CHD_dic: print('Creating CHD dir = {0}\n'.format(chdDestDir))
+      os.makedirs(chdDestDir);
+
+    # Iterate over this machine CHD list and copy them. Abort if CHD cannot be
+    # copied
+    CHD_list = CHD_dic[machine_name]
+    for CHD_file in CHD_list:
+      chdFileName = CHD_file + '.chd';
+      num_CHD += 1
+      if __prog_option_sync:
+        ret = update_ROM_file(chdFileName, chdSourceDir, chdDestDir, __prog_option_dry_run)
+      else:
+        ret = copy_ROM_file(chdFileName, chdSourceDir, chdDestDir, __prog_option_dry_run)
+      # On default verbosity level only report copied files and errors
+      percentage = 100 * step / num_steps
+      if ret == 0:
+        num_copied_CHD += 1
+        sys.stdout.write('{:3.0f}% '.format(percentage))
+        print_info('<Copied > ' + machine_name + '/' + chdFileName)
+      elif ret == 1:
+        num_updated_CHD += 1
+        if log_level >= Log.verb:
+          sys.stdout.write('{:3.0f}% '.format(percentage))
+        print_verb('<Updated> ' + machine_name + '/' + chdFileName)
+      elif ret == 2:
+        num_missing_CHD += 1
+        sys.stdout.write('{:3.0f}% '.format(percentage))
+        print_info('<Missing> ' + machine_name + '/' + chdFileName)
+      elif ret == -1:
+        num_errors += 1
+        sys.stdout.write('{:3.0f}% '.format(percentage))
+        print_info('<ERROR  > ' + machine_name + '/' + chdFileName)
+      else:
+        print_error('Wrong value returned by update_ROM_file()')
+        sys.exit(10)
+      sys.stdout.flush()
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]');
+  print_info('Total CHDs   ' + '{:4d}'.format(num_CHD));
+  print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_CHD));
+  print_info('Update CHDs  ' + '{:4d}'.format(num_updated_CHD));
+  print_info('Missing CHDs ' + '{:4d}'.format(num_missing_CHD));
+  print_info('Copy errors  ' + '{:4d}'.format(num_errors));
+
+def copy_ArtWork_list(filter_config, rom_copy_dic):
+  print_info('[Copying ArtWork]');
+  fanartSourceDir = filter_config.fanartSourceDir;
+  fanartDestDir = filter_config.fanartDestDir;
+  thumbsSourceDir = filter_config.thumbsSourceDir;
+  thumbsDestDir = filter_config.thumbsDestDir;
+
+  # --- Copy artwork
+  num_steps = len(rom_copy_dic)
+  step = 0
+  num_artwork = 0
+  num_copied_thumbs = 0
+  num_updated_thumbs = 0
+  num_missing_thumbs = 0
+  num_copied_fanart = 0
+  num_updated_fanart = 0
+  num_missing_fanart = 0
+  for rom_baseName in sorted(rom_copy_dic):
+    # --- Get artwork name
+    art_baseName = rom_copy_dic[rom_baseName]
+    num_artwork += 1
+
+    # --- Thumbs
+    if __prog_option_sync:
+      ret = update_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir)
+    else:
+      ret = copy_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir)
+    # On default verbosity level only report copied files
+    percentage = 100 * step / num_steps;    
+    if ret == 0:
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      num_copied_thumbs += 1;
+      print_info('<Copied  Thumb > ' + art_baseName);
+    elif ret == 1:
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      num_missing_thumbs += 1;
+      print_info('<Missing Thumb > ' + art_baseName);
+    elif ret == 2:
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3.0f}% '.format(percentage));
+      num_updated_thumbs += 1
+      print_verb('<Updated Thumb > ' + art_baseName)
+    elif ret == -1:
+      num_errors += 1;
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      print_info('<ERROR  > ' + art_baseName);
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()');
+      sys.exit(10)
+
+    # --- Fanart
+    if __prog_option_sync:
+      ret = update_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir)
+    else:
+      ret = copy_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir)
+    # On default verbosity level only report copied files
+    if ret == 0:
+      sys.stdout.write('{:3.0f}% '.format(percentage))
+      num_copied_fanart += 1
+      print_info('<Copied  Thumb > ' + art_baseName)
+    elif ret == 1:
+      sys.stdout.write('{:3.0f}% '.format(percentage))
+      num_missing_fanart += 1
+      print_info('<Missing Thumb > ' + art_baseName)
+    elif ret == 2:
+      if log_level >= Log.verb:
+        sys.stdout.write('{:3.0f}% '.format(percentage))
+      num_updated_fanart += 1
+      print_verb('<Updated Thumb > ' + art_baseName)
+    elif ret == -1:
+      num_errors += 1;
+      sys.stdout.write('{:3.0f}% '.format(percentage))
+      print_info('<ERROR  > ' + art_baseName)
+    else:
+      print_error('Wrong value returned by copy_ArtWork_file()')
+      sys.exit(10)
+
+    # --- Update progress
+    step += 1;
+
+  print_info('[Report]')
+  print_info('Artwork files ' + '{:6d}'.format(num_artwork))  
+  print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs))
+  print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs))
+  print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs))
+  print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart))
+  print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart))
+  print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart))
+
+# Delete ROMs present in destDir not present in the filtered list
+# 1) Make a list of .zip files in destDir
+# 2) Delete all .zip files of games no in the filtered list
+def clean_ROMs_destDir(rom_copy_dic, destDir):
+  print_info('[Cleaning ROMs in ROMsDest]')
+
+  rom_main_list = [];
+  for file in os.listdir(destDir):
+    if file.endswith(".zip"):
+      rom_main_list.append(file);
+
+  num_cleaned_roms = 0;
+  for file in sorted(rom_main_list):
+    basename, ext = os.path.splitext(file); # Remove extension
+    if basename not in rom_copy_dic:
+      num_cleaned_roms += 1;
+      delete_ROM_file(file, destDir, __prog_option_dry_run);
+      print_info('<Deleted> ' + file);
+
+  print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
+
+# Delete CHDs in destDir not in the filtered list
+# 1) Scan directories in destDir
+# 2) Check if directory is a machine name in filtered list.
+# 3) If not, deleted directory with contents inside.
+__DEBUG_clean_CHDs_destDir = 0
+def clean_CHDs_destDir(CHD_dic, destDir):
+  print_info('[Cleaning ROMs in ROMsDest]')
+
+  # directories_dic = { 'machine' : 'CHD_destDirectory'}
+  directories_dic = {};
+  for file in os.listdir(destDir):
+    # if __DEBUG_clean_CHDs_destDir: print('listdir entry {0}'.format(file))
+    CHD_dir_full_name = destDir + file;
+    if os.path.isdir(CHD_dir_full_name):
+      if __DEBUG_clean_CHDs_destDir: print('Directory {0}'.format(CHD_dir_full_name))
+      directories_dic[file] = CHD_dir_full_name
+  
+  num_deleted_dirs = 0
+  num_deleted_CHD = 0
+  for CHD_dir_name in sorted(directories_dic):
+    CHD_dir_full_name = directories_dic[CHD_dir_name]
+    if CHD_dir_name not in CHD_dic:
+      num_CHD = delete_CHD_directory(CHD_dir_full_name, __prog_option_dry_run)
+      num_deleted_dirs += 1
+      num_deleted_CHD += num_CHD
+      print_info('<Deleted> ' + CHD_dir_full_name)
+    else:
+      if __DEBUG_clean_CHDs_destDir: print('CHD_dir_name {0} in filtered list'.format(CHD_dir_name))
+
+  print_info('Deleted directories  ' + str(num_deleted_dirs))
+  print_info('Deleted CHDs         ' + str(num_deleted_CHD))
+
+def clean_NFO_destDir(destDir):
+  print_info('[Deleting redundant NFO files]');
+  num_deletedNFO_files = 0;
+  for file in os.listdir(destDir):
+    if file.endswith(".nfo"):
+      # Chech if there is a corresponding ROM for this NFO file
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      romFileName_temp = thisFileName + '.zip';
+      if not exists_ROM_file(romFileName_temp, destDir):
+        delete_ROM_file(file, destDir, __prog_option_dry_run);
+        num_deletedNFO_files += 1
+        print_info('<Deleted NFO> ' + file)
+
+  print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
+
+def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
+  print_info('[Cleaning ArtWork]');
+
+  thumbsDestDir = filter_config.thumbsDestDir;
+  fanartDestDir = filter_config.fanartDestDir;
+  
+  # --- Check that directories exist
+  haveDir_or_abort(thumbsDestDir);
+  haveDir_or_abort(thumbsDestDir);
+
+  # --- Delete unknown thumbs
+  thumbs_file_list = [];
+  for file in os.listdir(thumbsDestDir):
+    if file.endswith(".png"):
+      thumbs_file_list.append(file);
+
+  num_cleaned_thumbs = 0;
+  for file in sorted(thumbs_file_list):
+    art_baseName, ext = os.path.splitext(file); # Remove extension
+    if art_baseName not in artwork_copy_dic:
+      num_cleaned_thumbs += 1;
+      delete_ROM_file(file, thumbsDestDir, __prog_option_dry_run);
+      print_info('<Deleted thumb > ' + file);
+
+  # --- Delete unknown fanart
+  fanart_file_list = [];
+  for file in os.listdir(fanartDestDir):
+    if file.endswith(".png"):
+      fanart_file_list.append(file);
+
+  num_cleaned_fanart = 0;
+  for file in sorted(fanart_file_list):
+    art_baseName, ext = os.path.splitext(file); # Remove extension
+    if art_baseName not in artwork_copy_dic:
+      num_cleaned_fanart += 1;
+      delete_ROM_file(file, fanartDestDir, __prog_option_dry_run);
+      print_info('<Deleted fanart> ' + file);
+
+  # Print eport
+  print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
+  print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
 
 # -----------------------------------------------------------------------------
 # XML functions
