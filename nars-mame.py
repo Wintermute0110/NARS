@@ -265,345 +265,10 @@ def get_Filter_Config(filterName):
 # -----------------------------------------------------------------------------
 # Filesystem interaction functions
 # -----------------------------------------------------------------------------
-def haveDir_or_abort(dirName, infoStr = None):
-  if infoStr == None:
-    if dirName == None:
-      print_error('\033[31m[ERROR]\033[0m Directory not configured');
-      sys.exit(10)
-  else:
-    if dirName == None:
-      print_error('\033[31m[ERROR]\033[0m Directory ' + infoStr + ' not configured');
-      sys.exit(10)
 
-  if not os.path.isdir(dirName):
-    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
-    sys.exit(10)
 
 # -----------------------------------------------------------------------------
-def copy_ROM_list(rom_list, sourceDir, destDir):
-  NARS.print_info('[Copying ROMs into destDir]');
 
-  num_steps = len(rom_list);
-  step = 0 # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
-  num_roms = 0
-  num_copied_roms = 0
-  num_updated_roms = 0
-  num_missing_roms = 0
-  num_errors = 0
-  for rom_copy_item in sorted(rom_list):
-    romFileName = rom_copy_item + '.zip';
-    num_roms += 1
-    if __prog_option_sync:
-      ret = NARS.update_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run)
-    else:
-      ret = NARS.copy_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run)
-    # On default verbosity level only report copied files and errors
-    percentage = 100 * step / num_steps
-    if ret == 0:
-      num_copied_roms += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      NARS.print_info('<Copied > ' + romFileName);
-    elif ret == 1:
-      num_updated_roms += 1;
-      if NARS.log_level >= NARS.Log.verb:
-        sys.stdout.write('{:3.0f}% '.format(percentage));
-      NARS.print_verb('<Updated> ' + romFileName);
-    elif ret == 2:
-      num_missing_roms += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      NARS.print_info('<Missing> ' + romFileName);
-    elif ret == -1:
-      num_errors += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      NARS.print_info('<ERROR  > ' + romFileName);
-    else:
-      NARS.print_error('Wrong value returned by update_ROM_file()')
-      sys.exit(10)
-    # --- Update progress
-    step += 1;
-
-  NARS.print_info('[Report]');
-  NARS.print_info('Total CHDs   ' + '{:4d}'.format(num_roms));
-  NARS.print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_roms));
-  NARS.print_info('Update CHDs  ' + '{:4d}'.format(num_updated_roms));
-  NARS.print_info('Missing CHDs ' + '{:4d}'.format(num_missing_roms));
-  NARS.print_info('Copy errors  ' + '{:4d}'.format(num_errors));
-
-#
-# CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
-#
-__debug_copy_CHD_dic = 0
-def copy_CHD_dic(CHD_dic, sourceDir, destDir):
-  NARS.print_info('[Copying CHDs into destDir]');
-
-  # If user did not configure CHDs source directory then do nothing
-  if sourceDir == None or sourceDir == '':
-    NARS.print_info('CHD source directory not configured');
-    NARS.print_info('Skipping CHD copy');
-    return
-
-  if not os.path.exists(sourceDir):
-    NARS.print_error('CHD source directory not found ' + sourceDir)
-    sys.exit(10);
-
-  # --- Copy CHDs ---
-  num_steps = len(CHD_dic);
-  step = 0 # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
-  num_CHD = 0
-  num_copied_CHD = 0
-  num_updated_CHD = 0
-  num_missing_CHD = 0
-  num_errors = 0
-  for machine_name in sorted(CHD_dic):
-    # Check if CHD directory exists. If not, create it. Abort if creation fails.
-    chdSourceDir = sourceDir + machine_name + '/'
-    chdDestDir = destDir + machine_name + '/'
-    if __debug_copy_CHD_dic: print('CHD dir = {0}\n'.format(chdDestDir))
-    if not os.path.isdir(chdDestDir):
-      if __debug_copy_CHD_dic: print('Creating CHD dir = {0}\n'.format(chdDestDir))
-      os.makedirs(chdDestDir);
-
-    # Iterate over this machine CHD list and copy them. Abort if CHD cannot be
-    # copied
-    CHD_list = CHD_dic[machine_name]
-    for CHD_file in CHD_list:
-      chdFileName = CHD_file + '.chd';
-      num_CHD += 1
-      if __prog_option_sync:
-        ret = NARS.update_ROM_file(chdFileName, chdSourceDir, chdDestDir, __prog_option_dry_run)
-      else:
-        ret = NARS.copy_ROM_file(chdFileName, chdSourceDir, chdDestDir, __prog_option_dry_run)
-      # On default verbosity level only report copied files and errors
-      percentage = 100 * step / num_steps
-      if ret == 0:
-        num_copied_CHD += 1
-        sys.stdout.write('{:3.0f}% '.format(percentage))
-        NARS.print_info('<Copied > ' + machine_name + '/' + chdFileName)
-      elif ret == 1:
-        num_updated_CHD += 1
-        if NARS.log_level >= NARS.Log.verb:
-          sys.stdout.write('{:3.0f}% '.format(percentage))
-        NARS.print_verb('<Updated> ' + machine_name + '/' + chdFileName)
-      elif ret == 2:
-        num_missing_CHD += 1
-        sys.stdout.write('{:3.0f}% '.format(percentage))
-        NARS.print_info('<Missing> ' + machine_name + '/' + chdFileName)
-      elif ret == -1:
-        num_errors += 1
-        sys.stdout.write('{:3.0f}% '.format(percentage))
-        NARS.print_info('<ERROR  > ' + machine_name + '/' + chdFileName)
-      else:
-        NARS.print_error('Wrong value returned by update_ROM_file()')
-        sys.exit(10)
-      sys.stdout.flush()
-    # --- Update progress
-    step += 1;
-
-  NARS.print_info('[Report]');
-  NARS.print_info('Total CHDs   ' + '{:4d}'.format(num_CHD));
-  NARS.print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_CHD));
-  NARS.print_info('Update CHDs  ' + '{:4d}'.format(num_updated_CHD));
-  NARS.print_info('Missing CHDs ' + '{:4d}'.format(num_missing_CHD));
-  NARS.print_info('Copy errors  ' + '{:4d}'.format(num_errors));
-
-def copy_ArtWork_list(filter_config, rom_copy_dic):
-  NARS.print_info('[Copying ArtWork]');
-  fanartSourceDir = filter_config.fanartSourceDir;
-  fanartDestDir = filter_config.fanartDestDir;
-  thumbsSourceDir = filter_config.thumbsSourceDir;
-  thumbsDestDir = filter_config.thumbsDestDir;
-
-  # --- Copy artwork
-  num_steps = len(rom_copy_dic)
-  step = 0
-  num_artwork = 0
-  num_copied_thumbs = 0
-  num_updated_thumbs = 0
-  num_missing_thumbs = 0
-  num_copied_fanart = 0
-  num_updated_fanart = 0
-  num_missing_fanart = 0
-  for rom_baseName in sorted(rom_copy_dic):
-    # --- Get artwork name
-    art_baseName = rom_copy_dic[rom_baseName]
-    num_artwork += 1
-
-    # --- Thumbs
-    if __prog_option_sync:
-      ret = update_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir)
-    else:
-      ret = copy_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir)
-    # On default verbosity level only report copied files
-    percentage = 100 * step / num_steps;    
-    if ret == 0:
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      num_copied_thumbs += 1;
-      NARS.print_info('<Copied  Thumb > ' + art_baseName);
-    elif ret == 1:
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      num_missing_thumbs += 1;
-      NARS.print_info('<Missing Thumb > ' + art_baseName);
-    elif ret == 2:
-      if NARS.log_level >= NARS.Log.verb:
-        sys.stdout.write('{:3.0f}% '.format(percentage));
-      num_updated_thumbs += 1
-      NARS.print_verb('<Updated Thumb > ' + art_baseName)
-    elif ret == -1:
-      num_errors += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      NARS.print_info('<ERROR  > ' + art_baseName);
-    else:
-      NARS.print_error('Wrong value returned by copy_ArtWork_file()');
-      sys.exit(10)
-
-    # --- Fanart
-    if __prog_option_sync:
-      ret = update_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir)
-    else:
-      ret = copy_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir)
-    # On default verbosity level only report copied files
-    if ret == 0:
-      sys.stdout.write('{:3.0f}% '.format(percentage))
-      num_copied_fanart += 1
-      NARS.print_info('<Copied  Thumb > ' + art_baseName)
-    elif ret == 1:
-      sys.stdout.write('{:3.0f}% '.format(percentage))
-      num_missing_fanart += 1
-      NARS.print_info('<Missing Thumb > ' + art_baseName)
-    elif ret == 2:
-      if NARS.log_level >= NARS.Log.verb:
-        sys.stdout.write('{:3.0f}% '.format(percentage))
-      num_updated_fanart += 1
-      NARS.print_verb('<Updated Thumb > ' + art_baseName)
-    elif ret == -1:
-      num_errors += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage))
-      NARS.print_info('<ERROR  > ' + art_baseName)
-    else:
-      NARS.print_error('Wrong value returned by copy_ArtWork_file()')
-      sys.exit(10)
-
-    # --- Update progress
-    step += 1;
-
-  NARS.print_info('[Report]')
-  NARS.print_info('Artwork files ' + '{:6d}'.format(num_artwork))  
-  NARS.print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs))
-  NARS.print_info('Updated thumbs ' + '{:5d}'.format(num_updated_thumbs))
-  NARS.print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs))
-  NARS.print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart))
-  NARS.print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart))
-  NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart))
-
-# Delete ROMs present in destDir not present in the filtered list
-# 1) Make a list of .zip files in destDir
-# 2) Delete all .zip files of games no in the filtered list
-def clean_ROMs_destDir(rom_copy_dic, destDir):
-  NARS.print_info('[Cleaning ROMs in ROMsDest]')
-
-  rom_main_list = [];
-  for file in os.listdir(destDir):
-    if file.endswith(".zip"):
-      rom_main_list.append(file);
-
-  num_cleaned_roms = 0;
-  for file in sorted(rom_main_list):
-    basename, ext = os.path.splitext(file); # Remove extension
-    if basename not in rom_copy_dic:
-      num_cleaned_roms += 1;
-      NARS.delete_ROM_file(file, destDir, __prog_option_dry_run);
-      NARS.print_info('<Deleted> ' + file);
-
-  NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
-
-# Delete CHDs in destDir not in the filtered list
-# 1) Scan directories in destDir
-# 2) Check if directory is a machine name in filtered list.
-# 3) If not, deleted directory with contents inside.
-__DEBUG_clean_CHDs_destDir = 0
-def clean_CHDs_destDir(CHD_dic, destDir):
-  NARS.print_info('[Cleaning ROMs in ROMsDest]')
-
-  # directories_dic = { 'machine' : 'CHD_destDirectory'}
-  directories_dic = {};
-  for file in os.listdir(destDir):
-    # if __DEBUG_clean_CHDs_destDir: print('listdir entry {0}'.format(file))
-    CHD_dir_full_name = destDir + file;
-    if os.path.isdir(CHD_dir_full_name):
-      if __DEBUG_clean_CHDs_destDir: print('Directory {0}'.format(CHD_dir_full_name))
-      directories_dic[file] = CHD_dir_full_name
-  
-  num_deleted_dirs = 0
-  num_deleted_CHD = 0
-  for CHD_dir_name in sorted(directories_dic):
-    CHD_dir_full_name = directories_dic[CHD_dir_name]
-    if CHD_dir_name not in CHD_dic:
-      num_CHD = NARS.delete_CHD_directory(CHD_dir_full_name, __prog_option_dry_run)
-      num_deleted_dirs += 1
-      num_deleted_CHD += num_CHD
-      NARS.print_info('<Deleted> ' + CHD_dir_full_name)
-    else:
-      if __DEBUG_clean_CHDs_destDir: print('CHD_dir_name {0} in filtered list'.format(CHD_dir_name))
-
-  NARS.print_info('Deleted directories  ' + str(num_deleted_dirs))
-  NARS.print_info('Deleted CHDs         ' + str(num_deleted_CHD))
-
-def clean_NFO_destDir(destDir):
-  NARS.print_info('[Deleting redundant NFO files]');
-  num_deletedNFO_files = 0;
-  for file in os.listdir(destDir):
-    if file.endswith(".nfo"):
-      # Chech if there is a corresponding ROM for this NFO file
-      thisFileName, thisFileExtension = os.path.splitext(file);
-      romFileName_temp = thisFileName + '.zip';
-      if not NARS.exists_ROM_file(romFileName_temp, destDir):
-        NARS.delete_ROM_file(file, destDir, __prog_option_dry_run);
-        num_deletedNFO_files += 1
-        NARS.print_info('<Deleted NFO> ' + file)
-
-  NARS.print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
-
-def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
-  NARS.print_info('[Cleaning ArtWork]');
-
-  thumbsDestDir = filter_config.thumbsDestDir;
-  fanartDestDir = filter_config.fanartDestDir;
-  
-  # --- Check that directories exist
-  haveDir_or_abort(thumbsDestDir);
-  haveDir_or_abort(thumbsDestDir);
-
-  # --- Delete unknown thumbs
-  thumbs_file_list = [];
-  for file in os.listdir(thumbsDestDir):
-    if file.endswith(".png"):
-      thumbs_file_list.append(file);
-
-  num_cleaned_thumbs = 0;
-  for file in sorted(thumbs_file_list):
-    art_baseName, ext = os.path.splitext(file); # Remove extension
-    if art_baseName not in artwork_copy_dic:
-      num_cleaned_thumbs += 1;
-      NARS.delete_ROM_file(file, thumbsDestDir, __prog_option_dry_run);
-      NARS.print_info('<Deleted thumb > ' + file);
-
-  # --- Delete unknown fanart
-  fanart_file_list = [];
-  for file in os.listdir(fanartDestDir):
-    if file.endswith(".png"):
-      fanart_file_list.append(file);
-
-  num_cleaned_fanart = 0;
-  for file in sorted(fanart_file_list):
-    art_baseName, ext = os.path.splitext(file); # Remove extension
-    if art_baseName not in artwork_copy_dic:
-      num_cleaned_fanart += 1;
-      NARS.delete_ROM_file(file, fanartDestDir, __prog_option_dry_run);
-      NARS.print_info('<Deleted fanart> ' + file);
-
-  # Print eport
-  NARS.print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
-  NARS.print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
 
 # -----------------------------------------------------------------------------
 # Misc functions
@@ -3067,149 +2732,134 @@ def do_printHelp():
 # -----------------------------------------------------------------------------
 # main function
 # -----------------------------------------------------------------------------
-def main(argv):
-  print('\033[36mNARS Advanced ROM Sorting - MAME edition\033[0m' + \
-        ' version ' + NARS.__software_version)
+print('\033[36mNARS Advanced ROM Sorting - MAME edition\033[0m' + \
+      ' version ' + NARS.__software_version)
 
-  # --- Command line parser
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-v', '--verbose', help="be verbose", action="count")
-  parser.add_argument('-l', '--log', help="log output to default file", action='store_true')
-  parser.add_argument('--logto', help="log output to specified file", nargs = 1)
-  parser.add_argument('--dryRun', help="don't modify any files", action="store_true")
-  parser.add_argument('--cleanROMs', help="clean destDir of unknown ROMs", action="store_true")
-  parser.add_argument('--generateNFO', help="generate NFO files", action="store_true")
-  parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
-  parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
-  parser.add_argument('--cleanCHD', help="clean unknown CHDs", action="store_true")
-  parser.add_argument('command', \
-     help="usage, reduce-XML, merge, list-merged, \
-           list-categories, list-drivers, list-controls, list-years,\
-           list-filters, check, copy, update \
-           copy-chd, update-chd \
-           check-artwork, copy-artwork, update-artwork", nargs = 1)
-  parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
-  args = parser.parse_args();
+# --- Command line parser
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', '--verbose', help="be verbose", action="count")
+parser.add_argument('-l', '--log', help="log output to default file", action='store_true')
+parser.add_argument('--logto', help="log output to specified file", nargs = 1)
+parser.add_argument('--dryRun', help="don't modify any files", action="store_true")
+parser.add_argument('--cleanROMs', help="clean destDir of unknown ROMs", action="store_true")
+parser.add_argument('--generateNFO', help="generate NFO files", action="store_true")
+parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
+parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
+parser.add_argument('--cleanCHD', help="clean unknown CHDs", action="store_true")
+parser.add_argument('command', \
+    help="usage, reduce-XML, merge, list-merged, \
+          list-categories, list-drivers, list-controls, list-years,\
+          list-filters, check, copy, update \
+          copy-chd, update-chd \
+          check-artwork, copy-artwork, update-artwork", nargs = 1)
+parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
+args = parser.parse_args();
 
-  # --- Optional arguments
-  global __prog_option_log, __prog_option_log_filename;
-  global __prog_option_dry_run;
-  global __prog_option_clean_ROMs;
-  global __prog_option_generate_NFO;
-  global __prog_option_clean_NFO;
-  global __prog_option_clean_ArtWork;
-  global __prog_option_clean_CHD;
-  global __prog_option_sync;
+# --- Optional arguments
+if args.verbose:
+  if args.verbose == 1:   NARS.change_log_level(NARS.Log.verb);
+  elif args.verbose == 2: NARS.change_log_level(NARS.Log.vverb);
+  elif args.verbose >= 3: NARS.change_log_level(NARS.Log.debug);
+if args.log:
+  __prog_option_log = 1;
+if args.logto:
+  __prog_option_log = 1;
+  __prog_option_log_filename = args.logto[0];
+if args.dryRun:       __prog_option_dry_run = 1;
+if args.cleanROMs:    __prog_option_clean_ROMs = 1;
+if args.generateNFO:  __prog_option_generate_NFO = 1;
+if args.cleanNFO:     __prog_option_clean_NFO = 1;
+if args.cleanArtWork: __prog_option_clean_ArtWork = 1;
+if args.cleanCHD:     __prog_option_clean_CHD = 1;
 
-  if args.verbose:
-    if args.verbose == 1:   NARS.change_log_level(NARS.Log.verb);
-    elif args.verbose == 2: NARS.change_log_level(NARS.Log.vverb);
-    elif args.verbose >= 3: NARS.change_log_level(NARS.Log.debug);
-  if args.log:
-    __prog_option_log = 1;
-  if args.logto:
-    __prog_option_log = 1;
-    __prog_option_log_filename = args.logto[0];
-  if args.dryRun:       __prog_option_dry_run = 1;
-  if args.cleanROMs:    __prog_option_clean_ROMs = 1;
-  if args.generateNFO:  __prog_option_generate_NFO = 1;
-  if args.cleanNFO:     __prog_option_clean_NFO = 1;
-  if args.cleanArtWork: __prog_option_clean_ArtWork = 1;
-  if args.cleanCHD:     __prog_option_clean_CHD = 1;
+# --- Positional arguments that don't require parsing of the config file
+command = args.command[0];
+if command == 'usage':
+  do_printHelp();
+  sys.exit(0);
 
-  # --- Positional arguments that don't require parsing of the config file
-  command = args.command[0];
-  if command == 'usage':
-    do_printHelp();
-    sys.exit(0);
+# --- Read configuration file
+global configuration; # Needed to modify global copy of globvar
+configuration = parse_File_Config();
 
-  # --- Read configuration file
-  global configuration; # Needed to modify global copy of globvar
-  configuration = parse_File_Config();
+# --- Positional arguments that don't require a filterName
+if command == 'reduce-XML':
+  do_reduce_XML()
 
-  # --- Positional arguments that don't require a filterName
-  if command == 'reduce-XML':
-    do_reduce_XML()
+elif command == 'merge-XML':
+  do_merge()
 
-  elif command == 'merge-XML':
-    do_merge()
+elif command == 'list-merged':
+  do_list_merged()
 
-  elif command == 'list-merged':
-    do_list_merged()
+elif command == 'list-categories':
+  do_list_categories()
 
-  elif command == 'list-categories':
-    do_list_categories()
+elif command == 'list-drivers':
+  do_list_drivers();
 
-  elif command == 'list-drivers':
-    do_list_drivers();
+elif command == 'list-controls':
+  do_list_controls();
 
-  elif command == 'list-controls':
-    do_list_controls();
+elif command == 'list-years':
+  do_list_years();
 
-  elif command == 'list-years':
-    do_list_years();
+elif command == 'list-filters':
+  do_list_filters()
 
-  elif command == 'list-filters':
-    do_list_filters()
+elif command == 'check':
+  if args.filterName == None:
+    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+    sys.exit(10)
+  do_checkFilter(args.filterName)
 
-  elif command == 'check':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    do_checkFilter(args.filterName)
+elif command == 'copy':
+  if args.filterName == None:
+    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+    sys.exit(10)
+  do_update(args.filterName)
 
-  elif command == 'copy':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    do_update(args.filterName)
+elif command == 'update':
+  if args.filterName == None:
+    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+    sys.exit(10)
+  __prog_option_sync = 1
+  do_update(args.filterName); 
 
-  elif command == 'update':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    __prog_option_sync = 1
-    do_update(args.filterName); 
+elif command == 'copy-chd':
+  if args.filterName == None:
+    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+    sys.exit(10)
+  do_update_CHD(args.filterName)
 
-  elif command == 'copy-chd':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    do_update_CHD(args.filterName)
+elif command == 'update-chd':
+  if args.filterName == None:
+    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+    sys.exit(10)
+  __prog_option_sync = 1
+  do_update_CHD(args.filterName)
 
-  elif command == 'update-chd':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    __prog_option_sync = 1
-    do_update_CHD(args.filterName)
+elif command == 'check-artwork':
+  if args.filterName == None:
+    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+    sys.exit(10)
+  do_check_Artwork(args.filterName)
 
-  elif command == 'check-artwork':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    do_check_Artwork(args.filterName)
+elif command == 'copy-artwork':
+  if args.filterName == None:
+    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+    sys.exit(10)
+  do_update_Artwork(args.filterName)
 
-  elif command == 'copy-artwork':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    do_update_Artwork(args.filterName)
+elif command == 'update-artwork':
+  if args.filterName == None:
+    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
+    sys.exit(10)
+  __prog_option_sync = 1
+  do_update_Artwork(args.filterName)
 
-  elif command == 'update-artwork':
-    if args.filterName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-      sys.exit(10)
-    __prog_option_sync = 1
-    do_update_Artwork(args.filterName)
+else:
+  NARS.print_error('Unrecognised command: ' + command)
+  sys.exit(1)
 
-  else:
-    NARS.print_error('Unrecognised command: ' + command)
-    sys.exit(1)
-
-  sys.exit(0)
-
-# Execute main function if script called from command line (not imported 
-# as module)
-if __name__ == "__main__":
-  main(sys.argv[1:])
+sys.exit(0)
