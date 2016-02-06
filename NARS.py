@@ -135,14 +135,47 @@ def print_debug(print_str):
 # -----------------------------------------------------------------------------
 # This function either succeeds or aborts the program. Check if file exists
 # before calling this.
-def delete_ROM_file(fileName, dir):
+def delete_ROM_file(fileName, dir, __prog_option_dry_run):
   fullFilename = dir + fileName;
 
   if not __prog_option_dry_run:
     try:
       os.remove(fullFilename);
     except EnvironmentError:
-      print_debug("delete_ROM_file >> Error happened");
+      print_debug("delete_ROM_file >> Error happened")
+
+# Deletes directory CHD_dir, deleting CHD files first, then delete the directory
+# using rmdir. Abort if directory is not empty after cleaning CHD files.
+# Returns,
+# n >= 0  Directory deleted and number of CHD files deleted (maybe 0)
+__DEBUG_delete_CHD_directory = 0
+def delete_CHD_directory(CHD_dir, __prog_option_dry_run):
+  num_CHD = 0
+
+  CHD_list = [];
+  for file in os.listdir(CHD_dir):
+    if file.endswith(".chd"):
+      CHD_full_path = CHD_dir + '/' + file
+      if __DEBUG_delete_CHD_directory: print('CHD_list file {0}'.format(CHD_full_path))
+      CHD_list.append(CHD_full_path);
+
+  # Delete all CHD files inside directory
+  if not __prog_option_dry_run:
+    for file in CHD_list:
+      try:
+        os.remove(file)
+        if __DEBUG_delete_CHD_directory: print('Deleted CHD       {0}'.format(file))
+      except EnvironmentError:
+        print_debug("delete_CHD_directory >> Error happened deleting CHD file")
+      num_CHD += 1
+    try:
+      os.rmdir(CHD_dir)
+      if __DEBUG_delete_CHD_directory: print('Deleted directory {0}'.format(CHD_dir))
+    except OSError:
+      print_debug("delete_CHD_directory >> Directory not empty after deleting CHD file/s")
+      sys.exit(10)
+
+  return num_CHD
 
 def exists_ROM_file(fileName, dir):
   fullFilename = dir + fileName;
