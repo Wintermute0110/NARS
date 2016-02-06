@@ -2878,7 +2878,7 @@ def do_checkFilter(filterName):
         num_CHD += 1
         CHDFullFilename = sourceDir_CHD + '/' + romObject.name + '/' + CHD_file + '.chd'
         haveFlag = 'Have CHD'
-        if not os.path.isfile(sourceFullFilename):
+        if not os.path.isfile(CHDFullFilename):
           missing_CHD += 1
           haveFlag = 'Missing CHD'
         else:
