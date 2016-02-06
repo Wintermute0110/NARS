@@ -265,6 +265,20 @@ def get_Filter_Config(filterName):
 # -----------------------------------------------------------------------------
 # Filesystem interaction functions
 # -----------------------------------------------------------------------------
+def haveDir_or_abort(dirName, infoStr = None):
+  if infoStr == None:
+    if dirName == None:
+      print_error('\033[31m[ERROR]\033[0m Directory not configured');
+      sys.exit(10);
+  else:
+    if dirName == None:
+      print_error('\033[31m[ERROR]\033[0m Directory ' + infoStr + ' not configured');
+      sys.exit(10);
+
+  if not os.path.isdir(dirName):
+    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
+    sys.exit(10);
+
 # Returns:
 #  0 - ArtWork file found in sourceDir and copied
 #  1 - ArtWork file not found in sourceDir
@@ -325,95 +339,6 @@ def update_ArtWork_file(fileName, artName, sourceDir, destDir):
       NARS.print_debug("update_ArtWork_file >> Error happened");
 
   return 0
-
-# Returns:
-#  0 no error
-# -1 copy error (exception)
-def copy_CHD_file(romName, chdName, sourceDir, destDir):
-  sourceFullFilename = sourceDir + romName + '/' + chdName;
-  destFullFilename = destDir + romName + '/' + chdName;
-  chdDestDir = destDir + romName;
-
-  print_debug(' Copying     ' + sourceFullFilename);
-  print_debug('      Into        ' + destFullFilename);
-  print_debug('      CHD destDir ' + chdDestDir);
-
-  existsSource = os.path.isfile(sourceFullFilename);
-  if not existsSource:
-    return 2;
-
-  ret = 0;
-  if not __prog_option_dry_run:
-    # --- Create CHD destination directory if needed
-    if not os.path.isdir(chdDestDir):
-      os.makedirs(chdDestDir);
-    # --- Copy CHD file
-    try:
-      shutil.copy(sourceFullFilename, destFullFilename)
-    except EnvironmentError:
-      ret = -1;
-      print_debug("copy_CHD_file() >> Error happened when copying file");
-
-  return ret;
-
-# Returns:
-#  0 - File copied (sizes different)
-#  1 - File not copied (updated)
-#  2 - source CHD not found (missing CHD)
-# -1 - copy error (exception)
-def update_CHD_file(romName, chdName, sourceDir, destDir):
-  sourceFullFilename = sourceDir + romName + '/' + chdName;
-  destFullFilename = destDir + romName + '/' + chdName;
-  chdDestDir = destDir + romName;
-
-  print_debug(' Updating   ' + sourceFullFilename);
-  print_debug('      Into        ' + destFullFilename);
-  print_debug('      CHD destDir ' + chdDestDir);
-
-  existsSource = os.path.isfile(sourceFullFilename);
-  existsDest = os.path.isfile(destFullFilename);
-  if not existsSource:
-    return 2;
-
-  sizeSource = os.path.getsize(sourceFullFilename);
-  if existsDest:
-    sizeDest = os.path.getsize(destFullFilename);
-  else:
-    sizeDest = -1;
-
-  # If sizes are equal. Skip copy and return 1
-  if sizeSource == sizeDest:
-    return 1;
-
-  # destFile does not exist or sizes are different, copy.
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
-  if not __prog_option_dry_run:
-    # --- Create CHD destination directory if needed
-    if not os.path.isdir(chdDestDir):
-      os.makedirs(chdDestDir);
-    # --- Copy file
-    try:
-      shutil.copy(sourceFullFilename, destFullFilename)
-    except EnvironmentError:
-      print_debug("update_CHD_file >> Error happened");
-      return -1;
-
-  return 0;
-
-def haveDir_or_abort(dirName, infoStr = None):
-  if infoStr == None:
-    if dirName == None:
-      print_error('\033[31m[ERROR]\033[0m Directory not configured');
-      sys.exit(10);
-  else:
-    if dirName == None:
-      print_error('\033[31m[ERROR]\033[0m Directory ' + infoStr + ' not configured');
-      sys.exit(10);
-
-  if not os.path.isdir(dirName):
-    print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
-    sys.exit(10);
 
 # -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir):
@@ -479,10 +404,14 @@ def update_ROM_list(rom_list, sourceDir, destDir):
   NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
   NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
 
-def copy_CHD_dic(chd_dic, sourceDir, destDir):
+#
+# CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
+#
+__debug_copy_CHD_dic = 0
+def copy_CHD_dic(CHD_dic, sourceDir, destDir):
   NARS.print_info('[Copying CHDs into destDir]');
 
-  # * If user did not configure CHDs source directory then do nothing
+  # If user did not configure CHDs source directory then do nothing
   if sourceDir == None or sourceDir == '':
     NARS.print_info('CHD source directory not configured');
     NARS.print_info('Skipping CHD copy');
@@ -492,88 +421,65 @@ def copy_CHD_dic(chd_dic, sourceDir, destDir):
     NARS.print_error('CHD source directory not found ' + sourceDir)
     sys.exit(10);
 
-  # * Copy CHDs
-  num_steps = len(chd_dic);
+  # --- Copy CHDs ---
+  num_steps = len(CHD_dic);
   step = 0; # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
-  num_files = 0;
-  num_copied_CHDs = 0;
-  for chd_copy_key in sorted(chd_dic):
-    # --- Update progress
-    percentage = 100 * step / num_steps;
-    sys.stdout.write('{:3d}% '.format(percentage));
+  num_CHD = 0
+  num_copied_CHD = 0
+  num_updated_CHD = 0
+  num_missing_CHD = 0
+  num_errors = 0
+  for machine_name in sorted(CHD_dic):
+    # Check if CHD directory exists. If not, create it. Abort if creation fails.
+    chdSourceDir = sourceDir + machine_name + '/'
+    chdDestDir = destDir + machine_name + '/'
+    if __debug_copy_CHD_dic: print('CHD dir = {0}\n'.format(chdDestDir))
+    if not os.path.isdir(chdDestDir):
+      if __debug_copy_CHD_dic: print('Creating CHD dir = {0}\n'.format(chdDestDir))
+      os.makedirs(chdDestDir);
 
-    # --- Copy file (this function succeeds or aborts program)
-    chdFileName = chd_dic[chd_copy_key] + '.chd';
-    ret = copy_CHD_file(chd_copy_key, chdFileName, sourceDir, destDir);
-    if ret == 0:
-      num_copied_CHDs += 1;
-      print_info('<Copied > ' + chd_copy_key + '/' + chdFileName);
-    elif ret == 2:
-      print_info('<Missing> ' + chd_copy_key + '/' + chdFileName);
-    elif ret == -1:
-      print_info('<ERROR  > ' + chd_copy_key + '/' + chdFileName);
-    else:
-      print_error('Wrong value returned by copy_CHD_file()');
-      sys.exit(10);
-    sys.stdout.flush();
-
-    # --- Update progress
-    step += 1;
-
-  NARS.print_info('[Report]');
-  NARS.print_info('Copied CHDs ' + '{:6d}'.format(num_copied_CHDs));
-
-def update_CHD_dic(chd_dic, sourceDir, destDir):
-  NARS.print_info('[Updating CHDs into destDir]');
-
-  # * If user did not configure CHDs source directory then do nothing
-  if sourceDir == None or sourceDir == '':
-    NARS.print_info('CHD source directory not configured');
-    NARS.print_info('Skipping CHD copy');
-    return
-
-  if not os.path.exists(sourceDir):
-    NARS.print_error('CHD source directory not found ' + sourceDir)
-    sys.exit(10)
-
-  num_steps = len(chd_dic);
-  step = 0; # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
-  num_copied_CHDs = 0;
-  num_updated_CHDs = 0;
-  for chd_copy_key in sorted(chd_dic):
-    # --- Update progress
-    percentage = 100 * step / num_steps;
-
-    # --- Copy file (this function succeeds or aborts program)
-    chdFileName = chd_dic[chd_copy_key] + '.chd';
-    ret = update_CHD_file(chd_copy_key, chdFileName, sourceDir, destDir);
-    if ret == 0:
-      # On default verbosity level only report copied files
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      num_copied_CHDs += 1;
-      NARS.print_info('<Copied > ' + chd_copy_key + '/' + chdFileName);
-    elif ret == 1:
-      if log_level >= Log.verb:
+    # Iterate over this machine CHD list and copy them. Abort if CHD cannot be
+    # copied
+    CHD_list = CHD_dic[machine_name]
+    for CHD_file in CHD_list:
+      num_CHD += 1
+      chdFileName = CHD_file + '.chd';
+      if __prog_option_sync:
+        ret = NARS.update_ROM_file(chdFileName, chdSourceDir, chdDestDir, __prog_option_dry_run)
+      else:
+        ret = NARS.copy_ROM_file(chdFileName, chdSourceDir, chdDestDir, __prog_option_dry_run)
+      # On default verbosity level only report copied files and errors
+      percentage = 100 * step / num_steps
+      if ret == 0:
+        num_copied_CHD += 1;
         sys.stdout.write('{:3.0f}% '.format(percentage));
-      num_updated_CHDs += 1;
-      NARS.print_verb('<Updated> ' + chd_copy_key + '/' + chdFileName);
-    elif ret == 2:
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      NARS.print_info('<Missing> ' + chd_copy_key + '/' + chdFileName);
-    elif ret == -1:
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      NARS.print_info('<ERROR  > ' + chd_copy_key + '/' + chdFileName);
-    else:
-      NARS.print_error('Wrong value returned by update_ROM_file()');
-      sys.exit(10);
-    sys.stdout.flush()
-
+        NARS.print_info('<Copied > ' + machine_name + '/' + chdFileName);
+      elif ret == 1:
+        num_updated_CHD += 1;
+        if NARS.log_level >= NARS.Log.verb:
+          sys.stdout.write('{:3.0f}% '.format(percentage));
+        NARS.print_verb('<Updated> ' + machine_name + '/' + chdFileName);
+      elif ret == 2:
+        num_missing_CHD += 1;
+        sys.stdout.write('{:3.0f}% '.format(percentage));
+        NARS.print_info('<Missing> ' + machine_name + '/' + chdFileName);
+      elif ret == -1:
+        num_errors += 1;
+        sys.stdout.write('{:3.0f}% '.format(percentage));
+        NARS.print_info('<ERROR  > ' + machine_name + '/' + chdFileName);
+      else:
+        NARS.print_error('Wrong value returned by update_ROM_file()');
+        sys.exit(10);
+      sys.stdout.flush()
     # --- Update progress
     step += 1;
 
   NARS.print_info('[Report]');
-  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_CHDs));
-  NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_CHDs));
+  NARS.print_info('Total CHDs   ' + '{:4d}'.format(num_CHD));
+  NARS.print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_CHD));
+  NARS.print_info('Update CHDs  ' + '{:4d}'.format(num_updated_CHD));
+  NARS.print_info('Missing CHDs ' + '{:4d}'.format(num_missing_CHD));
+  NARS.print_info('Copy errors  ' + '{:4d}'.format(num_errors));
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
   NARS.print_info('[Cleaning ROMs in ROMsDest]');
@@ -1669,6 +1575,13 @@ def create_copy_list(mame_filtered_dic, rom_main_list):
 
   return copy_list;
 
+# Creates a dictionary of CHDs to be copied. Diccionary key if the machine
+# name. Dictionary value is a list of the CHDs belonging to that machine. One
+# machine may have more than one CHD. CHD names are generally different from
+# machine names.
+#
+# CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
+__debug_CHD_list = 1;
 def create_copy_CHD_dic(mame_filtered_dic):
   "With list of filtered ROMs and, create list of CHDs to be copied"
 
@@ -1676,16 +1589,21 @@ def create_copy_CHD_dic(mame_filtered_dic):
   CHD_dic = {};
   num_added_CHDs = 0;
   for key in sorted(mame_filtered_dic):
+    if __debug_CHD_list:
+      print('DEBUG: Machine {0}'.format(key))
     romObject = mame_filtered_dic[key];
-    # - CHD dependencies
+    # CHD dependencies
     if hasattr(romObject, 'CHD_depends') and (romObject.CHD_depends):
+      CHD_list = [];
       for CHD_depend in romObject.CHD_depends:
-        # CHD names may be different from ROM names
-        CHD_dic[key] = CHD_depend;
-        num_added_CHDs += 1;
+        CHD_list.append(CHD_depend)
+        num_added_CHDs += 1
         NARS.print_info('Game ' + key.ljust(8) + ' depends on CHD    ' + \
-                        CHD_depend.ljust(11) + ' - Adding  to list');
+                        CHD_depend.ljust(30) + ' - Adding  to list');
+      CHD_dic[key] = CHD_list      
   NARS.print_info('Added ' + str(num_added_CHDs) + ' CHDs');
+  if __debug_CHD_list:
+    print('DEBUG: len(CHD_dic) = {0}'.format(len(CHD_dic)))
 
   return CHD_dic;
 
@@ -2918,8 +2836,8 @@ def do_checkFilter(filterName):
 
   # --- Check for errors, missing paths, etc...
   NARS.have_dir_or_abort(sourceDir)
-  NARS.have_dir_or_abort(destDir)
   NARS.have_dir_or_abort(sourceDir_CHD)
+  NARS.have_dir_or_abort(destDir)
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML()
@@ -3053,13 +2971,9 @@ def do_update_CHD(filterName):
 
   # --- Create list of CHDs and samples needed --------------------------------
   CHD_dic = create_copy_CHD_dic(mame_filtered_dic);
-  # samples_list = create_copy_samples_list(mame_filtered_dic);
 
-  # --- Copy CHDs into destDir ------------------------------------------------
-  if __prog_option_sync:
-    update_CHD_dic(CHD_dic, sourceDir_CHD, destDir);
-  else:
-    copy_CHD_dic(CHD_dic, sourceDir_CHD, destDir);
+  # --- Copy/Update CHDs into destDir -----------------------------------------
+  copy_CHD_dic(CHD_dic, sourceDir_CHD, destDir)
 
   # If --cleanCHDs is on then delete unknown CHD and directories.
   if __prog_option_clean_CHD:

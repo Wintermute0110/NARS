@@ -21,6 +21,7 @@
 import sys
 import os
 import re
+import shutil
 
 # ElementTree XML parser
 import xml.etree.ElementTree as ET
@@ -149,6 +150,12 @@ def exists_ROM_file(fileName, dir):
   return os.path.isfile(fullFilename);
 
 def have_dir_or_abort(dirName):
+  if dirName == None:
+    print_error('\033[31m[ERROR]\033[0m Directory name = None');
+    sys.exit(10);
+  else:
+    print_info('Checking directory ' + dirName)
+
   if not os.path.isdir(dirName):
     print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + dirName);
     sys.exit(10);
@@ -156,21 +163,35 @@ def have_dir_or_abort(dirName):
 # -----------------------------------------------------------------------------
 # Filesystem helper functions
 # -----------------------------------------------------------------------------
+# Returns:
+#  0  File copied, no error
+#  2  Source file missing
+# -1  Copy error (exception)
 def copy_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
 
   print_debug(' Copying ' + sourceFullFilename);
   print_debug(' Into    ' + destFullFilename);
+
+  existsSource = os.path.isfile(sourceFullFilename);
+  if not existsSource:
+    return 2
+
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
       print_debug("copy_ROM_file >> Error happened");
+      return -1
+
+  return 0
 
 # Returns:
-#  0 - File copied (sizes different)
-#  1 - File not copied (updated)
+#  0  File copied (sizes different)
+#  1  File not copied (updated)
+#  2  Source file missing
+# -1  Copy/Stat error (exception)
 def update_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
@@ -178,18 +199,17 @@ def update_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
   existsSource = os.path.isfile(sourceFullFilename);
   existsDest = os.path.isfile(destFullFilename);
   if not existsSource:
-    print_error("Source file not found");
-    sys.exit(10);
+    return 2
 
   sizeSource = os.path.getsize(sourceFullFilename);
   if existsDest:
     sizeDest = os.path.getsize(destFullFilename);
   else:
-    sizeDest = -1;
+    sizeDest = -1
 
   # If sizes are equal. Skip copy and return 1
   if sizeSource == sizeDest:
-    return 1;
+    return 1
 
   # destFile does not exist or sizes are different, copy.
   print_debug(' Copying ' + sourceFullFilename);
@@ -200,7 +220,7 @@ def update_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
     except EnvironmentError:
       print_debug("update_ROM_file >> Error happened");
 
-  return 0;
+  return 0
 
 # -----------------------------------------------------------------------------
 # XML functions
