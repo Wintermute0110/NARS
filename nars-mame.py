@@ -1204,7 +1204,7 @@ def get_ROM_main_list(sourceDir):
 
   return romMainList_dict;
 
-def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
+def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
   "Generates game information files (NFO) in destDir"
 
   NARS.print_info('[Generating NFO files]');
@@ -2398,20 +2398,15 @@ def do_checkFilter(filterName):
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_Config(filterName)
-  sourceDir = filter_config.sourceDir
-  destDir = filter_config.destDir
-  sourceDir_CHD = filter_config.destDir_CHD
-
-  # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir)
-  NARS.have_dir_or_abort(sourceDir_CHD)
-  NARS.have_dir_or_abort(destDir)
+  NARS.have_dir_or_abort(filter_config.sourceDir, 'ROMsSource')
+  NARS.have_dir_or_abort(filter_config.destDir_CHD, 'CHDsSource')
+  NARS.have_dir_or_abort(filter_config.destDir, 'ROMsDest')
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML()
 
   # --- Create main ROM list in sourceDir -------------------------------------
-  rom_main_list = get_ROM_main_list(sourceDir)
+  rom_main_list = get_ROM_main_list(filter_config.sourceDir)
 
   # --- Apply filter and create list of files to be copied --------------------
   mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config)
@@ -2427,7 +2422,7 @@ def do_checkFilter(filterName):
     romObject = mame_filtered_dic[key_main]
 
     # --- Check if ROM file exists ---
-    sourceFullFilename = sourceDir + romObject.name + '.zip'
+    sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
     haveFlag = 'Have ROM';
     if not os.path.isfile(sourceFullFilename):
       missing_roms += 1
@@ -2444,7 +2439,8 @@ def do_checkFilter(filterName):
     if len(romObject.CHD_depends) > 0:
       for CHD_file in romObject.CHD_depends:
         num_CHD += 1
-        CHDFullFilename = sourceDir_CHD + '/' + romObject.name + '/' + CHD_file + '.chd'
+        CHDFullFilename = filter_config.destDir_CHD + '/' + \
+                          romObject.name + '/' + CHD_file + '.chd'
         haveFlag = 'Have CHD'
         if not os.path.isfile(CHDFullFilename):
           missing_CHD += 1
@@ -2477,8 +2473,8 @@ def do_update(filterName):
   destDir = filter_config.destDir;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir)
-  NARS.have_dir_or_abort(destDir)
+  NARS.have_dir_or_abort(sourceDir, 'ROMsSource')
+  NARS.have_dir_or_abort(destDir, 'ROMsDest')
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML()
@@ -2491,19 +2487,19 @@ def do_update(filterName):
   rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list)
 
   # --- Copy/Update ROMs into destDir -----------------------------------------
-  copy_ROM_list(rom_copy_list, sourceDir, destDir)
+  NARS.copy_ROM_list(rom_copy_list, sourceDir, destDir, __prog_option_sync, __prog_option_dry_run)
 
   # If --cleanROMs is on then delete unknown files.
   if __prog_option_clean_ROMs:
-    clean_ROMs_destDir(rom_copy_list, destDir)
+    NARS.clean_ROMs_destDir(rom_copy_list, destDir)
 
   # --- Generate NFO XML files with information for launchers
   if __prog_option_generate_NFO:
-    generate_NFO_files(rom_copy_list, mame_filtered_dic, destDir)
+    generate_MAME_NFO_files(rom_copy_list, mame_filtered_dic, destDir)
 
   # --- Delete NFO files of ROMs not present in the destination directory.
   if __prog_option_clean_NFO:
-    clean_NFO_destDir(destDir)
+    NARS.clean_NFO_destDir(destDir, __prog_option_dry_run)
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
@@ -2520,9 +2516,9 @@ def do_update_CHD(filterName):
   sourceDir_CHD = filter_config.destDir_CHD;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir);
-  NARS.have_dir_or_abort(destDir);
-  NARS.have_dir_or_abort(sourceDir_CHD);
+  NARS.have_dir_or_abort(sourceDir, 'ROMsSource');
+  NARS.have_dir_or_abort(sourceDir_CHD, 'CHDsSource');
+  NARS.have_dir_or_abort(destDir, 'ROMsDest');
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML();
@@ -2538,7 +2534,7 @@ def do_update_CHD(filterName):
   CHD_dic = create_copy_CHD_dic(mame_filtered_dic);
 
   # --- Copy/Update CHDs into destDir -----------------------------------------
-  copy_CHD_dic(CHD_dic, sourceDir_CHD, destDir)
+  NARS.copy_CHD_dic(CHD_dic, sourceDir_CHD, destDir, __prog_option_sync, __prog_option_dry_run)
 
   # If --cleanCHDs is on then delete unknown CHD and directories.
   if __prog_option_clean_CHD:
@@ -2558,9 +2554,9 @@ def do_check_Artwork(filterName):
   fanartSourceDir = filter_config.fanartSourceDir;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir);
-  NARS.have_dir_or_abort(thumbsSourceDir);
-  NARS.have_dir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(destDir, 'ROMsDest');
+  NARS.have_dir_or_abort(thumbsSourceDir, 'ThumbsSource');
+  NARS.have_dir_or_abort(fanartSourceDir, 'FanartSource');
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
@@ -2652,11 +2648,11 @@ def do_update_Artwork(filterName):
   fanartDestDir = filter_config.fanartDestDir;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir);
-  NARS.have_dir_or_abort(thumbsSourceDir);
-  NARS.have_dir_or_abort(fanartSourceDir);
-  NARS.have_dir_or_abort(thumbsDestDir);
-  NARS.have_dir_or_abort(fanartDestDir);
+  NARS.have_dir_or_abort(destDir, 'ROMsDest');
+  NARS.have_dir_or_abort(thumbsSourceDir, 'ThumbsSource');
+  NARS.have_dir_or_abort(fanartSourceDir, 'FanartSource');
+  NARS.have_dir_or_abort(thumbsDestDir, 'ThumbsDest');
+  NARS.have_dir_or_abort(fanartDestDir, 'FanartDest');
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
@@ -2680,11 +2676,11 @@ def do_update_Artwork(filterName):
     artwork_copy_dic[rom] = rom;
 
   # --- Copy/Update artwork    
-  copy_ArtWork_list(filter_config, artwork_copy_dic)
+  NARS.copy_ArtWork_list(filter_config, artwork_copy_dic, __prog_option_sync, __prog_option_dry_run)
 
   # --- If --cleanArtWork is on then delete unknown files.
   if __prog_option_clean_ArtWork:
-    clean_ArtWork_destDir(filter_config, artwork_copy_dic)
+    NARS.clean_ArtWork_destDir(filter_config, artwork_copy_dic, __prog_option_dry_run)
 
 def do_printHelp():
   print("""\033[32mUsage: nars-mame.py [options] <command> [filter]\033[0m
