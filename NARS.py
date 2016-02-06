@@ -204,8 +204,8 @@ def copy_ROM_file(fileName, sourceDir, destDir, __prog_option_dry_run):
   sourceFullFilename = sourceDir + fileName;
   destFullFilename = destDir + fileName;
 
-  print_debug(' Copying ' + sourceFullFilename);
-  print_debug(' Into    ' + destFullFilename);
+  print_debug('Copying ' + sourceFullFilename);
+  print_debug('Into    ' + destFullFilename);
 
   existsSource = os.path.isfile(sourceFullFilename);
   if not existsSource:

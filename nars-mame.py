@@ -345,64 +345,50 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
   NARS.print_info('[Copying ROMs into destDir]');
 
   num_steps = len(rom_list);
-  # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
-  step = 0;
-  num_files = 0;
-  num_copied_roms = 0;
+  step = 0 # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
+  num_roms = 0
+  num_copied_roms = 0
+  num_updated_roms = 0
+  num_missing_roms = 0
+  num_errors = 0
   for rom_copy_item in sorted(rom_list):
-    # --- Update progress
-    percentage = 100 * step / num_steps;
-    sys.stdout.write('{:2.0f}% '.format(percentage));
-
-    # --- Copy file (this function succeeds or aborts program)
     romFileName = rom_copy_item + '.zip';
-    NARS.copy_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run);
-    num_copied_roms += 1;
-    NARS.print_info('<Copied> ' + romFileName);
-    sys.stdout.flush();
-
-    # --- Update progress
-    step += 1;
-
-  NARS.print_info('[Report]');
-  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
-
-def update_ROM_list(rom_list, sourceDir, destDir):
-  NARS.print_info('[Updating ROMs into destDir]');
-
-  num_steps = len(rom_list);
-  # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
-  step = 0;
-  num_copied_roms = 0;
-  num_updated_roms = 0;
-  for rom_copy_item in sorted(rom_list):
-    # --- Update progress
-    percentage = 100 * step / num_steps;
-
-    # --- Copy file (this function succeeds or aborts program)
-    romFileName = rom_copy_item + '.zip';
-    ret = NARS.update_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run);
+    num_roms += 1
+    if __prog_option_sync:
+      ret = NARS.update_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run)
+    else:
+      ret = NARS.copy_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run)
+    # On default verbosity level only report copied files and errors
+    percentage = 100 * step / num_steps
     if ret == 0:
-      # On default verbosity level only report copied files
-      sys.stdout.write('{:3.0f}% '.format(percentage));
       num_copied_roms += 1;
+      sys.stdout.write('{:3.0f}% '.format(percentage));
       NARS.print_info('<Copied > ' + romFileName);
     elif ret == 1:
+      num_updated_roms += 1;
       if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:3.0f}% '.format(percentage));
-      num_updated_roms += 1;
       NARS.print_verb('<Updated> ' + romFileName);
+    elif ret == 2:
+      num_missing_roms += 1;
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      NARS.print_info('<Missing> ' + romFileName);
+    elif ret == -1:
+      num_errors += 1;
+      sys.stdout.write('{:3.0f}% '.format(percentage));
+      NARS.print_info('<ERROR  > ' + romFileName);
     else:
-      NARS.print_error('Wrong value returned by update_ROM_file()');
-      sys.exit(10);
-    sys.stdout.flush()
-
+      NARS.print_error('Wrong value returned by update_ROM_file()')
+      sys.exit(10)
     # --- Update progress
     step += 1;
 
   NARS.print_info('[Report]');
-  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms));
-  NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms));
+  NARS.print_info('Total CHDs   ' + '{:4d}'.format(num_roms));
+  NARS.print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_roms));
+  NARS.print_info('Update CHDs  ' + '{:4d}'.format(num_updated_roms));
+  NARS.print_info('Missing CHDs ' + '{:4d}'.format(num_missing_roms));
+  NARS.print_info('Copy errors  ' + '{:4d}'.format(num_errors));
 
 #
 # CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
@@ -423,7 +409,7 @@ def copy_CHD_dic(CHD_dic, sourceDir, destDir):
 
   # --- Copy CHDs ---
   num_steps = len(CHD_dic);
-  step = 0; # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
+  step = 0 # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
   num_CHD = 0
   num_copied_CHD = 0
   num_updated_CHD = 0
@@ -442,8 +428,8 @@ def copy_CHD_dic(CHD_dic, sourceDir, destDir):
     # copied
     CHD_list = CHD_dic[machine_name]
     for CHD_file in CHD_list:
-      num_CHD += 1
       chdFileName = CHD_file + '.chd';
+      num_CHD += 1
       if __prog_option_sync:
         ret = NARS.update_ROM_file(chdFileName, chdSourceDir, chdDestDir, __prog_option_dry_run)
       else:
@@ -451,25 +437,25 @@ def copy_CHD_dic(CHD_dic, sourceDir, destDir):
       # On default verbosity level only report copied files and errors
       percentage = 100 * step / num_steps
       if ret == 0:
-        num_copied_CHD += 1;
-        sys.stdout.write('{:3.0f}% '.format(percentage));
-        NARS.print_info('<Copied > ' + machine_name + '/' + chdFileName);
+        num_copied_CHD += 1
+        sys.stdout.write('{:3.0f}% '.format(percentage))
+        NARS.print_info('<Copied > ' + machine_name + '/' + chdFileName)
       elif ret == 1:
-        num_updated_CHD += 1;
+        num_updated_CHD += 1
         if NARS.log_level >= NARS.Log.verb:
-          sys.stdout.write('{:3.0f}% '.format(percentage));
-        NARS.print_verb('<Updated> ' + machine_name + '/' + chdFileName);
+          sys.stdout.write('{:3.0f}% '.format(percentage))
+        NARS.print_verb('<Updated> ' + machine_name + '/' + chdFileName)
       elif ret == 2:
-        num_missing_CHD += 1;
-        sys.stdout.write('{:3.0f}% '.format(percentage));
-        NARS.print_info('<Missing> ' + machine_name + '/' + chdFileName);
+        num_missing_CHD += 1
+        sys.stdout.write('{:3.0f}% '.format(percentage))
+        NARS.print_info('<Missing> ' + machine_name + '/' + chdFileName)
       elif ret == -1:
-        num_errors += 1;
-        sys.stdout.write('{:3.0f}% '.format(percentage));
-        NARS.print_info('<ERROR  > ' + machine_name + '/' + chdFileName);
+        num_errors += 1
+        sys.stdout.write('{:3.0f}% '.format(percentage))
+        NARS.print_info('<ERROR  > ' + machine_name + '/' + chdFileName)
       else:
-        NARS.print_error('Wrong value returned by update_ROM_file()');
-        sys.exit(10);
+        NARS.print_error('Wrong value returned by update_ROM_file()')
+        sys.exit(10)
       sys.stdout.flush()
     # --- Update progress
     step += 1;
@@ -2956,11 +2942,8 @@ def do_update(filterName):
   mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config)
   rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list)
 
-  # --- Copy ROMs into destDir ------------------------------------------------
-  if __prog_option_sync:
-    update_ROM_list(rom_copy_list, sourceDir, destDir)
-  else:
-    copy_ROM_list(rom_copy_list, sourceDir, destDir)
+  # --- Copy/Update ROMs into destDir -----------------------------------------
+  copy_ROM_list(rom_copy_list, sourceDir, destDir)
 
   # If --cleanROMs is on then delete unknown files.
   if __prog_option_clean_ROMs:
