@@ -542,12 +542,12 @@ def delete_redundant_NFO(destDir):
       # Chech if there is a corresponding ROM for this NFO file
       thisFileName, thisFileExtension = os.path.splitext(file);
       romFileName_temp = thisFileName + '.zip';
-      if not exists_ROM_file(romFileName_temp, destDir):
-        delete_ROM_file(file, destDir);
-        num_deletedNFO_files += 1;
-        print_info('<Deleted NFO> ' + file);
+      if not NARS.exists_ROM_file(romFileName_temp, destDir):
+        NARS.delete_ROM_file(file, destDir, __prog_option_dry_run);
+        num_deletedNFO_files += 1
+        NARS.print_info('<Deleted NFO> ' + file)
 
-  print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
+  NARS.print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
   NARS.print_info('[Copying ArtWork]');
@@ -686,7 +686,7 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
   NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
 
 def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
-  print_info('[Cleaning ArtWork]');
+  NARS.print_info('[Cleaning ArtWork]');
 
   thumbsDestDir = filter_config.thumbsDestDir;
   fanartDestDir = filter_config.fanartDestDir;
@@ -706,8 +706,8 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
     art_baseName, ext = os.path.splitext(file); # Remove extension
     if art_baseName not in artwork_copy_dic:
       num_cleaned_thumbs += 1;
-      delete_ROM_file(file, thumbsDestDir);
-      print_info('<Deleted thumb > ' + file);
+      NARS.delete_ROM_file(file, thumbsDestDir, __prog_option_dry_run);
+      NARS.print_info('<Deleted thumb > ' + file);
 
   # --- Delete unknown fanart
   fanart_file_list = [];
@@ -720,12 +720,12 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
     art_baseName, ext = os.path.splitext(file); # Remove extension
     if art_baseName not in artwork_copy_dic:
       num_cleaned_fanart += 1;
-      delete_ROM_file(file, fanartDestDir);
-      print_info(' <Deleted fanart> ' + file);
+      NARS.delete_ROM_file(file, fanartDestDir, __prog_option_dry_run);
+      NARS.print_info('<Deleted fanart> ' + file);
 
-  # --- Report
-  print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
-  print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
+  # Print eport
+  NARS.print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
+  NARS.print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
 
 # -----------------------------------------------------------------------------
 # Misc functions
@@ -1664,7 +1664,7 @@ def get_ROM_main_list(sourceDir):
 def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
   "Generates game information files (NFO) in destDir"
 
-  print_info('[Generating NFO files]');
+  NARS.print_info('[Generating NFO files]');
   num_NFO_files = 0;
   for rom_name in sorted(rom_copy_dic):
     romObj = mame_filtered_dic[rom_name];
@@ -1728,13 +1728,13 @@ def generate_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 
     # --- Write output file (don't use miniDOM, is sloow)
     # See http://norwied.wordpress.com/2013/08/27/307/
-    print_verb('Writing ' + NFO_full_filename);
-    indent_ElementTree_XML(root_output);
+    NARS.print_verb('Writing ' + NFO_full_filename);
+    NARS.indent_ElementTree_XML(root_output);
     tree_output.write(NFO_full_filename, xml_declaration=True, encoding='utf-8', method="xml")
     num_NFO_files += 1;
 
-  print_info('[Report]');
-  print_info('Generated ' + str(num_NFO_files) + ' NFO files');
+  NARS.print_info('[Report]');
+  NARS.print_info('Generated ' + str(num_NFO_files) + ' NFO files');
 
 # -----------------------------------------------------------------------------
 # MAME XML is written by this file:
