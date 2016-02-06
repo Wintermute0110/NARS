@@ -1957,8 +1957,6 @@ def do_list_merged():
       # Machine attributes
       machine_attrib = machine_EL.attrib;
       NARS.print_info(machine_attrib['name']);
-
-      # Machine attributes
       if 'sourcefile' in machine_attrib:
         NARS.print_info('-         driver   ' + machine_attrib['sourcefile']);
       if 'sampleof' in machine_attrib:
@@ -1974,14 +1972,9 @@ def do_list_merged():
         num_BIOS += 1;
         NARS.print_info('-         isbios   ' + machine_attrib['isbios']);
       if 'runnable' in machine_attrib:
-        if machine_attrib['runnable'] == 'yes':
-          print('Found a machine with runnable="yes" attribute! Exiting...')
-          sys.exit(10)
-        else:
-          num_norunnable += 1;
+        num_norunnable += 1;
         NARS.print_info('-       runnable   ' + machine_attrib['runnable']);
         
-
       # Iterate through the children of a machine
       for machine_child in machine_EL:
         if machine_child.tag == 'description':
@@ -1994,19 +1987,17 @@ def do_list_merged():
           NARS.print_info('-- driver status   ' + machine_child.attrib['status']);
         elif machine_child.tag == 'category':
           NARS.print_info('--      category   ' + machine_child.text);
-#    else:
-#      NARS.print_info('Machine tag = ' + machine_EL.tag)
 
   NARS.print_info('[Report]');
   NARS.print_info('Number of machines     ' + str(num_games))
   NARS.print_info('Number of clones       ' + str(num_clones))
-  NARS.print_info('Number of arcades      ' + str(-1))
-  NARS.print_info('Number of non-arcades  ' + str(-1))
-  NARS.print_info('Machines with samples  ' + str(num_samples))
+  NARS.print_info('Machines with ROMs     ' + str(-1))
+  NARS.print_info('Machines without ROMs  ' + str(-1))
   NARS.print_info('Machines with CHDs     ' + str(-1))
+  NARS.print_info('Machines with samples  ' + str(num_samples))
   NARS.print_info('Number of devices      ' + str(num_devices))
   NARS.print_info('Number of BIOS         ' + str(num_BIOS))
-  NARS.print_info('Machines non-runnable  ' + str(num_norunnable))
+  NARS.print_info('Non-runnable machines  ' + str(num_norunnable))
 
 def do_list_categories():
   "Parses Catver.ini and prints the categories and how many games for each"
