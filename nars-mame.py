@@ -534,7 +534,7 @@ def clean_CHDs_destDir(CHD_dic, destDir):
   NARS.print_info('Deleted directories  ' + str(num_deleted_dirs))
   NARS.print_info('Deleted CHDs         ' + str(num_deleted_CHD))
 
-def delete_redundant_NFO(destDir):
+def clean_NFO_destDir(destDir):
   NARS.print_info('[Deleting redundant NFO files]');
   num_deletedNFO_files = 0;
   for file in os.listdir(destDir):
@@ -2972,7 +2972,7 @@ def do_update(filterName):
 
   # --- Delete NFO files of ROMs not present in the destination directory.
   if __prog_option_clean_NFO:
-    delete_redundant_NFO(destDir)
+    clean_NFO_destDir(destDir)
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
