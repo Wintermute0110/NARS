@@ -482,7 +482,9 @@ def copy_CHD_dic(CHD_dic, sourceDir, destDir):
   NARS.print_info('Copy errors  ' + '{:4d}'.format(num_errors));
 
 # Delete ROMs present in destDir not present in the filtered list
-def clean_ROMs_destDir(destDir, rom_copy_dic):
+# 1) Make a list of .zip files in destDir
+# 2) Delete all .zip files of games no in the filtered list
+def clean_ROMs_destDir(rom_copy_dic, destDir):
   NARS.print_info('[Cleaning ROMs in ROMsDest]')
 
   rom_main_list = [];
@@ -495,8 +497,8 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
     basename, ext = os.path.splitext(file); # Remove extension
     if basename not in rom_copy_dic:
       num_cleaned_roms += 1;
-      delete_ROM_file(file, destDir);
-      print_info('<Deleted> ' + file);
+      NARS.delete_ROM_file(file, destDir, __prog_option_dry_run);
+      NARS.print_info('<Deleted> ' + file);
 
   NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
 
@@ -2941,36 +2943,36 @@ def do_update(filterName):
   destDir = filter_config.destDir;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir);
-  NARS.have_dir_or_abort(destDir);
+  NARS.have_dir_or_abort(sourceDir)
+  NARS.have_dir_or_abort(destDir)
 
   # --- Get MAME parent/clone dictionary --------------------------------------
-  mame_xml_dic = parse_MAME_merged_XML();
+  mame_xml_dic = parse_MAME_merged_XML()
 
   # --- Create main ROM list in sourceDir -------------------------------------
-  rom_main_list = get_ROM_main_list(sourceDir);
+  rom_main_list = get_ROM_main_list(sourceDir)
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
-  rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list);
+  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config)
+  rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list)
 
   # --- Copy ROMs into destDir ------------------------------------------------
   if __prog_option_sync:
-    update_ROM_list(rom_copy_list, sourceDir, destDir);
+    update_ROM_list(rom_copy_list, sourceDir, destDir)
   else:
-    copy_ROM_list(rom_copy_list, sourceDir, destDir);
+    copy_ROM_list(rom_copy_list, sourceDir, destDir)
 
   # If --cleanROMs is on then delete unknown files.
   if __prog_option_clean_ROMs:
-    clean_ROMs_destDir(destDir, rom_copy_list);
+    clean_ROMs_destDir(rom_copy_list, destDir)
 
   # --- Generate NFO XML files with information for launchers
   if __prog_option_generate_NFO:
-    generate_NFO_files(rom_copy_list, mame_filtered_dic, destDir);
+    generate_NFO_files(rom_copy_list, mame_filtered_dic, destDir)
 
   # --- Delete NFO files of ROMs not present in the destination directory.
   if __prog_option_clean_NFO:
-    delete_redundant_NFO(destDir);
+    delete_redundant_NFO(destDir)
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
