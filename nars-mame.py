@@ -2779,7 +2779,6 @@ if command == 'usage':
   sys.exit(0);
 
 # --- Read configuration file
-global configuration; # Needed to modify global copy of globvar
 configuration = parse_File_Config();
 
 # --- Positional arguments that don't require a filterName
