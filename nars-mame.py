@@ -1945,58 +1945,76 @@ def do_list_merged():
   root = tree.getroot();
 
   # Child elements (Reduced MAME XML):
-  num_games = 0;
-  num_clones = 0;
-  num_samples = 0;
-  num_devices = 0;
-  num_BIOS = 0;
-  num_norunnable = 0;
+  num_machines = 0
+  num_clones = 0
+  
+  num_ROMs = 0
+  num_no_ROMs = 0
+  num_CHD = 0
+  num_coin_slot = 0
+  
+  num_samples = 0
+  num_mechanical = 0
+  num_devices = 0
+  num_norunnable = 0
+  num_BIOS = 0
   for machine_EL in root:
     if machine_EL.tag == 'machine':
-      num_games += 1;
-      # Machine attributes
+      num_machines += 1;
       machine_attrib = machine_EL.attrib;
       NARS.print_info(machine_attrib['name']);
-      if 'sourcefile' in machine_attrib:
-        NARS.print_info('-         driver   ' + machine_attrib['sourcefile']);
-      if 'sampleof' in machine_attrib:
-        num_samples += 1;
-        NARS.print_info('-       sampleof   ' + machine_attrib['sampleof']);
+      # --- Machine attributes ---
       if 'cloneof' in machine_attrib:
-        num_clones += 1;
-        NARS.print_info('-        cloneof   ' + machine_attrib['cloneof']);
-      if 'isdevice' in machine_attrib:
-        num_devices += 1;
-        NARS.print_info('-       isdevice   ' + machine_attrib['isdevice']);
-      if 'isbios' in machine_attrib:
-        num_BIOS += 1;
-        NARS.print_info('-         isbios   ' + machine_attrib['isbios']);
-      if 'runnable' in machine_attrib:
-        num_norunnable += 1;
-        NARS.print_info('-       runnable   ' + machine_attrib['runnable']);
-        
+        num_clones += 1
+        NARS.print_info('-        cloneof   ' + machine_attrib['cloneof'])
+      if 'sourcefile' in machine_attrib:
+        NARS.print_info('-         driver   ' + machine_attrib['sourcefile'])
+      if 'sampleof' in machine_attrib:
+        num_samples += 1
+        NARS.print_info('-       sampleof   ' + machine_attrib['sampleof'])
+      # yes/no attributes (which have default value in the DTD)
+      if 'ismechanical' in machine_attrib and machine_attrib['ismechanical'] == 'yes':
+        num_mechanical += 1
+        NARS.print_info('-   ismechanical   ' + machine_attrib['ismechanical'])
+      if 'isbios' in machine_attrib and machine_attrib['isbios'] == 'yes':
+        num_BIOS += 1
+        NARS.print_info('-         isbios   ' + machine_attrib['isbios'])
+      if 'isdevice' in machine_attrib and machine_attrib['isdevice'] == 'yes':
+        num_devices += 1
+        NARS.print_info('-       isdevice   ' + machine_attrib['isdevice'])
+      if 'runnable' in machine_attrib and machine_attrib['runnable'] == 'no':
+        num_norunnable += 1
+        NARS.print_info('-       runnable   ' + machine_attrib['runnable'])
+
       # Iterate through the children of a machine
       for machine_child in machine_EL:
         if machine_child.tag == 'description':
-          NARS.print_info('--   description   ' + machine_child.text);
+          NARS.print_info('--   description   ' + machine_child.text)
         elif machine_child.tag == 'year':
-          NARS.print_info('--          year   ' + machine_child.text);
+          NARS.print_info('--          year   ' + machine_child.text)
         elif machine_child.tag == 'manufacturer':
-          NARS.print_info('--  manufacturer   ' + machine_child.text);
+          NARS.print_info('--  manufacturer   ' + machine_child.text)
         elif machine_child.tag == 'driver':
-          NARS.print_info('-- driver status   ' + machine_child.attrib['status']);
+          NARS.print_info('-- driver status   ' + machine_child.attrib['status'])
         elif machine_child.tag == 'category':
-          NARS.print_info('--      category   ' + machine_child.text);
-
+          NARS.print_info('--      category   ' + machine_child.text)
+        # --- NARS custom tags ---
+        elif machine_child.tag == 'NARS':
+          # NARS attributes
+          
+          # NARS child tags
+          pass
   NARS.print_info('[Report]');
-  NARS.print_info('Number of machines     ' + str(num_games))
+  NARS.print_info('Number of machines     ' + str(num_machines))
   NARS.print_info('Number of clones       ' + str(num_clones))
-  NARS.print_info('Machines with ROMs     ' + str(-1))
-  NARS.print_info('Machines without ROMs  ' + str(-1))
-  NARS.print_info('Machines with CHDs     ' + str(-1))
+  NARS.print_info('Machines with ROMs     ' + str(num_ROMs))
+  NARS.print_info('Machines without ROMs  ' + str(num_no_ROMs))
+  NARS.print_info('Machines with CHDs     ' + str(num_CHD))
+  NARS.print_info('Machines with CHDs     ' + str(num_coin_slot))
   NARS.print_info('Machines with samples  ' + str(num_samples))
-  NARS.print_info('Number of devices      ' + str(num_devices))
+  NARS.print_info('Mechanical machines    ' + str(num_mechanical))
   NARS.print_info('Number of BIOS         ' + str(num_BIOS))
+  NARS.print_info('Number of devices      ' + str(num_devices))
   NARS.print_info('Non-runnable machines  ' + str(num_norunnable))
 
 def do_list_categories():
