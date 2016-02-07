@@ -320,7 +320,11 @@ def trim_driver_string(driver_str):
   # If driver name ends in .c, for example cps1.c, then trim .c
   if driver_str[-2:] == '.c':
     old_driver_str = driver_str;
-    driver_str = old_driver_str[:len(old_driver_str)-2]
+    driver_str = old_driver_str[:-2]
+  # If driver name ends in .cpp, for example cps2.cpp, then trim .cpp
+  elif driver_str[-4:] == '.cpp':
+    old_driver_str = driver_str;
+    driver_str = old_driver_str[:-4]
 
   return driver_str
 
@@ -509,11 +513,9 @@ def parse_MAME_merged_XML():
 
       # Create ROM object and fill default values. Code has to change only
       # non-default ones, and will be more compact.
-      romObject = ROM(romName)
-
-      # --- Game attributes
       game_attrib = game_EL.attrib;
       romName = game_attrib['name'];
+      romObject = ROM(romName)
       NARS.print_debug('machine = ' + romName)
       # --- Check game attributes and create variables for filtering
       # Parent or clone
@@ -2154,6 +2156,7 @@ def do_list_categories():
   NARS.print_info('[Report]');
   NARS.print_info('Number of categories  ' + str(num_categories))
 
+__debug_do_list_drivers = 0
 def do_list_drivers():    
   "Parses merged XML database and makes driver histogram and statistics"
 
@@ -2165,45 +2168,48 @@ def do_list_drivers():
   filename = configuration.MergedInfo_XML;
   tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
-  # Do histogram
+  # --- Do histogram ---
   drivers_histo_dic = {};
   root = tree.getroot();
   for machine_EL in root:
     if machine_EL.tag == 'machine':
-      machine_attrib = machine_EL.attrib;
+      machine_attrib = machine_EL.attrib
+      if __debug_do_list_drivers:
+        print('Machine {0}'.format(machine_EL.attrib['name']))
       # If machine is a clone don't include it in the histogram
       if 'cloneof' in machine_attrib:
-        continue;
-      # - If machine is mechanical don't include it
-      if 'ismechanical' in machine_attrib:
-        continue;
-      # - If machine is device don't include it
-      if 'isdevice' in machine_attrib:
-        continue;
-
-      # --- Histogram
+        continue
+      # If machine is mechanical don't include it
+      if 'ismechanical' in machine_attrib and machine_attrib['ismechanical'] == 'yes':
+        continue
+      # If machine is device don't include it
+      if 'isdevice' in machine_attrib and machine_attrib['isdevice'] == 'yes':
+        continue
+      # --- Histogram ---
       if 'sourcefile' in machine_attrib:
-        driver_name = machine_attrib['sourcefile'];
+        driver_name = trim_driver_string(machine_attrib['sourcefile'])
       else:
-        driver_name = '__unknown__';
+        driver_name = '__unknown__'
+      if __debug_do_list_drivers:
+        print(' driver {0}'.format(driver_name))        
       if driver_name in drivers_histo_dic: 
-        drivers_histo_dic[driver_name] += 1;
+        drivers_histo_dic[driver_name] += 1
       else:
-        drivers_histo_dic[driver_name] = 1;
+        drivers_histo_dic[driver_name] = 1
 
-  # --- Print histogram
+  # --- Print histogram ---
   # Valid in Python 2
 #  sorted_histo = sorted(drivers_histo_dic.iteritems(), key=operator.itemgetter(1))
   # Valid in Python 3
   sorted_histo = ((k, drivers_histo_dic[k]) for k in sorted(drivers_histo_dic, key=drivers_histo_dic.get, reverse=False))
-  NARS.print_info('[Final (used) drivers]');
+  NARS.print_info('[Driver histogram]');
   num_drivers = 0
   for k, v in sorted_histo:
     NARS.print_info('{:4d}'.format(v) + '  ' + k);
     num_drivers += 1
 
   NARS.print_info('[Report]');
-  NARS.print_info('Number of drivers  ' + str(num_drivers))
+  NARS.print_info('Number of drivers {:5d}'.format(num_drivers))
 
 # See http://mamedev.org/source/src/emu/info.c.html, line 784
 __debug_do_list_controls = 0;
@@ -2230,19 +2236,19 @@ def do_list_controls():
   root = tree.getroot();
   for game_EL in root:
     if game_EL.tag == 'machine':
-      game_attrib = game_EL.attrib;
+      machine_attrib = game_EL.attrib;
 
-      # - If game is a clone don't include it in the histogram
-      if 'cloneof' in game_attrib:
-        continue;
-      # - If game is mechanical don't include it
-      if 'ismechanical' in game_attrib:
-        continue;
-      # - If game is device don't include it
-      if 'isdevice' in game_attrib:
-        continue;
+      # If machine is a clone don't include it in the histogram
+      if 'cloneof' in machine_attrib:
+        continue
+      # If machine is mechanical don't include it
+      if 'ismechanical' in machine_attrib and machine_attrib['ismechanical'] == 'yes':
+        continue
+      # If machine is device don't include it
+      if 'isdevice' in machine_attrib and machine_attrib['isdevice'] == 'yes':
+        continue
 
-      game_name = game_attrib['name']
+      game_name = machine_attrib['name']
       if __debug_do_list_controls:
         print('game = ' + game_name);
 
@@ -2367,18 +2373,20 @@ def do_list_years():
   root = tree.getroot();
   for game_EL in root:
     if game_EL.tag == 'machine':
-      game_attrib = game_EL.attrib;
+      machine_attrib = game_EL.attrib;
 
-      # - Remove crap
-      if 'cloneof' in game_attrib:
-        continue;
-      if 'isdevice' in game_attrib:
-        continue;
-      if 'ismechanical' in game_attrib:
-        continue;
+      # If machine is a clone don't include it in the histogram
+      if 'cloneof' in machine_attrib:
+        continue
+      # If machine is mechanical don't include it
+      if 'ismechanical' in machine_attrib and machine_attrib['ismechanical'] == 'yes':
+        continue
+      # If machine is device don't include it
+      if 'isdevice' in machine_attrib and machine_attrib['isdevice'] == 'yes':
+        continue
 
       # - Game name
-      game_name = game_attrib['name']
+      game_name = machine_attrib['name']
 
       # --- Histogram of years
       has_year = 0;
@@ -2479,17 +2487,17 @@ def do_checkFilter(filterName):
 
     # --- Check if ROM file exists ---
     sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
-    haveFlag = 'Have ROM';
     if not os.path.isfile(sourceFullFilename):
       missing_roms += 1
-      haveFlag = 'Missing ROM'
+      NARS.print_info("<Game> " + romObject.name.ljust(12) + \
+                      ' - ' + 'Missing ROM'.ljust(11) + \
+                      ' - ROM ' + romObject.name + '.zip' + \
+                      ' (' + romObject.description + ')')
     else:
       have_roms += 1
-
-    # --- Print ROM have/missing status ---
-    NARS.print_info("<Game> " + romObject.name.ljust(12) + \
-                    ' - ' + haveFlag.ljust(11) + \
-                    ' - ROM ' + romObject.name + '.zip')
+      NARS.print_debug("<Game> " + romObject.name.ljust(12) + \
+                       ' - ' + 'Have ROM'.ljust(11) + \
+                       ' - ROM ' + romObject.name + '.zip')
 
     # --- Check if CHD exists ---
     if len(romObject.CHD_depends) > 0:
@@ -2497,15 +2505,17 @@ def do_checkFilter(filterName):
         num_CHD += 1
         CHDFullFilename = filter_config.destDir_CHD + '/' + \
                           romObject.name + '/' + CHD_file + '.chd'
-        haveFlag = 'Have CHD'
         if not os.path.isfile(CHDFullFilename):
           missing_CHD += 1
           haveFlag = 'Missing CHD'
+          NARS.print_info("<Game> " + romObject.name.ljust(12) + \
+                          ' - ' + 'Missing CHD'.ljust(11) + \
+                          ' - CHD ' + romObject.name + '/' + CHD_file + '.chd')
         else:
           have_CHD += 1
-        NARS.print_info("<Game> " + romObject.name.ljust(12) + \
-                        ' - ' + haveFlag.ljust(11) + \
-                        ' - CHD ' + romObject.name + '/' + CHD_file + '.chd')
+          NARS.print_debug("<Game> " + romObject.name.ljust(12) + \
+                           ' - ' + 'Have CHD'.ljust(11) + \
+                           ' - CHD ' + romObject.name + '/' + CHD_file + '.chd')
 
   NARS.print_info('[Report]');
   NARS.print_info('Filtered ROMs ' + str(len(mame_filtered_dic)));
