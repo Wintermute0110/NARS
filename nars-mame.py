@@ -2694,7 +2694,7 @@ def do_printHelp():
 \033[31mlist-drivers\033[0m            Reads merged XML database and prints a histogram of the drivers.
 \033[31mlist-controls\033[0m           Reads merged XML database and prints a histogram of the game controls.
 \033[31mlist-years\033[0m              Reads merged XML database and prints a histogram of the game release year.
-\033[31mlist-filters\033[0m            List filters defined in configuration file.
+\033[31mlist\033[0m                    List filters defined in configuration file.
 \033[31mcheck <filter>\033[0m          Applies filters and checks you source directory for have and missing ROMs.
 \033[31mcopy <filter>\033[0m           Applies ROM filters and copies sourceDir into destDir.
 \033[31mupdate <filter>\033[0m         Like copy, but only copies files if file size is different.
@@ -2736,7 +2736,7 @@ parser.add_argument('--cleanCHD', help="clean unknown CHDs", action="store_true"
 parser.add_argument('command', \
     help="usage, reduce-XML, merge, list-merged, \
           list-categories, list-drivers, list-controls, list-years,\
-          list-filters, check, copy, update \
+          list, check, copy, update \
           copy-chd, update-chd \
           check-artwork, copy-artwork, update-artwork", nargs = 1)
 parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
@@ -2783,7 +2783,7 @@ elif command == 'list-controls':
   do_list_controls();
 elif command == 'list-years':
   do_list_years();
-elif command == 'list-filters':
+elif command == 'list':
   do_list_filters()
 elif command == 'check':
   if args.filterName == None:
