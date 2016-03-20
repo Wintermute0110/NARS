@@ -1522,7 +1522,7 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # -----------------------------------------------------------------------------
 # Tags created by NARS to be used by the filters
 # -----------------------------------------------------------------------------
-# <NARS hasROM="yes|no" hasSoftwareLists="yes|no" orientation="Horizontal|Vertical">
+# <NARS hasROMs="yes|no" hasSoftwareLists="yes|no" orientation="Horizontal|Vertical">
 #  <BIOS>bios1</BIOS>
 #  <Device>device1</Device>
 #  <Device>device1</Device>
@@ -1811,12 +1811,12 @@ def do_reduce_XML():
       # Create tag <NARS>
       NARS_element = ET.SubElement(machine_EL, 'NARS')
       
-      # <NARS hasROM="yes|no" hasSoftwareLists="yes|no" orientation="Horizontal|Vertical">
+      # <NARS hasROMs="yes|no" hasSoftwareLists="yes|no" orientation="Horizontal|Vertical">
       # 'hasROM is mandatory'
       if has_ROMs or has_CHDs:
-        NARS_element.attrib['hasROM'] = "yes"
+        NARS_element.attrib['hasROMs'] = "yes"
       else:
-        NARS_element.attrib['hasROM'] = "no"
+        NARS_element.attrib['hasROMs'] = "no"
       if hasSoftwareLists:
         NARS_element.attrib['hasSoftwareLists'] = "yes"
       else:
