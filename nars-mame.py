@@ -263,14 +263,6 @@ def get_Filter_Config(filterName):
   sys.exit(20)
 
 # -----------------------------------------------------------------------------
-# Filesystem interaction functions
-# -----------------------------------------------------------------------------
-
-
-# -----------------------------------------------------------------------------
-
-
-# -----------------------------------------------------------------------------
 # Misc functions
 # -----------------------------------------------------------------------------
 # A class to store the MAME machine information.
@@ -1530,14 +1522,13 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # -----------------------------------------------------------------------------
 # Tags created by NARS to be used by the filters
 # -----------------------------------------------------------------------------
-# <NARS>
+# <NARS hasROM="yes|no" hasSoftwareLists="yes|no" orientation="Horizontal|Vertical">
 #  <BIOS>bios1</BIOS>
 #  <Device>device1</Device>
 #  <Device>device1</Device>
 #  <CHD>chd1</CHD>
 #  <CHD>chd2</CHD>
 # </NARS>
-__debug_do_reduce_XML_print_lists = 0;
 __debug_do_reduce_XML_dependencies = 0;
 def do_reduce_XML():
   """Strip out unused MAME XML information, and add ROM/CHD dependencies"""
@@ -1556,16 +1547,21 @@ def do_reduce_XML():
   NARS.print_info('NOTE: this will take a looong time...');
   tree_input = NARS.XML_read_file_ElementTree(input_filename, "Parsing MAME XML file");
 
-  # List of machines which are BIOS, have devices with ROMS, or have CHDs.
+  # Several lists of machines.
   # Checking if a list has an element is SLOW. This lists will be transformed
-  # into sets for quicker access.
-  # List can have repeated elements, sets have unique elements
-  # Sets and dictionaries using hashing.
+  # into sets for quicker access. List can have repeated elements, sets have unique 
+  # elements. Sets and dictionaries use hashing, list do not use hashing.
   # See http://stackoverflow.com/questions/513882/python-list-vs-dict-for-look-up-table
-  bios_list = []; # machines that are BIOS
-  device_with_rom_list = []; # machines that are devices
-  machine_with_chd_list = []; # machines that have CHDs
-  machine_with_ROM_list = []; # machines that have ROMs
+  machine_isBIOS_list = []            # machines that are BIOS
+  machine_isDevice_with_ROM_list = [] # machines that are devices and have ROMs
+  machine_with_CHD_list = []          # machines that have CHDs
+  machine_with_ROM_list = []          # machines that have ROMs
+  machine_with_SoftList_list = []     # machines that have one or more software lists
+  machine_orientation_dic = {}        # key = machine_name : value = "Vertical|Horizontal"
+
+  # NOTE All the MAME XML checks must be done here, and not when the reduced XML is loaded.
+  #      Loading the reduced XML must be as quick as possible.
+
 
   # --- Traverse MAME XML input file ---
   # Root element:
@@ -1594,18 +1590,18 @@ def do_reduce_XML():
   # </machine>
   NARS.print_info('[Reducing MAME XML database]');
   for machine_EL in root_input:
-    isdevice_flag = 0;
+    isdevice_flag = 0
     if machine_EL.tag == 'machine':
       NARS.print_verb('[Machine]');
       machine_name = machine_EL.attrib['name']
 
-      # Copy machine attributes in output XML
+      # Copy all machine attributes in output XML
       game_output = ET.SubElement(root_output, 'machine')
       game_output.attrib = machine_EL.attrib
 
       # Put BIOSes and devices in the list
       if 'isbios' in game_output.attrib:
-        bios_list.append(machine_name)
+        machine_isBIOS_list.append(machine_name)
       if 'isdevice' in game_output.attrib:
         isdevice_flag = 1
 
@@ -1613,7 +1609,8 @@ def do_reduce_XML():
       # for key in machine_EL.attrib:
       #   print ' machine --', key, '->', machine_EL.attrib[key];
 
-      # --- Iterate through the children tags of a machine
+      # --- Iterate through the children tags of a machine, and copy the ones we want to
+      #     keep into the output XML.
       for machine_child in machine_EL:
         if machine_child.tag == 'description':
           NARS.print_verb(' description = ' + machine_child.text);
@@ -1630,63 +1627,79 @@ def do_reduce_XML():
           manufacturer_output = ET.SubElement(game_output, 'manufacturer');
           manufacturer_output.text = machine_child.text;
 
+        # Check machine orientation
+        if machine_child.tag == 'display':
+          if 'rotate' in machine_child.attrib:
+            rotate_attrib = machine_child.attrib['rotate']
+            if rotate_attrib == '0':
+              machine_orientation_dic[machine_name] = 'Horizontal'
+            elif rotate_attrib == '90':
+              machine_orientation_dic[machine_name] = 'Vertical'
+            elif rotate_attrib == '180':
+              machine_orientation_dic[machine_name] = 'Horizontal'
+            elif rotate_attrib == '270':
+              machine_orientation_dic[machine_name] = 'Vertical'
+            else:
+              print(machine_child.attrib)
+              print('Machine "{0}" Unknown rotate = {1}\n'.format(machine_name, machine_child.attrib['rotate']))
+              sys.exit(10)
+          else:
+            print(machine_child.attrib)
+            print('Machine "{0}" <display> has no "rotate" attribute\n'.format(machine_name))
+            sys.exit(10)
+
         if machine_child.tag == 'input':
           input_output = ET.SubElement(game_output, 'input');
-          # Copy machine attributes in output XML
           input_output.attrib = machine_child.attrib
-
-          # Traverse <input> children
+          # Traverse <input> children and copy <control> tags
           for input_child in machine_child:
             if input_child.tag == 'control':
               control_output = ET.SubElement(input_output, 'control');
               control_output.attrib = input_child.attrib;
 
+        # From tag <driver> only copy attribute status, discard the rest to save
+        # space in output XML.
         if machine_child.tag == 'driver':
-          driver_output = ET.SubElement(game_output, 'driver')
-          # Copy game attributes in output XML
-          driver_output.attrib = machine_child.attrib
+          if 'status' in machine_child.attrib:
+            driver_output = ET.SubElement(game_output, 'driver')
+            driver_output.attrib['status'] = machine_child.attrib['status']
+          else:
+            print('Machine "{0}" <driver> has no "status" attribute\n'.format(machine_name))
+            sys.exit(10)
 
-        # --- CHDs (disks) ---
-        if machine_child.tag == 'disk':
-          # print(machine_child.attrib['name'], machine_child.attrib['region'])
-          if 'name' in machine_child.attrib and 'sha1' in machine_child.attrib:
-            machine_with_chd_list.append(machine_name);
+        # --- CHDs (disk) list ---
+        if machine_child.tag == 'disk' and 'name' in machine_child.attrib and \
+           'sha1' in machine_child.attrib:
+          machine_with_CHD_list.append(machine_name);
 
         # --- List of devices with ROMs ---
-        if isdevice_flag:
-          if machine_child.tag == 'rom':
-            device_with_rom_list.append(machine_name)
+        if isdevice_flag and machine_child.tag == 'rom':
+          machine_isDevice_with_ROM_list.append(machine_name)
             
         # --- List of machines with ROMs ---
         if machine_child.tag == 'rom':
           machine_with_ROM_list.append(machine_name)
+        
+        # --- List of machines with Software Lists ---
+        if machine_child.tag == 'softwarelist':
+          machine_with_SoftList_list.append(machine_name);
 
   # Transform lists into sets for quick membership testing. See comments above.
-  bios_set = set(bios_list)
-  device_rom_set = set(device_with_rom_list)
-  chd_set = set(machine_with_chd_list)
+  machine_isBIOS_set = set(machine_isBIOS_list)
+  machine_isDevice_with_ROM_set = set(machine_isDevice_with_ROM_list)
+  machine_with_CHD_set = set(machine_with_CHD_list)
   machine_with_ROM_set = set(machine_with_ROM_list)
-
-  if __debug_do_reduce_XML_print_lists:
-    print('[List of BIOSes]')
-    for biosName in bios_set:
-      print(biosName)
-    print('[List of devices with ROMs]')
-    for deviceName in device_rom_set:
-      print(deviceName)
-    print('[List of machines with disks]')
-    for chdName in chd_set:
-      print(chdName)
+  machine_with_SoftList_set = set(machine_with_SoftList_list)
 
   # --- Make list of dependencies ---
   # Dependencies can be more than 1. Also, quick indexing by name is required
-  # use a dictionary)
+  # so use a dictionary or a set.
   # depends_dic = { machine_name : [device/bios/chd, device/bios/chd, ...], 
   #                 machine_name : [device/bios/chd, device/bios/chd, ...], 
   #                 ...
   #               }
-  device_depends_dic = {};
-  chd_depends_dic = {};
+  Device_depends_dic = {};
+  CHD_depends_dic = {};
   parent_bios_depends_dic = {};
   NARS.print_info('[Checking ROM dependencies (1st pass)]');
   for machine_EL in root_input:
@@ -1701,7 +1714,7 @@ def do_reduce_XML():
                   machine_EL.attrib['romof'] + ' (1st pass)')
         # BIOS depends Case b) Parent should be checked
         else:
-          # print 'game = ' + machine_name + ' is a clone a parent must be checked for BIOS dependencies';
+          # print 'game = ' + machine_name + ' is a clone and parent must be checked for BIOS dependencies';
           pass
 
       # Machine child tags
@@ -1710,14 +1723,14 @@ def do_reduce_XML():
       # can be multiple. Create lists with all the dependencies, and then insert
       # that list into the dictionary as value.
       device_depends_list = [];
-      chd_depends_list = [];
+      CHD_depends_list = [];
       for game_child in machine_EL:
         # Check for devices
         if game_child.tag == 'device_ref':
           if 'name' in game_child.attrib:
             device_ref_name = game_child.attrib['name']
             # Check if device this is in the list of devices with ROMs
-            if device_ref_name in device_rom_set:
+            if device_ref_name in machine_isDevice_with_ROM_set:
               if __debug_do_reduce_XML_dependencies:
                 print('machine ' + '{:>12}'.format(machine_name) + \
                       ' device depends on ' + device_ref_name)
@@ -1732,16 +1745,16 @@ def do_reduce_XML():
             if __debug_do_reduce_XML_dependencies:
               print('machine ' + '{:>12}'.format(machine_name) + \
                     ' depends on CHD ' + chd_name)
-            chd_depends_list.append(chd_name)
+            CHD_depends_list.append(chd_name)
 
       # If device dependency list is not empty, insert a new entry in the
       # dictionary of dependencies.
       num_device_depends = len(device_depends_list)
-      num_CHD_depends = len(chd_depends_list)
+      num_CHD_depends = len(CHD_depends_list)
       if num_device_depends > 0:
-        device_depends_dic[machine_name] = device_depends_list
+        Device_depends_dic[machine_name] = device_depends_list
       if num_CHD_depends > 0:
-        chd_depends_dic[machine_name] = chd_depends_list
+        CHD_depends_dic[machine_name] = CHD_depends_list
       if __debug_do_reduce_XML_dependencies:
         if num_device_depends > 1:
           print('machine ' + '{:>12}'.format(machine_name) + ' depends on ' + \
@@ -1753,7 +1766,7 @@ def do_reduce_XML():
       print('Found a no <machine> tag ' + machine_EL.tag)
       sys.exit(10)
 
-  bios_depends_dic = {};
+  BIOS_depends_dic = {};
   NARS.print_info('[Checking ROM dependencies (2nd pass)]')
   for machine_EL in root_input:
     if machine_EL.tag == 'machine':
@@ -1763,7 +1776,7 @@ def do_reduce_XML():
         # BIOS depends case a)
         if 'cloneof' not in machine_EL.attrib:
           chd_depends_list.append(machine_EL.attrib['romof'])
-          bios_depends_dic[machine_name] = chd_depends_list
+          BIOS_depends_dic[machine_name] = chd_depends_list
           if __debug_do_reduce_XML_dependencies:
             print('machine = ' + '{:>12}'.format(machine_name) + \
                   ' BIOS depends on ' + machine_EL.attrib['romof'])
@@ -1772,7 +1785,7 @@ def do_reduce_XML():
           # If parent is in this list then clone has a BIOS dependence
           if machine_EL.attrib['cloneof'] in parent_bios_depends_dic:
             chd_depends_list.append(parent_bios_depends_dic[machine_EL.attrib['cloneof']])
-            bios_depends_dic[machine_name] = chd_depends_list
+            BIOS_depends_dic[machine_name] = chd_depends_list
             if __debug_do_reduce_XML_dependencies:
               print('machine = ' + '{:>12}'.format(machine_name) + \
                     ' is a clone that BIOS depends on ' + chd_depends_list[0])
@@ -1789,22 +1802,36 @@ def do_reduce_XML():
   for machine_EL in root_output:
     if machine_EL.tag == 'machine':
       machine_name = machine_EL.attrib['name'];
-      has_bios    = machine_name in bios_depends_dic
-      has_devices = machine_name in device_depends_dic
-      has_CHDs    = machine_name in chd_depends_dic
-      has_ROMs    = machine_name in machine_with_ROM_set
+      has_BIOS_dep     = machine_name in BIOS_depends_dic
+      has_devices_dep  = machine_name in Device_depends_dic
+      has_CHDs_dep     = machine_name in CHD_depends_dic
+      has_ROMs         = machine_name in machine_with_ROM_set
+      has_CHDs         = machine_name in machine_with_CHD_set
+      hasSoftwareLists = machine_name in machine_with_SoftList_list
       # Create tag <NARS>
       NARS_element = ET.SubElement(machine_EL, 'NARS')
-      # <NARS> atributes
+      
+      # <NARS hasROM="yes|no" hasSoftwareLists="yes|no" orientation="Horizontal|Vertical">
       # 'hasROM is mandatory'
-      if has_ROMs:
+      if has_ROMs or has_CHDs:
         NARS_element.attrib['hasROM'] = "yes"
       else:
         NARS_element.attrib['hasROM'] = "no"
-      # <NARS> tags
-      if has_bios:
-        # values of bios_depends_dic are list of strings, even if only 1 element
-        bios_list = bios_depends_dic[machine_name]
+      if hasSoftwareLists:
+        NARS_element.attrib['hasSoftwareLists'] = "yes"
+      else:
+        NARS_element.attrib['hasSoftwareLists'] = "no"
+      # mechanical machines do not have <display> tag
+      # Set it to Unknown
+      if machine_name in machine_orientation_dic:
+        NARS_element.attrib['orientation'] = machine_orientation_dic[machine_name]  
+      else:
+        NARS_element.attrib['orientation'] = 'Unknown'
+
+      # <NARS> tags: <BIOS>, <Device>, <CHD>
+      if has_BIOS_dep:
+        # values of BIOS_depends_dic are list of strings, even if only 1 element
+        bios_list = BIOS_depends_dic[machine_name]
         if len(bios_list) > 1:
           print('[ERROR] Machine ' + '{:>12}'.format(machine_name) + ' depends on more than 1 BIOS')
           sys.exit(10)
@@ -1812,15 +1839,15 @@ def do_reduce_XML():
           bios_depends_tag = ET.SubElement(NARS_element, 'BIOS')
           bios_depends_tag.text = bios_name
 
-      if has_devices:
-        devices_list = device_depends_dic[machine_name]
+      if has_devices_dep:
+        devices_list = Device_depends_dic[machine_name]
         devices_set = set(devices_list)
         for device_unique_name in devices_set:
           device_depends_tag = ET.SubElement(NARS_element, 'Device')
           device_depends_tag.text = device_unique_name
 
-      if has_CHDs:
-        CHD_list = chd_depends_dic[machine_name]
+      if has_CHDs_dep:
+        CHD_list = CHD_depends_dic[machine_name]
         CHD_set = set(CHD_list)
         if len(CHD_set) != len(CHD_list):
           print('[WARNING] machine ' + '{:>12}'.format(machine_name) + \
