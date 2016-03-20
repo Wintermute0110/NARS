@@ -47,24 +47,46 @@ __prog_option_sync = 0;
 # -----------------------------------------------------------------------------
 # --- Config file options global class (like a C struct) ---
 class ConfigFile:
-  pass
+  def __init__(self):
+    self.MAME_XML = ''
+    self.MAME_XML_redux = ''
+    self.Catver = ''
+    self.MergedInfo_XML = ''
+    self.filter_dic = {}
+
 class ConfigFileFilter:
-  pass
-configuration = ConfigFile();
+  def __init__(self):
+    # By default things are None, which means user didn't wrote them in config 
+    # file OR no text was written ('', or blanks (spaces, tabs)).
+    self.name = None;
+    self.sourceDir = None;
+    self.destDir = None;
+    self.destDir_CHD = None;
+    self.fanartSourceDir = None;
+    self.fanartDestDir = None;
+    self.thumbsSourceDir = None;
+    self.thumbsDestDir = None;
+    self.mainFilter = None;
+    self.driver = None;
+    self.machineType = None;
+    self.categories = None;
+    self.controls = None;
+    self.buttons_exp = None;
+    self.players_exp = None;
+    self.year_exp = None;
+    self.year_YearExpansion = 0;
+
+# Global variable with the filter configuration
+configuration = ConfigFile()
 
 def parse_File_Config():
   "Parses configuration file"
-  NARS.print_info('[Parsing config file]');
+  NARS.print_info('[Parsing config file]')
   tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
-  root = tree.getroot();
+  root = tree.getroot()
 
   # --- Configuration object
-  configFile = ConfigFile();
-  configFile.MAME_XML = '';
-  configFile.MAME_XML_redux = '';
-  configFile.Catver = '';
-  configFile.MergedInfo_XML = '';
-  configFile.filter_dic = {};
+  configFile = ConfigFile()
 
   # --- Parse general options
   general_tag_found = 0;
@@ -82,40 +104,20 @@ def parse_File_Config():
           configFile.MergedInfo_XML = general_child.text;
         else:
           NARS.print_error('Unrecognised tag "' + general_child.tag + '" inside <General>');
-          sys.exit(10);
+          sys.exit(10)
   if not general_tag_found:
-    NARS.print_error('Configuration error. <General> tag not found');
-    sys.exit(10);
+    NARS.print_error('Configuration error. <General> tag not found')
+    sys.exit(10)
 
   # --- Parse filters
   for root_child in root:
     if root_child.tag == 'MAMEFilter':
-      NARS.print_debug('<MAMEFilter>');
+      NARS.print_debug('<MAMEFilter>')
       if 'name' in root_child.attrib:
-        filter_class = ConfigFileFilter();
-        filter_class.name = root_child.attrib['name'];
-        NARS.print_debug(' name = ' + filter_class.name);
-
-        # By default things are None, which means user didn't
-        # wrote them in config file.
-        # NOTE if we have the tag but no text is written, then 
-        #      filter_child.text will be None. Take this into account.
-        filter_class.sourceDir = None;
-        filter_class.destDir = None;
-        filter_class.destDir_CHD = None;
-        filter_class.fanartSourceDir = None;
-        filter_class.fanartDestDir = None;
-        filter_class.thumbsSourceDir = None;
-        filter_class.thumbsDestDir = None;
-        filter_class.mainFilter = None;
-        filter_class.driver = None;
-        filter_class.machineType = None;
-        filter_class.categories = None;
-        filter_class.controls = None;
-        filter_class.buttons_exp = None;
-        filter_class.players_exp = None;
-        filter_class.year_exp = None;
-        filter_class.year_YearExpansion = 0;
+        filterName = root_child.attrib['name']
+        NARS.print_debug(' name = ' + filterName)
+        filter_class = ConfigFileFilter()
+        filter_class.name = filterName
         sourceDirFound = 0;
         destDirFound = 0;
         for filter_child in root_child:
@@ -169,56 +171,42 @@ def parse_File_Config():
             if text_string != None:
               NARS.print_debug(' MainFilter = ' + text_string);
               filter_class.mainFilter = trim_list(text_string.split(","));
-            else:
-              filter_class.mainFilter = '';
 
           elif filter_child.tag == 'Driver':
             text_string = filter_child.text;
             if text_string != None:
               NARS.print_debug(' Driver = ' + text_string);
               filter_class.driver = text_string;
-            else:
-              filter_class.driver = '';
 
           elif filter_child.tag == 'Categories':
             text_string = filter_child.text;
             if text_string != None:
               NARS.print_debug(' Categories = ' + text_string);
               filter_class.categories = text_string;
-            else:
-              filter_class.categories = '';
 
           elif filter_child.tag == 'Controls':
             text_string = filter_child.text;
             if text_string != None:
               NARS.print_debug(' Controls = ' + text_string);
               filter_class.controls = text_string;
-            else:
-              filter_class.controls = '';
 
           elif filter_child.tag == 'Buttons':
             text_string = filter_child.text;
             if text_string != None:
               NARS.print_debug(' Buttons = ' + text_string);
               filter_class.buttons_exp = text_string;
-            else:
-              filter_class.buttons_exp = '';
 
           elif filter_child.tag == 'Players':
             text_string = filter_child.text;
             if text_string != None:
               NARS.print_debug(' Players = ' + text_string);
               filter_class.players_exp = text_string;
-            else:
-              filter_class.players_exp = '';
 
           elif filter_child.tag == 'Years':
             text_string = filter_child.text;
             if text_string != None:
               NARS.print_debug(' Years = ' + text_string);
               filter_class.year_exp = text_string;
-            else:
-              filter_class.year_exp = '';
 
           elif filter_child.tag == 'YearsOpts':
             text_string = filter_child.text;
@@ -228,30 +216,30 @@ def parse_File_Config():
               for option in yearOpts_list:
                 # Only one option supported at the moment
                 if option == 'YearExpansion':
-                  filter_class.year_YearExpansion = 1;
+                  filter_class.year_YearExpansion = 1
                 else:
                   NARS.print_error('Unknown option ' + option + 'inside <YearsOpts>');
-                  sys.exit(10);
+                  sys.exit(10)
 
           else:
             NARS.print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
-            sys.exit(10);
+            sys.exit(10)
 
-        # - Check for errors in this filter
+        # --- Check for errors in this filter ---
         if not sourceDirFound:
-          NARS.print_error('ROMsSource directory not found in config file');
-          sys.exit(10);
+          NARS.print_error('ROMsSource directory not found in config file')
+          sys.exit(10)
         if not destDirFound:
-          NARS.print_error('ROMsDest directory not found in config file');
-          sys.exit(10);
+          NARS.print_error('ROMsDest directory not found in config file')
+          sys.exit(10)
 
         # - Aggregate filter to configuration main variable
-        configFile.filter_dic[filter_class.name] = filter_class;
+        configFile.filter_dic[filter_class.name] = filter_class
       else:
-        NARS.print_error('<MAMEFilter> tag does not have name attribute');
-        sys.exit(10);
+        NARS.print_error('<MAMEFilter> tag does not have name attribute')
+        sys.exit(10)
   
-  return configFile;
+  return configFile
 
 def get_Filter_Config(filterName):
   "Returns the configuration filter object given the filter name"
@@ -292,7 +280,7 @@ def get_Filter_Config(filterName):
 # ROM.manufacturer    string
 class ROM:
   def __init__(self, name):
-    self.name = name; 
+    self.name = name
 
 def add_to_histogram(key, hist_dic):
   if key in hist_dic:
