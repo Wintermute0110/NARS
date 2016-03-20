@@ -279,8 +279,31 @@ def get_Filter_Config(filterName):
 # ROM.year            string
 # ROM.manufacturer    string
 class ROM:
-  def __init__(self, name):
-    self.name = name
+  def __init__(self):
+    self.name = None;
+    self.cloneof = None;
+    self.isclone = None;
+    self.isdevice = None;
+    self.runnable = None;
+    self.sampleof = None;
+    self.hasSamples = None;
+    self.isMechanical = None;
+    self.isBIOS = None;
+    self.sourcefile = None;
+    self.driver_status = None;
+    self.category = None;
+    self.buttons = None;
+    self.players = None;
+    self.coins = None;
+    self.hascoins = None;
+    self.hasROMs = None;
+    self.control_type = None;
+    self.BIOS_depends = None;
+    self.device_depends = None;
+    self.CHD_depends = None;
+    self.description = None;
+    self.year = None;
+    self.manufacturer = None;
 
 def add_to_histogram(key, hist_dic):
   if key in hist_dic:
@@ -1875,92 +1898,86 @@ def do_merge():
   merged_filename = configuration.MergedInfo_XML
 
   # --- Get categories from Catver.ini
-  categories_dic = parse_catver_ini();
+  categories_dic = parse_catver_ini()
 
   # --- Read MAME XML or reduced MAME XML and incorporate categories
   # NOTE: this piece of code is very similar to do_reduce_XML()
   # --- Build XML output file ---
-  tree_output = ET.ElementTree();
-  root_output = ET.Element('mame');
-  tree_output._setroot(root_output);
-  NARS.print_info('[Parsing (reduced) MAME XML file]');
+  tree_output = ET.ElementTree()
+  root_output = ET.Element('mame')
+  tree_output._setroot(root_output)
+  NARS.print_info('[Parsing (reduced) MAME XML file]')
   tree_input = NARS.XML_read_file_cElementTree(mame_redux_filename, "Reading merged XML file")
   
   # --- Traverse MAME XML input file ---
-  NARS.print_info('[Merging MAME XML and categories]');
-  root_input = tree_input.getroot();
-  root_output.attrib = root_input.attrib; # Copy mame attributes in output XML
+  NARS.print_info('[Merging MAME XML and categories]')
+  root_input = tree_input.getroot()
+  root_output.attrib = root_input.attrib # Copy mame attributes in output XML
   num_no_category = 0
   for machine_EL in root_input:
     if machine_EL.tag == 'machine':
-      machine_output = ET.SubElement(root_output, 'machine');
-      # Copy machine attributes in output XML
-      machine_output.attrib = machine_EL.attrib;
+      machine_output = ET.SubElement(root_output, 'machine')
+      # --- Copy machine attributes in output XML ---
+      machine_output.attrib = machine_EL.attrib
 
       # --- Iterate through the children of a machine
       for machine_child in machine_EL:
         if machine_child.tag == 'description':
-          description_output = ET.SubElement(machine_output, 'description');
-          description_output.text = machine_child.text;
+          description_output = ET.SubElement(machine_output, 'description')
+          description_output.text = machine_child.text
 
         if machine_child.tag == 'year':
-          year_output = ET.SubElement(machine_output, 'year');
-          year_output.text = machine_child.text;
+          year_output = ET.SubElement(machine_output, 'year')
+          year_output.text = machine_child.text
 
         if machine_child.tag == 'manufacturer':
           manufacturer_output = ET.SubElement(machine_output, 'manufacturer');
-          manufacturer_output.text = machine_child.text;
+          manufacturer_output.text = machine_child.text
 
         if machine_child.tag == 'input':
-          # This information is not used yet. Don't add to the output
-          # file to save some space.
           input_output = ET.SubElement(machine_output, 'input')
-          # Copy <input> attributes in output XML
           input_output.attrib = machine_child.attrib
           # Traverse children
           for input_child in machine_child:
             if input_child.tag == 'control':
               control_output = ET.SubElement(input_output, 'control');
-              control_output.attrib = input_child.attrib;
+              control_output.attrib = input_child.attrib
 
         if machine_child.tag == 'driver':
-          driver_output = ET.SubElement(machine_output, 'driver');
-          # From here only attribute 'status' is used
-          driver_attrib = {};
-          driver_attrib['status'] = machine_child.attrib['status'];
-          driver_output.attrib = driver_attrib;
+          driver_output = ET.SubElement(machine_output, 'driver')
+          driver_output.attrib = machine_child.attrib
 
         # Dependencies
         if machine_child.tag == 'NARS':
-          NARS_output = ET.SubElement(machine_output, 'NARS');
+          NARS_output = ET.SubElement(machine_output, 'NARS')
           # Copy <NARS> attributes in output XML
-          NARS_output.attrib = machine_child.attrib;
+          NARS_output.attrib = machine_child.attrib
           # Traverse children
           for NARS_child in machine_child:
             if NARS_child.tag == 'BIOS':
-              device_depends_output = ET.SubElement(NARS_output, 'BIOS');
-              device_depends_output.text = NARS_child.text;
+              device_depends_output = ET.SubElement(NARS_output, 'BIOS')
+              device_depends_output.text = NARS_child.text
             if NARS_child.tag == 'Device':
-              bios_depends_output = ET.SubElement(NARS_output, 'Device');
-              bios_depends_output.text = NARS_child.text;
+              bios_depends_output = ET.SubElement(NARS_output, 'Device')
+              bios_depends_output.text = NARS_child.text
             if NARS_child.tag == 'CHD':
-              chd_depends_output = ET.SubElement(NARS_output, 'CHD');
-              chd_depends_output.text = NARS_child.text;
+              chd_depends_output = ET.SubElement(NARS_output, 'CHD')
+              chd_depends_output.text = NARS_child.text
 
-      # --- Add category element
-      game_name = machine_EL.attrib['name'];
-      category = 'Unknown';
-      if game_name in categories_dic:
-        category = categories_dic[game_name];
+      # --- Add category element ---
+      machine_name = machine_EL.attrib['name']
+      category = 'Unknown'
+      if machine_name in categories_dic:
+        category = categories_dic[machine_name]
       else:
-        NARS.print_warn('[WARNING] Category not found for game ' + game_name);
+        NARS.print_warn('[WARNING] Category not found for machine ' + machine_name)
         num_no_category += 1
-      category_output = ET.SubElement(machine_output, 'category');
-      category_output.text = category;
+      category_output = ET.SubElement(machine_output, 'category')
+      category_output.text = category
 
   # To save memory destroy input variables now
-  del tree_input;
-  del root_input;
+  del tree_input
+  del root_input
 
   # --- Write output file (don't use miniDOM, is sloow)
   # See http://norwied.wordpress.com/2013/08/27/307/
