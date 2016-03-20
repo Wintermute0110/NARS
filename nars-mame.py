@@ -222,7 +222,7 @@ def parse_File_Config():
                   sys.exit(10)
 
           else:
-            NARS.print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>');
+            NARS.print_error('Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>')
             sys.exit(10)
 
         # --- Check for errors in this filter ---
@@ -241,13 +241,13 @@ def parse_File_Config():
   
   return configFile
 
-def get_Filter_Config(filterName):
+def get_Filter_from_Config(filterName):
   "Returns the configuration filter object given the filter name"
   for key in configuration.filter_dic:
     if key == filterName:
-      return configuration.filter_dic[key];
-  
-  NARS.print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
+      return configuration.filter_dic[key]
+
+  NARS.print_error('get_Filter_from_Config >> filter ' + filterName + ' not found in configuration file')
   sys.exit(20)
 
 # -----------------------------------------------------------------------------
@@ -374,11 +374,11 @@ def trim_year_string(raw_year_text):
   return year_list;
 
 # Game year information:
-#  Accepts a string as input
-#  Returns:
-#   1 standard game or game with not-verified year (example 1998?)
-#   2 game that needs decade expansion (examples 198?, 199?) or
-#     full expansion (examples 19??, ????)
+# INPUT: takes a string as input
+# RETURN: returns and integer,
+# 1  standard game or game with not-verified year (example 1998?)
+# 2  game that needs decade expansion (examples 198?, 199?) or
+#    full expansion (examples 19??, ????)
 def get_game_year_information(year_srt):
   # --- Remove quotation marks at the end for some games
   if len(year_srt) == 5 and year_srt[4] == '?':
@@ -397,9 +397,11 @@ def get_game_year_information(year_srt):
 
   return game_info;
 
+# Splits string into words
 # See http://stackoverflow.com/questions/15929233/writing-a-tokenizer-in-python
-# split words
-def tokzr_WORD(txt): return re.findall(r'(?ms)\W*(\w+)', txt)
+# This should be into NARS module...
+def tokzr_WORD(txt):
+  return re.findall(r'(?ms)\W*(\w+)', txt)
 
 def fix_category_name(main_category, category):
   # Rename some categories
@@ -445,263 +447,169 @@ def fix_category_name(main_category, category):
 
   return final_category
 
-def parse_catver_ini():
-  "Parses Catver.ini and returns a ..."
+# rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
+def create_copy_list(mame_filtered_dic, rom_main_list):
+  "With list of filtered ROMs and list of source ROMs, create list of files to be copied"
 
-  # --- Parse Catver.ini
-  # --- Create a histogram with the categories
-  NARS.print_info('[Parsing Catver.ini]');
-  cat_filename = configuration.Catver;
-  NARS.print_verb(' Opening ' + cat_filename);
-  final_categories_dic = {};
-  f = open(cat_filename, 'r');
-  # 0 -> Looking for '[Category]' tag
-  # 1 -> Reading categories
-  # 2 -> Categories finished. STOP
-  read_status = 0;
-  for cat_line in f:
-    stripped_line = cat_line.strip();
-    if read_status == 0:
-      if stripped_line == '[Category]':
-        read_status = 1;
-    elif read_status == 1:
-      line_list = stripped_line.split("=");
-      if len(line_list) == 1:
-        read_status = 2;
-        continue;
+  NARS.print_info('[Creating list of ROMs to be copied/updated]');
+  copy_list = [];
+  num_added_roms = 0;
+  if len(rom_main_list) == 0:
+    print_info('WARNING: Not found ANY ROM in sourceDir');
+    print_info('Check your configuration file');
+  else:
+    for key_rom_name in mame_filtered_dic:
+      # If the ROM is in the mame filtered list, then add to the copy list
+      if key_rom_name in rom_main_list:
+        copy_list.append(key_rom_name);
+        num_added_roms += 1;
+        NARS.print_verb('Added ROM ' + key_rom_name);
       else:
-        game_name = line_list[0];
-        category = line_list[1];
-        # --- Sub-categories  
-        sub_categories = category.split("/");
-        main_category = sub_categories[0].strip();
-        second_category = sub_categories[0].strip();
+        NARS.print_info('Missing ROM ' + key_rom_name);
+  NARS.print_info('Added ' + str(num_added_roms) + ' ROMs');
 
-        # NOTE: Only use the main category for filtering.
-        final_category = fix_category_name(main_category, category);
+  return copy_list;
 
-        # - Create final categories dictionary
-        final_categories_dic[game_name] = final_category;
-    elif read_status == 2:
-      break;
+# Creates a dictionary of CHDs to be copied. Diccionary key if the machine
+# name. Dictionary value is a list of the CHDs belonging to that machine. One
+# machine may have more than one CHD. CHD names are generally different from
+# machine names.
+#
+# CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
+__debug_CHD_list = 1;
+def create_copy_CHD_dic(mame_filtered_dic):
+  "With list of filtered ROMs and, create list of CHDs to be copied"
+
+  NARS.print_info('[Creating list of CHDs to be copied/updated]');
+  CHD_dic = {};
+  num_added_CHDs = 0;
+  for key in sorted(mame_filtered_dic):
+    if __debug_CHD_list:
+      print('DEBUG: Machine {0}'.format(key))
+    romObject = mame_filtered_dic[key];
+    # CHD dependencies
+    if hasattr(romObject, 'CHD_depends') and (romObject.CHD_depends):
+      CHD_list = [];
+      for CHD_depend in romObject.CHD_depends:
+        CHD_list.append(CHD_depend)
+        num_added_CHDs += 1
+        NARS.print_info('Game ' + key.ljust(8) + ' depends on CHD    ' + \
+                        CHD_depend.ljust(30) + ' - Adding  to list');
+      CHD_dic[key] = CHD_list      
+  NARS.print_info('Added ' + str(num_added_CHDs) + ' CHDs');
+  if __debug_CHD_list:
+    print('DEBUG: len(CHD_dic) = {0}'.format(len(CHD_dic)))
+
+  return CHD_dic;
+
+# This function should be renamed and put into NARS module.
+def get_ROM_main_list(sourceDir):
+  "Reads sourceDir and creates a dictionary of ROMs"
+  __debug_get_ROM_main_list = 0;
+
+  # --- Parse sourceDir ROM list and create main ROM list
+  NARS.print_info('[Reading ROMs in source directory]');
+  romMainList_dict = {};
+  for file in os.listdir(sourceDir):
+    if file.endswith(".zip"):
+      thisFileName, thisFileExtension = os.path.splitext(file);
+      romFileName_temp = thisFileName + '.zip';
+      romObject = ROM(thisFileName);
+      romObject.filename = file;
+      romMainList_dict[thisFileName] = romObject;
+      if __debug_get_ROM_main_list:
+        print(romObject.name)
+        print(romObject.filename)
+
+  return romMainList_dict;
+
+def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
+  "Generates game information files (NFO) in destDir"
+
+  NARS.print_info('[Generating NFO files]');
+  num_NFO_files = 0;
+  for rom_name in sorted(rom_copy_dic):
+    romObj = mame_filtered_dic[rom_name];
+    # DEBUG: dump romObj
+    # print dir(romObj)
+    NFO_filename = rom_name + '.nfo';
+    NFO_full_filename =  destDir + NFO_filename;
+
+    # --- XML structure
+    tree_output = ET.ElementTree();
+    root_output = a = ET.Element('game');
+    tree_output._setroot(root_output);
+
+    # <title>1944 - The Loop Master</title>
+    sub_element = ET.SubElement(root_output, 'title');
+    sub_element.text = romObj.description;
+
+    # <platform>MAME</platform>
+    sub_element = ET.SubElement(root_output, 'platform');
+    sub_element.text = 'MAME';
+
+    # <year>2000</year>
+    # NOTE: some devices which are included as dependencies do not have
+    # some fields. Write defaults.
+    sub_element = ET.SubElement(root_output, 'year');
+    if hasattr(romObj, 'year'):
+      sub_element.text = romObj.year;
     else:
-      print_error('Unknown read_status FSM value');
-      sys.exit(10);
-  f.close();
+      print('ROM has no year tag ' + rom_name)
+      sub_element.text = '????';
 
-  return final_categories_dic;
+    # <publisher></publisher>
+    sub_element = ET.SubElement(root_output, 'publisher');
+    if hasattr(romObj, 'manufacturer'):
+      sub_element.text = romObj.manufacturer;
+    else:
+      print('ROM has no publisher tag ' + rom_name)
+      sub_element.text = 'Unknown';
 
-# Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
-# do_update_artwork()), but not in the do_list_*() functions.
-#
-# Returns dictionary rom_raw_dict with key the (unique) ROM name and value a 
-# ROM object with fields:
-# ROM.
-def parse_MAME_merged_XML():
-  "Parses a MAME merged XML and creates a parent/clone list"
+    # <genre>Shooter / Flying Vertical</genre>
+    sub_element = ET.SubElement(root_output, 'genre');
+    if hasattr(romObj, 'category'):
+      sub_element.text = romObj.category;
+    else:
+      print('ROM has no genre tag ' + rom_name)
+      sub_element.text = 'Unknown';
 
-  filename = configuration.MergedInfo_XML;
-  NARS.print_info('[Parsing MAME merged XML]');
-  tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
+    # <plot></plot>
+    # Probably need to merge information from history.dat or mameinfo.dat
+    # Now, just add some technical information about the game.
+    plot_str = 'Name = ' + romObj.name + ' | Driver = ' + romObj.sourcefile;
+    if hasattr(romObj, 'buttons'):
+      plot_str += ' | Buttons = ' + romObj.buttons;
+    if hasattr(romObj, 'players'):
+      plot_str += ' | Players = ' + romObj.players;
+    if hasattr(romObj, 'control_type'):
+      plot_str += ' | Controls = ' + str(romObj.control_type);
+    sub_element = ET.SubElement(root_output, 'plot');
+    sub_element.text = plot_str;
 
-  # --- Raw list: literal information from the XML
-  rom_raw_dict = {};
-  root = tree.getroot();
-  num_games = 0;
-  num_parents = 0;
-  num_clones = 0;
-  for game_EL in root:
-    if game_EL.tag == 'machine':
-      num_games += 1
+    # --- Write output file (don't use miniDOM, is sloow)
+    # See http://norwied.wordpress.com/2013/08/27/307/
+    NARS.print_verb('Writing ' + NFO_full_filename);
+    NARS.indent_ElementTree_XML(root_output);
+    tree_output.write(NFO_full_filename, xml_declaration=True, encoding='utf-8', method="xml")
+    num_NFO_files += 1
 
-      # Create ROM object and fill default values. Code has to change only
-      # non-default ones, and will be more compact.
-      game_attrib = game_EL.attrib;
-      romName = game_attrib['name'];
-      romObject = ROM(romName)
-      NARS.print_debug('machine = ' + romName)
-      # --- Check game attributes and create variables for filtering
-      # Parent or clone
-      if 'cloneof' in game_attrib:
-        num_clones += 1;
-        romObject.cloneof = game_attrib['cloneof'];
-        romObject.isclone = 1;
-        NARS.print_debug(' Clone of = ' + game_attrib['cloneof']);
-      else:
-        num_parents += 1;
-        romObject.isclone = 0;
+  NARS.print_info('[Report]')
+  NARS.print_info('Generated ' + str(num_NFO_files) + ' NFO files')
 
-      # --- Device and Runnable
-      if 'isdevice' in game_attrib:
-        if game_attrib['isdevice'] == 'yes':
-          romObject.isdevice = 1;
-        else:
-          romObject.isdevice = 0;
-      else:
-        romObject.isdevice = 0; # Device defaults to 0
+# -----------------------------------------------------------------------------
+# Filtering functions
+# -----------------------------------------------------------------------------
+# Main filter. <Include> and <Exclude> tags.
+def filter_main_filter():
+  pass
 
-      if 'runnable' in game_attrib:
-        if game_attrib['runnable'] == 'no':
-          romObject.runnable = 0;
-        else:
-          romObject.runnable = 1;
-      else:
-        romObject.runnable = 1; # Runnable defaults to 1
-
-      # Are all devices non runnable?
-      # In MAME 0.153b, when there is the attribute 'isdevice' there is also
-      # 'runnable'. Also, if isdevice = yes => runnable = no
-      if romObject.isdevice == 1 and romObject.runnable == 1:
-        NARS.print_error('Found a ROM which is device and runnable');
-        sys.exit(10);
-      if 'isdevice' in game_attrib and 'runnable' not in game_attrib:
-        NARS.print_error('isdevice but NOT runnable');
-        sys.exit(10);
-      if 'isdevice' not in game_attrib and 'runnable' in game_attrib:
-        NARS.print_error('NOT isdevice but runnable');
-        sys.exit(10);
-
-      # Samples
-      if 'sampleof' in game_attrib:
-        romObject.hasSamples = 1;
-        romObject.sampleof = game_attrib['sampleof'];
-      else:
-        romObject.hasSamples = 0; # By default has no samples
-        romObject.sampleof = '';
-
-      # Mechanical
-      if 'ismechanical' in game_attrib:
-        if game_attrib['ismechanical'] == 'yes':
-          romObject.isMechanical = 1;
-        else:
-          romObject.isMechanical = 0;
-      else:
-        romObject.isMechanical = 0; # isMechanical defaults to 0
-
-      # BIOS
-      if 'isbios' in game_attrib:
-        if game_attrib['isbios'] == 'yes':
-          romObject.isBIOS = 1;
-        else:
-          romObject.isBIOS = 0;
-      else:
-        romObject.isBIOS = 0;
-
-      # Game driver
-      if 'sourcefile' in game_attrib:
-        driverName = game_attrib['sourcefile']
-        # Remove the trailing '.c' or '.cpp' from driver name
-        if driverName[-2:] == '.c':     driverName = driverName[:-2]
-        elif driverName[-4:] == '.cpp': driverName = driverName[:-4]
-        romObject.sourcefile = driverName;
-      else:
-        # sourcefile (driver) defaults to unknown
-        romObject.sourcefile = 'unknown';
-
-      # --- Parse machine child tags ---
-      # Add fields that may not be present in XML. Avoid AttributeError exceptions
-      romObject.hasCoin = 0
-      romObject.hasROM = 0
-      romObject.BIOS_depends = []
-      romObject.device_depends = []
-      romObject.CHD_depends = []
-      for child_game in game_EL:
-        # - Driver status
-        if child_game.tag == 'driver':
-          driver_attrib = child_game.attrib;
-
-          # Driver status is good, imperfect, preliminary
-          # preliminary games don't work or have major emulation problems
-          # imperfect games are emulated with some minor issues
-          # good games are perfectly emulated
-          if 'status' in driver_attrib:
-            romObject.driver_status = driver_attrib['status'];
-            NARS.print_debug(' Driver status = ' + driver_attrib['status']);
-          else:
-            romObject.driver_status = 'unknown';
-
-        # - Category
-        elif child_game.tag == 'category':
-          romObject.category = child_game.text;
-
-        # --- Controls ---
-        elif child_game.tag == 'input':
-          control_attrib = child_game.attrib;
-          if 'buttons' in control_attrib:
-            romObject.buttons = control_attrib['buttons'];
-          else:
-            # There are some games with no buttons attribute
-            romObject.buttons = '0';
-
-          if 'players' in control_attrib:
-            romObject.players = control_attrib['players'];
-          else:
-            romObject.players = None;
-
-          if 'coins' in control_attrib:
-            romObject.coins = control_attrib['coins']
-            num_coins = int(control_attrib['coins'])
-            if num_coins > 0:
-              romObject.hasCoin = 1
-          else:
-            romObject.coins = None;
-
-          # NOTE a game may have more than one control (joystick, dial, ...)
-          romObject.control_type = [];
-          for control in child_game:
-            if control.tag == 'control':
-              if 'type' in control.attrib:
-                romObject.control_type.append(control.attrib['type'].title());
-
-          if len(romObject.control_type) < 1:
-            romObject.control_type.append('ButtonsOnly');
-
-        # --- Dependencies ---
-        elif child_game.tag == 'NARS':
-          if 'hasROM' in child_game.attrib:
-            if child_game.attrib['hasROM'] == 'yes':
-              romObject.hasROMs = 1
-
-          for NARS_tag in child_game:
-            if NARS_tag.tag == 'BIOS':
-              romObject.BIOS_depends.append(NARS_tag.text)
-            elif NARS_tag.tag == 'Device':
-              romObject.device_depends.append(NARS_tag.text)
-            elif NARS_tag.tag == 'CHD':
-              romObject.CHD_depends.append(NARS_tag.text)
-
-        # - Copy information to generate NFO files
-        elif child_game.tag == 'description':
-          romObject.description = child_game.text;
-        elif child_game.tag == 'year':
-          romObject.year = child_game.text;
-        elif child_game.tag == 'manufacturer':
-          romObject.manufacturer = child_game.text;
-
-      # Add new game to the list
-      rom_raw_dict[romName] = romObject;
-
-  del tree;
-  NARS.print_info('Total number of games = ' + str(num_games));
-  NARS.print_info('Number of parents = ' + str(num_parents));
-  NARS.print_info('Number of clones = ' + str(num_clones));
-
-  # --- Create a parent-clone list
-  # NOTE: a parent/clone hierarchy is not needed for MAME. In the ROM list
-  # include a field isClone, so clones can be filtered out or not.
-  # However, for NoIntro 1G1R, the parent/clone hierarchy is needed to filter
-  # the sourceDir rom list.
-
-  return rom_raw_dict;
-
-# Filtering function
-#
-def apply_MAME_filters(mame_xml_dic, filter_config):
-  "Apply filters to main parent/clone dictionary"
+# Main filtering function. Apply filters to main parent/clone dictionary.
+def filter_MAME_machines_main(mame_xml_dic, filter_config):
   NARS.print_info('[Applying MAME filters]');
   NARS.print_info('NOTE: -vv if you want to see filters in action');
 
-  # --- Default filters: remove crap
+  # --- Default filters: remove crap ---
   NARS.print_info('<Main filter>');
   mainF_str_offset = 32;
   # What is "crap"?
@@ -1077,24 +985,24 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
           # Knowing the boolean results for the wildcard expansion, check if game
           # should be included or not.
           if any(boolean_list):
-            mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-            print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
+            mame_filtered_dic_temp[key] = mame_filtered_dic[key]
+            print_debug('Included ' + key.ljust(8) + ' year ' + str(year))
           else:
-            filtered_out_games += 1;
-            NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
+            filtered_out_games += 1
+            NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year))
         else:
-          filtered_out_games += 1;
-          NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
+          filtered_out_games += 1
+          NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year))
       else:
-        NARS.print_error('Wrong result returned by get_game_year_information() = ' + str(game_info));
-        sys.exit(10);
+        NARS.print_error('Wrong result returned by get_game_year_information() = ' + str(game_info))
+        sys.exit(10)
     # --- Update list of filtered games
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
+    mame_filtered_dic = mame_filtered_dic_temp
+    del mame_filtered_dic_temp
     NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    NARS.print_info('User wants all years');
+    NARS.print_info('User wants all years')
 
   # --- ROM dependencies
   # Add ROMs (devices and BIOS) needed for other ROM to work.
@@ -1144,155 +1052,251 @@ def apply_MAME_filters(mame_xml_dic, filter_config):
 
   return mame_filtered_dic;
 
-# rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
-def create_copy_list(mame_filtered_dic, rom_main_list):
-  "With list of filtered ROMs and list of source ROMs, create list of files to be copied"
+# -----------------------------------------------------------------------------
+# Parse Catver.ini and MAME reduced XML file
+# -----------------------------------------------------------------------------
+def parse_catver_ini():
+  "Parses Catver.ini and returns a ..."
 
-  NARS.print_info('[Creating list of ROMs to be copied/updated]');
-  copy_list = [];
-  num_added_roms = 0;
-  if len(rom_main_list) == 0:
-    print_info('WARNING: Not found ANY ROM in sourceDir');
-    print_info('Check your configuration file');
-  else:
-    for key_rom_name in mame_filtered_dic:
-      # If the ROM is in the mame filtered list, then add to the copy list
-      if key_rom_name in rom_main_list:
-        copy_list.append(key_rom_name);
-        num_added_roms += 1;
-        NARS.print_verb('Added ROM ' + key_rom_name);
+  # --- Parse Catver.ini
+  # --- Create a histogram with the categories
+  NARS.print_info('[Parsing Catver.ini]');
+  cat_filename = configuration.Catver;
+  NARS.print_verb(' Opening ' + cat_filename);
+  final_categories_dic = {};
+  f = open(cat_filename, 'r');
+  # 0 -> Looking for '[Category]' tag
+  # 1 -> Reading categories
+  # 2 -> Categories finished. STOP
+  read_status = 0;
+  for cat_line in f:
+    stripped_line = cat_line.strip();
+    if read_status == 0:
+      if stripped_line == '[Category]':
+        read_status = 1;
+    elif read_status == 1:
+      line_list = stripped_line.split("=");
+      if len(line_list) == 1:
+        read_status = 2;
+        continue;
       else:
-        NARS.print_info('Missing ROM ' + key_rom_name);
-  NARS.print_info('Added ' + str(num_added_roms) + ' ROMs');
+        game_name = line_list[0];
+        category = line_list[1];
+        # --- Sub-categories  
+        sub_categories = category.split("/");
+        main_category = sub_categories[0].strip();
+        second_category = sub_categories[0].strip();
 
-  return copy_list;
+        # NOTE: Only use the main category for filtering.
+        final_category = fix_category_name(main_category, category);
 
-# Creates a dictionary of CHDs to be copied. Diccionary key if the machine
-# name. Dictionary value is a list of the CHDs belonging to that machine. One
-# machine may have more than one CHD. CHD names are generally different from
-# machine names.
+        # - Create final categories dictionary
+        final_categories_dic[game_name] = final_category;
+    elif read_status == 2:
+      break;
+    else:
+      print_error('Unknown read_status FSM value');
+      sys.exit(10);
+  f.close();
+
+  return final_categories_dic;
+
+# Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
+# do_update_artwork()), but not in the do_list_*() functions.
 #
-# CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
-__debug_CHD_list = 1;
-def create_copy_CHD_dic(mame_filtered_dic):
-  "With list of filtered ROMs and, create list of CHDs to be copied"
+# Returns dictionary rom_raw_dict with key the (unique) ROM name and value a 
+# ROM object with fields:
+# ROM.
+def parse_MAME_merged_XML():
+  "Parses a MAME merged XML and creates a parent/clone list"
 
-  NARS.print_info('[Creating list of CHDs to be copied/updated]');
-  CHD_dic = {};
-  num_added_CHDs = 0;
-  for key in sorted(mame_filtered_dic):
-    if __debug_CHD_list:
-      print('DEBUG: Machine {0}'.format(key))
-    romObject = mame_filtered_dic[key];
-    # CHD dependencies
-    if hasattr(romObject, 'CHD_depends') and (romObject.CHD_depends):
-      CHD_list = [];
-      for CHD_depend in romObject.CHD_depends:
-        CHD_list.append(CHD_depend)
-        num_added_CHDs += 1
-        NARS.print_info('Game ' + key.ljust(8) + ' depends on CHD    ' + \
-                        CHD_depend.ljust(30) + ' - Adding  to list');
-      CHD_dic[key] = CHD_list      
-  NARS.print_info('Added ' + str(num_added_CHDs) + ' CHDs');
-  if __debug_CHD_list:
-    print('DEBUG: len(CHD_dic) = {0}'.format(len(CHD_dic)))
+  filename = configuration.MergedInfo_XML;
+  NARS.print_info('[Parsing MAME merged XML]');
+  tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
 
-  return CHD_dic;
+  # --- Raw list: literal information from the XML
+  rom_raw_dict = {};
+  root = tree.getroot();
+  num_games = 0;
+  num_parents = 0;
+  num_clones = 0;
+  for game_EL in root:
+    if game_EL.tag == 'machine':
+      num_games += 1
 
-def get_ROM_main_list(sourceDir):
-  "Reads sourceDir and creates a dictionary of ROMs"
-  __debug_get_ROM_main_list = 0;
+      # Create ROM object and fill default values. Code has to change only
+      # non-default ones, and will be more compact.
+      game_attrib = game_EL.attrib;
+      romName = game_attrib['name'];
+      romObject = ROM(romName)
+      NARS.print_debug('machine = ' + romName)
+      # --- Check game attributes and create variables for filtering
+      # Parent or clone
+      if 'cloneof' in game_attrib:
+        num_clones += 1;
+        romObject.cloneof = game_attrib['cloneof'];
+        romObject.isclone = 1;
+        NARS.print_debug(' Clone of = ' + game_attrib['cloneof']);
+      else:
+        num_parents += 1;
+        romObject.isclone = 0;
 
-  # --- Parse sourceDir ROM list and create main ROM list
-  NARS.print_info('[Reading ROMs in source directory]');
-  romMainList_dict = {};
-  for file in os.listdir(sourceDir):
-    if file.endswith(".zip"):
-      thisFileName, thisFileExtension = os.path.splitext(file);
-      romFileName_temp = thisFileName + '.zip';
-      romObject = ROM(thisFileName);
-      romObject.filename = file;
-      romMainList_dict[thisFileName] = romObject;
-      if __debug_get_ROM_main_list:
-        print(romObject.name)
-        print(romObject.filename)
+      # --- Device and Runnable
+      if 'isdevice' in game_attrib:
+        if game_attrib['isdevice'] == 'yes':
+          romObject.isdevice = 1;
+        else:
+          romObject.isdevice = 0;
+      else:
+        romObject.isdevice = 0; # Device defaults to 0
 
-  return romMainList_dict;
+      if 'runnable' in game_attrib:
+        if game_attrib['runnable'] == 'no':
+          romObject.runnable = 0;
+        else:
+          romObject.runnable = 1;
+      else:
+        romObject.runnable = 1; # Runnable defaults to 1
 
-def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
-  "Generates game information files (NFO) in destDir"
+      # Are all devices non runnable?
+      # In MAME 0.153b, when there is the attribute 'isdevice' there is also
+      # 'runnable'. Also, if isdevice = yes => runnable = no
+      if romObject.isdevice == 1 and romObject.runnable == 1:
+        NARS.print_error('Found a ROM which is device and runnable');
+        sys.exit(10);
+      if 'isdevice' in game_attrib and 'runnable' not in game_attrib:
+        NARS.print_error('isdevice but NOT runnable');
+        sys.exit(10);
+      if 'isdevice' not in game_attrib and 'runnable' in game_attrib:
+        NARS.print_error('NOT isdevice but runnable');
+        sys.exit(10);
 
-  NARS.print_info('[Generating NFO files]');
-  num_NFO_files = 0;
-  for rom_name in sorted(rom_copy_dic):
-    romObj = mame_filtered_dic[rom_name];
-    # DEBUG: dump romObj
-    # print dir(romObj)
-    NFO_filename = rom_name + '.nfo';
-    NFO_full_filename =  destDir + NFO_filename;
+      # Samples
+      if 'sampleof' in game_attrib:
+        romObject.hasSamples = 1;
+        romObject.sampleof = game_attrib['sampleof'];
+      else:
+        romObject.hasSamples = 0; # By default has no samples
+        romObject.sampleof = '';
 
-    # --- XML structure
-    tree_output = ET.ElementTree();
-    root_output = a = ET.Element('game');
-    tree_output._setroot(root_output);
+      # Mechanical
+      if 'ismechanical' in game_attrib:
+        if game_attrib['ismechanical'] == 'yes':
+          romObject.isMechanical = 1;
+        else:
+          romObject.isMechanical = 0;
+      else:
+        romObject.isMechanical = 0; # isMechanical defaults to 0
 
-    # <title>1944 - The Loop Master</title>
-    sub_element = ET.SubElement(root_output, 'title');
-    sub_element.text = romObj.description;
+      # BIOS
+      if 'isbios' in game_attrib:
+        if game_attrib['isbios'] == 'yes':
+          romObject.isBIOS = 1;
+        else:
+          romObject.isBIOS = 0;
+      else:
+        romObject.isBIOS = 0;
 
-    # <platform>MAME</platform>
-    sub_element = ET.SubElement(root_output, 'platform');
-    sub_element.text = 'MAME';
+      # Game driver
+      if 'sourcefile' in game_attrib:
+        driverName = game_attrib['sourcefile']
+        # Remove the trailing '.c' or '.cpp' from driver name
+        if driverName[-2:] == '.c':     driverName = driverName[:-2]
+        elif driverName[-4:] == '.cpp': driverName = driverName[:-4]
+        romObject.sourcefile = driverName;
+      else:
+        # sourcefile (driver) defaults to unknown
+        romObject.sourcefile = 'unknown';
 
-    # <year>2000</year>
-    # NOTE: some devices which are included as dependencies do not have
-    # some fields. Write defaults.
-    sub_element = ET.SubElement(root_output, 'year');
-    if hasattr(romObj, 'year'):
-      sub_element.text = romObj.year;
-    else:
-      print('ROM has no year tag ' + rom_name)
-      sub_element.text = '????';
+      # --- Parse machine child tags ---
+      # Add fields that may not be present in XML. Avoid AttributeError exceptions
+      romObject.hasCoin = 0
+      romObject.hasROM = 0
+      romObject.BIOS_depends = []
+      romObject.device_depends = []
+      romObject.CHD_depends = []
+      for child_game in game_EL:
+        # - Driver status
+        if child_game.tag == 'driver':
+          driver_attrib = child_game.attrib;
 
-    # <publisher></publisher>
-    sub_element = ET.SubElement(root_output, 'publisher');
-    if hasattr(romObj, 'manufacturer'):
-      sub_element.text = romObj.manufacturer;
-    else:
-      print('ROM has no publisher tag ' + rom_name)
-      sub_element.text = 'Unknown';
+          # Driver status is good, imperfect, preliminary
+          # preliminary games don't work or have major emulation problems
+          # imperfect games are emulated with some minor issues
+          # good games are perfectly emulated
+          if 'status' in driver_attrib:
+            romObject.driver_status = driver_attrib['status'];
+            NARS.print_debug(' Driver status = ' + driver_attrib['status']);
+          else:
+            romObject.driver_status = 'unknown';
 
-    # <genre>Shooter / Flying Vertical</genre>
-    sub_element = ET.SubElement(root_output, 'genre');
-    if hasattr(romObj, 'category'):
-      sub_element.text = romObj.category;
-    else:
-      print('ROM has no genre tag ' + rom_name)
-      sub_element.text = 'Unknown';
+        # - Category
+        elif child_game.tag == 'category':
+          romObject.category = child_game.text;
 
-    # <plot></plot>
-    # Probably need to merge information from history.dat or mameinfo.dat
-    # Now, just add some technical information about the game.
-    plot_str = 'Name = ' + romObj.name + \
-               ' / Driver = ' + romObj.sourcefile;
-    if hasattr(romObj, 'buttons'):
-      plot_str += ' / Buttons = ' + romObj.buttons;
-    if hasattr(romObj, 'players'):
-      plot_str += ' / Players = ' + romObj.players;
-    if hasattr(romObj, 'control_type'):
-      plot_str += ' / Controls = ' + str(romObj.control_type);
-    sub_element = ET.SubElement(root_output, 'plot');
-    sub_element.text = plot_str;
+        # --- Controls ---
+        elif child_game.tag == 'input':
+          control_attrib = child_game.attrib;
+          if 'buttons' in control_attrib:
+            romObject.buttons = control_attrib['buttons'];
+          else:
+            # There are some games with no buttons attribute
+            romObject.buttons = '0';
 
-    # --- Write output file (don't use miniDOM, is sloow)
-    # See http://norwied.wordpress.com/2013/08/27/307/
-    NARS.print_verb('Writing ' + NFO_full_filename);
-    NARS.indent_ElementTree_XML(root_output);
-    tree_output.write(NFO_full_filename, xml_declaration=True, encoding='utf-8', method="xml")
-    num_NFO_files += 1;
+          if 'players' in control_attrib:
+            romObject.players = control_attrib['players'];
+          else:
+            romObject.players = None;
 
-  NARS.print_info('[Report]');
-  NARS.print_info('Generated ' + str(num_NFO_files) + ' NFO files');
+          if 'coins' in control_attrib:
+            romObject.coins = control_attrib['coins']
+            num_coins = int(control_attrib['coins'])
+            if num_coins > 0:
+              romObject.hasCoin = 1
+          else:
+            romObject.coins = None;
+
+          # NOTE a game may have more than one control (joystick, dial, ...)
+          romObject.control_type = [];
+          for control in child_game:
+            if control.tag == 'control':
+              if 'type' in control.attrib:
+                romObject.control_type.append(control.attrib['type'].title());
+
+          if len(romObject.control_type) < 1:
+            romObject.control_type.append('ButtonsOnly');
+
+        # --- Dependencies ---
+        elif child_game.tag == 'NARS':
+          if 'hasROM' in child_game.attrib:
+            if child_game.attrib['hasROM'] == 'yes':
+              romObject.hasROMs = 1
+
+          for NARS_tag in child_game:
+            if NARS_tag.tag == 'BIOS':
+              romObject.BIOS_depends.append(NARS_tag.text)
+            elif NARS_tag.tag == 'Device':
+              romObject.device_depends.append(NARS_tag.text)
+            elif NARS_tag.tag == 'CHD':
+              romObject.CHD_depends.append(NARS_tag.text)
+
+        # - Copy information to generate NFO files
+        elif child_game.tag == 'description':
+          romObject.description = child_game.text;
+        elif child_game.tag == 'year':
+          romObject.year = child_game.text;
+        elif child_game.tag == 'manufacturer':
+          romObject.manufacturer = child_game.text;
+
+      # Add new game to the list
+      rom_raw_dict[romName] = romObject;
+
+  del tree;
+  NARS.print_info('Total number of games = ' + str(num_games));
+  NARS.print_info('Number of parents = ' + str(num_parents));
+  NARS.print_info('Number of clones = ' + str(num_clones));
+
+  return rom_raw_dict;
 
 # -----------------------------------------------------------------------------
 # MAME XML is written by this file:
@@ -1352,6 +1356,8 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 #   <rom name="sp-s.sp1" merge="sp-s.sp1" bios="euro-s1" size="131072" crc="" sha1="" region="mainbios" offset="0"/>
 #   ...
 # </machine>
+#
+# Example of mess machine with a BIOS (segacd) --------------------------------
 #
 # -----------------------------------------------------------------------------
 # CHDs
@@ -2003,13 +2009,11 @@ def do_list_merged():
 
   # Child elements (Reduced MAME XML):
   num_machines = 0
-  num_clones = 0
-  
+  num_clones = 0  
   num_ROMs = 0
   num_no_ROMs = 0
   num_CHD = 0
-  num_coin_slot = 0
-  
+  num_coin_slot = 0  
   num_samples = 0
   num_mechanical = 0
   num_devices = 0
@@ -2155,7 +2159,7 @@ def do_list_categories():
       sys.exit(10);
   f.close();
 
-  # --- Only print if very verbose
+  # --- Only print if very verbose ---
   if NARS.log_level >= NARS.Log.vverb:
     # Want to sort categories_dic['category'] = integer by the integer
     # Sorting dictionaries, see
@@ -2164,21 +2168,21 @@ def do_list_categories():
 #    sorted_propertiesDic = sorted(categories_dic.iteritems(), key=operator.itemgetter(1))
     # This works on Python 3
     sorted_histo = ((k, categories_dic[k]) for k in sorted(categories_dic, key=categories_dic.get, reverse=False))
-    # - DEBUG object dump
+    # ~~~ DEBUG object dump ~~~
     # dumpclean(sorted_propertiesDic);
-    # - Better print (only print if verbose)
+    # ~~~ Print if verbose ~~~
     NARS.print_vverb('[Raw categories]');
     for k, v in sorted_histo:
       NARS.print_verb('{:6d}'.format(v) + '  ' + k);
 
-  # --- Only print if verbose
+  # ~~~ Only print if verbose ~~~
   if NARS.log_level >= NARS.Log.verb:
     sorted_histo = ((k, main_categories_dic[k]) for k in sorted(main_categories_dic, key=main_categories_dic.get, reverse=False))
     NARS.print_verb('[Main categories]');
     for k, v in sorted_histo:
       NARS.print_verb('{:6d}'.format(v) + '  ' + k);
 
-  # --- By default only list final categories
+  # ~~~ By default only list final categories ~~~
   sorted_histo = ((k, final_categories_dic[k]) for k in sorted(final_categories_dic, key=final_categories_dic.get, reverse=False))
   NARS.print_info('[Final (used) categories]');
   num_categories = 0
