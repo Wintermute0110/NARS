@@ -1594,7 +1594,7 @@ def do_reduce_XML():
   NARS.print_info('[Reducing MAME XML database]');
   for machine_EL in root_input:
     flag_isDevice = 0
-    flag_isRunnable = 0
+    flag_isRunnable = 1
     if machine_EL.tag == 'machine':
       NARS.print_verb('[Machine]');
       machine_name = machine_EL.attrib['name']
@@ -1610,18 +1610,18 @@ def do_reduce_XML():
       if 'isdevice' in machine_attrib and machine_attrib['isdevice'] == 'yes':
         flag_isDevice = 1
       if 'runnable' in machine_attrib and machine_attrib['runnable'] == 'no':
-        flag_isRunnable = 1
+        flag_isRunnable = 0
 
       # --- Attribute consistence test ---
       # Test A) Are all devices non runnable?
       if flag_isDevice == 1 and flag_isRunnable == 1:
-        NARS.print_error('Found a ROM which is device and runnable')
+        NARS.print_error('[ERROR] Found a machine which is device and runnable (machine = {0})'.format(machine_name))
         sys.exit(10)
       if 'isdevice' in machine_attrib and 'runnable' not in machine_attrib:
-        NARS.print_error('isdevice but NOT runnable')
+        NARS.print_error('[ERROR] isdevice attribute but NOT runnable attribute (machine = {0})'.format(machine_name))
         sys.exit(10)
       if 'isdevice' not in machine_attrib and 'runnable' in machine_attrib:
-        NARS.print_error('NOT isdevice but runnable')
+        NARS.print_error('[ERROR] NOT isdevice attribute but runnable attribute (machine = {0})'.format(machine_name))
         sys.exit(10)
 
       # --- Iterate through machine tag attributes (DEBUG) ---
