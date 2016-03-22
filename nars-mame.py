@@ -2788,23 +2788,24 @@ def do_printHelp():
   print("""\033[32mUsage: nars-mame.py [options] <command> [filter]\033[0m
 
 \033[32mCommands:\033[0m
-\033[31musage\033[0m                   Print usage information (this text)
-\033[31mreduce-XML\033[0m              Takes MAME XML as input and writes an stripped XML.
-\033[31mmerge-XML\033[0m               Takes MAME XML (reduced) info file and Catver.ini a mergued XML.
-\033[31mlist-merged\033[0m             List every ROM set system in the merged MAME XML.
-\033[31mlist-categories\033[0m         Reads Catver.ini and makes a histogram of the categories.
-\033[31mlist-drivers\033[0m            Reads merged XML database and prints a histogram of the drivers.
-\033[31mlist-controls\033[0m           Reads merged XML database and prints a histogram of the game controls.
-\033[31mlist-years\033[0m              Reads merged XML database and prints a histogram of the game release year.
-\033[31mlist\033[0m                    List filters defined in configuration file.
-\033[31mcheck <filter>\033[0m          Applies filters and checks you source directory for have and missing ROMs.
-\033[31mcopy <filter>\033[0m           Applies ROM filters and copies sourceDir into destDir.
-\033[31mupdate <filter>\033[0m         Like copy, but only copies files if file size is different.
-\033[31mcopy-chd <filter>\033[0m       WRITE ME.
-\033[31mupdate-chd <filter>\033[0m     WRITE ME.
-\033[31mcheck-artwork <filter>\033[0m  Checks if you have the artwork.
-\033[31mcopy-artwork <filter>\033[0m   Copies artwork to destination
-\033[31mupdate-artwork <filter>\033[0m Like copy-artwork, but also delete unknown images in artwork destination.
+\033[31musage\033[0m                     Print usage information (this text)
+\033[31mreduce-XML\033[0m                Takes MAME XML as input and writes an stripped XML.
+\033[31mmerge-XML\033[0m                 Takes MAME XML (reduced) info file and Catver.ini a mergued XML.
+\033[31mlist-merged\033[0m               List every ROM set system in the merged MAME XML.
+\033[31mlist-categories\033[0m           Reads Catver.ini and makes a histogram of the categories.
+\033[31mlist-drivers\033[0m              Reads merged XML database and prints a histogram of the drivers.
+\033[31mlist-controls\033[0m             Reads merged XML database and prints a histogram of the game controls.
+\033[31mlist-years\033[0m                Reads merged XML database and prints a histogram of the game release year.
+\033[31mlist\033[0m                      List filters defined in configuration file.
+\033[31mdiff <filterA> <filterB>\033[0m  Compares filter A and filter B and print differences.
+\033[31mcheck <filter>\033[0m            Applies filter and checks you source directory for Have and Missing ROMs.
+\033[31mcopy <filter>\033[0m             Applies filter and copies sourceDir ROMs into destDir.
+\033[31mupdate <filter>\033[0m           Like copy, but only copies files if file size is different.
+\033[31mcopy-chd <filter>\033[0m         Applies filter and copies sourceDir CHDs into destDir.
+\033[31mupdate-chd <filter>\033[0m       Like copy-chd, but only copies files if CHD size is different.
+\033[31mcheck-artwork <filter>\033[0m    Checks for Have and Missing artwork.
+\033[31mcopy-artwork <filter>\033[0m     Copies artwork to destination
+\033[31mupdate-artwork <filter>\033[0m   Like copy-artwork, but also delete unknown images in artwork destination???
 
 \033[32mOptions:\033[0m
 \033[35m-h\033[0m, \033[35m--help\033[0m        Print short command reference
