@@ -1260,9 +1260,9 @@ def parse_MAME_merged_XML():
     # --- Add new game to the list ---
     machine_dict[game_attrib['name']] = machineObj;
 
-  NARS.print_info('Total number of games = ' + str(num_games));
-  NARS.print_info('Number of parents = ' + str(num_parents));
-  NARS.print_info('Number of clones = ' + str(num_clones));
+  NARS.print_info('Number of machines  ' + str(num_games));
+  NARS.print_info('Number of parents   ' + str(num_parents));
+  NARS.print_info('Number of clones    ' + str(num_clones));
 
   return machine_dict;
 
