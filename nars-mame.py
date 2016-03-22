@@ -511,6 +511,8 @@ def create_copy_CHD_dic(mame_filtered_dic):
   return CHD_dic;
 
 # This function should be renamed and put into NARS module.
+# This function should be refactored. For a file list there is no need to
+# use the Machine class!
 def get_ROM_main_list(sourceDir):
   "Reads sourceDir and creates a dictionary of ROMs"
   __debug_get_ROM_main_list = 0;
@@ -522,9 +524,10 @@ def get_ROM_main_list(sourceDir):
     if file.endswith(".zip"):
       thisFileName, thisFileExtension = os.path.splitext(file);
       romFileName_temp = thisFileName + '.zip';
-      romObject = ROM(thisFileName);
-      romObject.filename = file;
-      romMainList_dict[thisFileName] = romObject;
+      romObject = Machine()
+      romObject.name = thisFileName
+      romObject.filename = file
+      romMainList_dict[thisFileName] = romObject
       if __debug_get_ROM_main_list:
         print(romObject.name)
         print(romObject.filename)
@@ -609,11 +612,14 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # Filtering functions
 # -----------------------------------------------------------------------------
 # Main filter. <Include> and <Exclude> tags.
-def filter_main_filter():
+def filter_main_filter( ):
+  pass
+
+def filter_secondary_filter( ):
   pass
 
 # Main filtering function. Apply filters to main parent/clone dictionary.
-def filter_MAME_machines_main(mame_xml_dic, filter_config):
+def filter_MAME_machines(mame_xml_dic, filter_config):
   NARS.print_info('[Applying MAME filters]');
   NARS.print_info('NOTE: -vv if you want to see filters in action');
 
@@ -2491,7 +2497,7 @@ def do_checkFilter(filterName):
   rom_main_list = get_ROM_main_list(filter_config.sourceDir)
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config)
+  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
 
   # --- Print list in alphabetical order ---
   NARS.print_info('[Filtered game list]')
