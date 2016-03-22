@@ -2497,9 +2497,9 @@ def do_checkFilter(filterName):
   NARS.print_info('Filter name = ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName)
+  filter_config = get_Filter_from_Config(filterName)
   NARS.have_dir_or_abort(filter_config.sourceDir, 'ROMsSource')
-  NARS.have_dir_or_abort(filter_config.destDir_CHD, 'CHDsSource')
+  NARS.have_dir_or_abort(filter_config.sourceDir_CHD, 'CHDsSource')
   NARS.have_dir_or_abort(filter_config.destDir, 'ROMsDest')
 
   # --- Get MAME parent/clone dictionary --------------------------------------
@@ -2511,8 +2511,8 @@ def do_checkFilter(filterName):
   # --- Apply filter and create list of files to be copied --------------------
   mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config)
 
-  # --- Print list in alphabetical order
-  NARS.print_info('[Filtered game list]');
+  # --- Print list in alphabetical order ---
+  NARS.print_info('[Filtered game list]')
   missing_roms = 0
   have_roms = 0
   missing_CHD = have_CHD = 0
@@ -2553,13 +2553,13 @@ def do_checkFilter(filterName):
                            ' - ' + 'Have CHD'.ljust(11) + \
                            ' - CHD ' + romObject.name + '/' + CHD_file + '.chd')
 
-  NARS.print_info('[Report]');
-  NARS.print_info('Filtered ROMs ' + str(len(mame_filtered_dic)));
-  NARS.print_info('Have ROMs     ' + str(have_roms));
-  NARS.print_info('Missing ROMs  ' + str(missing_roms));
-  NARS.print_info('Total CHDs    ' + str(num_CHD));
-  NARS.print_info('Have CHDs     ' + str(have_CHD));
-  NARS.print_info('Missing CHDs  ' + str(missing_CHD));
+  NARS.print_info('[Report]')
+  NARS.print_info('Filtered ROMs ' + str(len(mame_filtered_dic)))
+  NARS.print_info('Have ROMs     ' + str(have_roms))
+  NARS.print_info('Missing ROMs  ' + str(missing_roms))
+  NARS.print_info('Total CHDs    ' + str(num_CHD))
+  NARS.print_info('Have CHDs     ' + str(have_CHD))
+  NARS.print_info('Missing CHDs  ' + str(missing_CHD))
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
