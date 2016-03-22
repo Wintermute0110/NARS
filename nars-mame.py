@@ -237,56 +237,62 @@ def get_Filter_from_Config(filterName):
 # Misc functions
 # -----------------------------------------------------------------------------
 # A class to store the MAME machine information.
-# ROM.name            string  machine name (<machine name="">)
-# ROM.cloneof         string  clone name (<machine cloneof="">)
-# ROM.isclone         bool
-# ROM.isdevice        bool
-# ROM.runnable        bool
-# ROM.sampleof        string 
-# ROM.hasSamples      bool
-# ROM.isMechanical    bool
-# ROM.isBIOS          bool
-# ROM.sourcefile      string
-# ROM.driver_status   string
-# ROM.category        string
-# ROM.buttons         string
-# ROM.players         string
-# ROM.coins           string
-# ROM.hascoins        bool
-# ROM.hasROMs         bool
-# ROM.control_type    string_list
-# ROM.BIOS_depends    string_list
-# ROM.device_depends  string_list
-# ROM.CHD_depends     string_list
-# ROM.description     string
-# ROM.year            string
-# ROM.manufacturer    string
-class ROM:
+# Machine.name            string  machine name (<machine name="">)
+# Machine.cloneof         string  clone name (<machine cloneof="">)
+# Machine.isclone         bool
+# Machine.isdevice        bool
+# Machine.runnable        bool
+# Machine.sampleof        string 
+# Machine.hasSamples      bool
+# Machine.isMechanical    bool
+# Machine.isBIOS          bool
+# Machine.sourcefile      string
+# Machine.driver_status   string
+# Machine.category        string
+# Machine.buttons         string
+# Machine.players         string
+# Machine.coins           string
+# Machine.hascoins        bool
+# Machine.hasROMs         bool
+# Machine.control_type    string_list
+# Machine.BIOS_depends    string_list
+# Machine.device_depends  string_list
+# Machine.CHD_depends     string_list
+# Machine.description     string
+# Machine.year            string
+# Machine.manufacturer    string
+class Machine:
   def __init__(self):
-    self.name = None;
-    self.cloneof = None;
-    self.isclone = None;
-    self.isdevice = None;
-    self.runnable = None;
-    self.sampleof = None;
-    self.hasSamples = None;
-    self.isMechanical = None;
-    self.isBIOS = None;
-    self.sourcefile = None;
-    self.driver_status = None;
-    self.category = None;
-    self.buttons = None;
-    self.players = None;
-    self.coins = None;
-    self.hascoins = None;
-    self.hasROMs = None;
-    self.control_type = None;
-    self.BIOS_depends = None;
-    self.device_depends = None;
-    self.CHD_depends = None;
-    self.description = None;
-    self.year = None;
-    self.manufacturer = None;
+    # XML Machine attributes
+    self.name = None
+    self.cloneof = None
+    self.isClone = False
+    self.isDevice = False
+    self.isRunnable = True
+    self.sampleof = None
+    self.isSamples = False
+    self.isMechanical = False
+    self.isBIOS = False
+    self.sourcefile = None
+    # XML Machine tags
+    self.description = None
+    self.year = None
+    self.manufacturer = None
+    self.driver_status = None
+    self.category = None
+    self.buttons = None
+    self.players = None
+    self.coins = 0                 # int
+    self.hasCoins = False
+    self.control_type_list = []
+    # Custom <NARS> attributes
+    self.hasROMs = True
+    self.hasSoftwareLists = False
+    self.orientation = None
+    # Custom <NARS> tags
+    self.BIOS_depends_list = []
+    self.device_depends_list = []
+    self.CHD_depends_list = []
 
 # Parses machine swaps in configuration filter, like <MachineSwap>tmnt --> tmnt2po</MachineSwap>
 # Returns a tuple with the first machine (original name) and the second machine (swapped).
@@ -312,6 +318,9 @@ def add_to_histogram(key, hist_dic):
 
   return hist_dic;
 
+# Removes trailing '.c' or '.cpp' from string
+#
+# Returns the trimmed string
 def trim_driver_string(driver_str):
   # Check that string does not containg weird characters
   pattern = re.compile(r'\\/,')
@@ -1103,9 +1112,7 @@ def parse_catver_ini():
 # Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
 # do_update_artwork()), but not in the do_list_*() functions.
 #
-# Returns dictionary rom_raw_dict with key the (unique) ROM name and value a 
-# ROM object with fields:
-# ROM.
+# Returns dictionary machine_dict with key the Machine name and value a Machine object.
 def parse_MAME_merged_XML():
   "Parses a MAME merged XML and creates a parent/clone list"
 
@@ -1114,175 +1121,150 @@ def parse_MAME_merged_XML():
   tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
 
   # --- Raw list: literal information from the XML
-  rom_raw_dict = {};
+  machine_dict = {};
   root = tree.getroot();
   num_games = 0;
   num_parents = 0;
   num_clones = 0;
   for game_EL in root:
-    if game_EL.tag == 'machine':
-      num_games += 1
+    # Skip non machine tags, if any
+    if game_EL.tag != 'machine':
+      continue
 
-      # Create ROM object and fill default values. Code has to change only
-      # non-default ones, and will be more compact.
-      game_attrib = game_EL.attrib;
-      romName = game_attrib['name'];
-      romObject = ROM(romName)
-      NARS.print_debug('machine = ' + romName)
-      # --- Check game attributes and create variables for filtering
-      # Parent or clone
-      if 'cloneof' in game_attrib:
-        num_clones += 1;
-        romObject.cloneof = game_attrib['cloneof'];
-        romObject.isclone = 1;
-        NARS.print_debug(' Clone of = ' + game_attrib['cloneof']);
-      else:
-        num_parents += 1;
-        romObject.isclone = 0;
+    # Create Machine object and fill default values. Code has to change only
+    # non-default ones, and will be more compact.
+    num_games += 1
+    machineObj = Machine()
+    game_attrib = game_EL.attrib
+    machineObj.name = game_attrib['name']
+    NARS.print_debug('machine = ' + game_attrib['name'])
 
-      # --- Device and Runnable ---
-      if 'isdevice' in game_attrib:
-        if game_attrib['isdevice'] == 'yes':
-          romObject.isdevice = 1;
+    # ~~~~~ Check game attributes and create variables for filtering ~~~~~
+    # --- Parent or clone (isClone defaults False) ---
+    if 'cloneof' in game_attrib:
+      num_clones += 1
+      machineObj.isClone = True
+      machineObj.cloneof = game_attrib['cloneof']
+      NARS.print_debug(' Clone of = ' + game_attrib['cloneof'])
+    else:
+      num_parents += 1
+
+    # --- Device and Runnable (isDevice defaults False, isRunnable defaults True) ---
+    if 'isdevice' in game_attrib and game_attrib['isdevice'] == 'yes':
+      machineObj.isDevice = True
+
+    if 'runnable' in game_attrib and game_attrib['runnable'] == 'no':
+      machineObj.isRunnable = False
+
+    # --- Samples (isSamples defaults False) ---
+    if 'sampleof' in game_attrib:
+      machineObj.isSamples = True
+      machineObj.sampleof = game_attrib['sampleof']
+
+    # --- Mechanical (isMechanical defaults False) ---
+    if 'ismechanical' in game_attrib and game_attrib['ismechanical'] == 'yes':
+      machineObj.isMechanical = True
+
+    # --- BIOS (isBIOS defaults False) ---
+    if 'isbios' in game_attrib and game_attrib['isbios'] == 'yes':
+      machineObj.isBIOS = True
+
+    # --- Game driver ---
+    if 'sourcefile' in game_attrib:
+      # Remove the trailing '.c' or '.cpp' from driver name
+      machineObj.sourcefile = trim_driver_string(game_attrib['sourcefile'])
+
+    # ~~~~~ Parse machine child tags ~~~~~
+    for child_game in game_EL:
+      # --- information to generate NFO files ---
+      if child_game.tag == 'description':
+        machineObj.description = child_game.text
+      elif child_game.tag == 'year':
+        machineObj.year = child_game.text
+      elif child_game.tag == 'manufacturer':
+        machineObj.manufacturer = child_game.text    
+
+      # --- Driver status ---
+      elif child_game.tag == 'driver':
+        driver_attrib = child_game.attrib;
+
+        # Driver status is good, imperfect, preliminary
+        # preliminary games don't work or have major emulation problems
+        # imperfect games are emulated with some minor issues
+        # good games are perfectly emulated
+        if 'status' in driver_attrib:
+          machineObj.driver_status = driver_attrib['status'];
+          NARS.print_debug(' Driver status = ' + driver_attrib['status']);
         else:
-          romObject.isdevice = 0;
-      else:
-        romObject.isdevice = 0; # Device defaults to 0
+          machineObj.driver_status = 'unknown';
 
-      if 'runnable' in game_attrib:
-        if game_attrib['runnable'] == 'no':
-          romObject.runnable = 0;
+      # --- Category ---
+      elif child_game.tag == 'category':
+        machineObj.category = child_game.text;
+
+      # --- Controls ---
+      elif child_game.tag == 'input':
+        control_attrib = child_game.attrib;
+        if 'buttons' in control_attrib:
+          machineObj.buttons = control_attrib['buttons'];
         else:
-          romObject.runnable = 1;
-      else:
-        romObject.runnable = 1; # Runnable defaults to 1
+          # There are some games with no buttons attribute
+          machineObj.buttons = '0'
 
-      # --- Samples ---
-      if 'sampleof' in game_attrib:
-        romObject.hasSamples = 1;
-        romObject.sampleof = game_attrib['sampleof'];
-      else:
-        romObject.hasSamples = 0; # By default has no samples
-        romObject.sampleof = '';
-
-      # --- Mechanical ---
-      if 'ismechanical' in game_attrib:
-        if game_attrib['ismechanical'] == 'yes':
-          romObject.isMechanical = 1;
+        if 'players' in control_attrib:
+          machineObj.players = control_attrib['players'];
         else:
-          romObject.isMechanical = 0;
-      else:
-        romObject.isMechanical = 0; # isMechanical defaults to 0
+          machineObj.players = None;
 
-      # --- BIOS ---
-      if 'isbios' in game_attrib:
-        if game_attrib['isbios'] == 'yes':
-          romObject.isBIOS = 1;
+        if 'coins' in control_attrib:
+          machineObj.coins = control_attrib['coins']
+          num_coins = int(control_attrib['coins'])
+          if num_coins > 0:
+            machineObj.hasCoins = True
+
+        # A game may have more than one control (joystick, dial, ...)
+        for control in child_game:
+          if control.tag == 'control':
+            if 'type' in control.attrib:
+              machineObj.control_type_list.append(control.attrib['type'].title());
+        if len(machineObj.control_type_list) < 1:
+          machineObj.control_type_list.append('ButtonsOnly');
+
+      # --- <NARS> custom tag (attributes and sub-tags) ---
+      elif child_game.tag == 'NARS':
+        # --- <NARS> attributes ---
+        nars_attrib = child_game.attrib
+        # hasROMs defaults to True
+        if 'hasROM' in nars_attrib and nars_attrib['hasROM'] == 'no':
+          machineObj.hasROMs = False
+
+        # hasSoftwareLists defaults to False
+        if 'hasSoftwareLists' in nars_attrib and nars_attrib['hasSoftwareLists'] == 'yes':
+          machineObj.hasSoftwareLists = True
+
+        if 'orientation' in nars_attrib:
+          machineObj.orientation = nars_attrib['orientation']
         else:
-          romObject.isBIOS = 0;
-      else:
-        romObject.isBIOS = 0;
+          print('[ERROR] Not found <NARS orientation=... >\n')
+          sys.exit(10)
 
-      # --- Game driver ---
-      if 'sourcefile' in game_attrib:
-        driverName = game_attrib['sourcefile']
-        # Remove the trailing '.c' or '.cpp' from driver name
-        if driverName[-2:] == '.c':     driverName = driverName[:-2]
-        elif driverName[-4:] == '.cpp': driverName = driverName[:-4]
-        romObject.sourcefile = driverName;
-      else:
-        # sourcefile (driver) defaults to unknown
-        romObject.sourcefile = 'unknown';
+        # --- <NARS> tags ---
+        for NARS_tag in child_game:
+          if NARS_tag.tag == 'BIOS':
+            machineObj.BIOS_depends_list.append(NARS_tag.text)
+          elif NARS_tag.tag == 'Device':
+            machineObj.device_depends_list.append(NARS_tag.text)
+          elif NARS_tag.tag == 'CHD':
+            machineObj.CHD_depends_list.append(NARS_tag.text)
 
-      # --- Parse machine child tags ---
-      # Add fields that may not be present in XML. Avoid AttributeError exceptions
-      romObject.hasCoin = 0
-      romObject.hasROM = 0
-      romObject.BIOS_depends = []
-      romObject.device_depends = []
-      romObject.CHD_depends = []
-      for child_game in game_EL:
-        # --- Driver status ---
-        if child_game.tag == 'driver':
-          driver_attrib = child_game.attrib;
+    # --- Add new game to the list ---
+    machine_dict[game_attrib['name']] = machineObj;
 
-          # Driver status is good, imperfect, preliminary
-          # preliminary games don't work or have major emulation problems
-          # imperfect games are emulated with some minor issues
-          # good games are perfectly emulated
-          if 'status' in driver_attrib:
-            romObject.driver_status = driver_attrib['status'];
-            NARS.print_debug(' Driver status = ' + driver_attrib['status']);
-          else:
-            romObject.driver_status = 'unknown';
-
-        # --- Category ---
-        elif child_game.tag == 'category':
-          romObject.category = child_game.text;
-
-        # --- Controls ---
-        elif child_game.tag == 'input':
-          control_attrib = child_game.attrib;
-          if 'buttons' in control_attrib:
-            romObject.buttons = control_attrib['buttons'];
-          else:
-            # There are some games with no buttons attribute
-            romObject.buttons = '0';
-
-          if 'players' in control_attrib:
-            romObject.players = control_attrib['players'];
-          else:
-            romObject.players = None;
-
-          if 'coins' in control_attrib:
-            romObject.coins = control_attrib['coins']
-            num_coins = int(control_attrib['coins'])
-            if num_coins > 0:
-              romObject.hasCoin = 1
-          else:
-            romObject.coins = None;
-
-          # NOTE a game may have more than one control (joystick, dial, ...)
-          romObject.control_type = [];
-          for control in child_game:
-            if control.tag == 'control':
-              if 'type' in control.attrib:
-                romObject.control_type.append(control.attrib['type'].title());
-
-          if len(romObject.control_type) < 1:
-            romObject.control_type.append('ButtonsOnly');
-
-        # --- Dependencies ---
-        elif child_game.tag == 'NARS':
-          if 'hasROM' in child_game.attrib:
-            if child_game.attrib['hasROM'] == 'yes':
-              romObject.hasROMs = 1
-
-          for NARS_tag in child_game:
-            if NARS_tag.tag == 'BIOS':
-              romObject.BIOS_depends.append(NARS_tag.text)
-            elif NARS_tag.tag == 'Device':
-              romObject.device_depends.append(NARS_tag.text)
-            elif NARS_tag.tag == 'CHD':
-              romObject.CHD_depends.append(NARS_tag.text)
-
-        # --- Copy information to generate NFO files ---
-        elif child_game.tag == 'description':
-          romObject.description = child_game.text;
-        elif child_game.tag == 'year':
-          romObject.year = child_game.text;
-        elif child_game.tag == 'manufacturer':
-          romObject.manufacturer = child_game.text;
-
-      # Add new game to the list
-      rom_raw_dict[romName] = romObject;
-
-  del tree;
   NARS.print_info('Total number of games = ' + str(num_games));
   NARS.print_info('Number of parents = ' + str(num_parents));
   NARS.print_info('Number of clones = ' + str(num_clones));
 
-  return rom_raw_dict;
+  return machine_dict;
 
 # -----------------------------------------------------------------------------
 # MAME XML is written by this file:
