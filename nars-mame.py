@@ -2467,18 +2467,16 @@ def do_list_filters():
   # Iterate over XML root object
   root = tree.getroot();
   for root_child in root:
-    if root_child.tag == 'General':
-      NARS.print_info('<General configuration>')
-      # Iterate through children nodes
-      for root_child_node in root_child:
-        if root_child_node.tag == 'MAME_XML':
-          NARS.print_info('MAME_XML        ' + root_child_node.text)
-        elif root_child_node.tag == 'MAME_XML_redux':
-          NARS.print_info('MAME_XML_redux  ' + root_child_node.text)
-        elif root_child_node.tag == 'Catver':
-          NARS.print_info('Catver          ' + root_child_node.text)
-        elif root_child_node.tag == 'Merged_XML':
-          NARS.print_info('Merged_XML      ' + root_child_node.text)
+    if root_child.tag == 'MAME_XML':
+      NARS.print_info('MAME_XML        ' + root_child.text)
+    elif root_child.tag == 'MAME_XML_redux':
+      NARS.print_info('MAME_XML_redux  ' + root_child.text)
+    elif root_child.tag == 'Catver':
+      NARS.print_info('Catver          ' + root_child.text)
+    elif root_child.tag == 'Merged_XML':
+      NARS.print_info('Merged_XML      ' + root_child.text)
+    elif root_child.tag == 'MachineSwap':
+      NARS.print_info('MachineSwap     ' + root_child.text)
     elif root_child.tag == 'MAMEFilter':
       NARS.print_info('<MAME filter>')
       NARS.print_info('Name        ' + root_child.attrib['name'])
