@@ -1141,7 +1141,7 @@ def parse_MAME_merged_XML():
         num_parents += 1;
         romObject.isclone = 0;
 
-      # --- Device and Runnable
+      # --- Device and Runnable ---
       if 'isdevice' in game_attrib:
         if game_attrib['isdevice'] == 'yes':
           romObject.isdevice = 1;
@@ -1158,20 +1158,7 @@ def parse_MAME_merged_XML():
       else:
         romObject.runnable = 1; # Runnable defaults to 1
 
-      # Are all devices non runnable?
-      # In MAME 0.153b, when there is the attribute 'isdevice' there is also
-      # 'runnable'. Also, if isdevice = yes => runnable = no
-      if romObject.isdevice == 1 and romObject.runnable == 1:
-        NARS.print_error('Found a ROM which is device and runnable');
-        sys.exit(10);
-      if 'isdevice' in game_attrib and 'runnable' not in game_attrib:
-        NARS.print_error('isdevice but NOT runnable');
-        sys.exit(10);
-      if 'isdevice' not in game_attrib and 'runnable' in game_attrib:
-        NARS.print_error('NOT isdevice but runnable');
-        sys.exit(10);
-
-      # Samples
+      # --- Samples ---
       if 'sampleof' in game_attrib:
         romObject.hasSamples = 1;
         romObject.sampleof = game_attrib['sampleof'];
@@ -1179,7 +1166,7 @@ def parse_MAME_merged_XML():
         romObject.hasSamples = 0; # By default has no samples
         romObject.sampleof = '';
 
-      # Mechanical
+      # --- Mechanical ---
       if 'ismechanical' in game_attrib:
         if game_attrib['ismechanical'] == 'yes':
           romObject.isMechanical = 1;
@@ -1188,7 +1175,7 @@ def parse_MAME_merged_XML():
       else:
         romObject.isMechanical = 0; # isMechanical defaults to 0
 
-      # BIOS
+      # --- BIOS ---
       if 'isbios' in game_attrib:
         if game_attrib['isbios'] == 'yes':
           romObject.isBIOS = 1;
@@ -1197,7 +1184,7 @@ def parse_MAME_merged_XML():
       else:
         romObject.isBIOS = 0;
 
-      # Game driver
+      # --- Game driver ---
       if 'sourcefile' in game_attrib:
         driverName = game_attrib['sourcefile']
         # Remove the trailing '.c' or '.cpp' from driver name
@@ -1216,7 +1203,7 @@ def parse_MAME_merged_XML():
       romObject.device_depends = []
       romObject.CHD_depends = []
       for child_game in game_EL:
-        # - Driver status
+        # --- Driver status ---
         if child_game.tag == 'driver':
           driver_attrib = child_game.attrib;
 
@@ -1230,7 +1217,7 @@ def parse_MAME_merged_XML():
           else:
             romObject.driver_status = 'unknown';
 
-        # - Category
+        # --- Category ---
         elif child_game.tag == 'category':
           romObject.category = child_game.text;
 
@@ -1280,7 +1267,7 @@ def parse_MAME_merged_XML():
             elif NARS_tag.tag == 'CHD':
               romObject.CHD_depends.append(NARS_tag.text)
 
-        # - Copy information to generate NFO files
+        # --- Copy information to generate NFO files ---
         elif child_game.tag == 'description':
           romObject.description = child_game.text;
         elif child_game.tag == 'year':
@@ -1607,20 +1594,36 @@ def do_reduce_XML():
   # </machine>
   NARS.print_info('[Reducing MAME XML database]');
   for machine_EL in root_input:
-    isdevice_flag = 0
+    flag_isDevice = 0
+    flag_isRunnable = 0
     if machine_EL.tag == 'machine':
       NARS.print_verb('[Machine]');
       machine_name = machine_EL.attrib['name']
 
       # Copy all machine attributes in output XML
-      game_output = ET.SubElement(root_output, 'machine')
-      game_output.attrib = machine_EL.attrib
+      machine_output = ET.SubElement(root_output, 'machine')
+      machine_output.attrib = machine_EL.attrib
+      machine_attrib = machine_output.attrib
 
       # Put BIOSes and devices in the list
-      if 'isbios' in game_output.attrib:
+      if 'isbios' in machine_attrib and machine_attrib['isbios'] == 'yes':
         machine_isBIOS_list.append(machine_name)
-      if 'isdevice' in game_output.attrib:
-        isdevice_flag = 1
+      if 'isdevice' in machine_attrib and machine_attrib['isdevice'] == 'yes':
+        flag_isDevice = 1
+      if 'runnable' in machine_attrib and machine_attrib['runnable'] == 'no':
+        flag_isRunnable = 1
+
+      # --- Attribute consistence test ---
+      # Test A) Are all devices non runnable?
+      if flag_isDevice == 1 and flag_isRunnable == 1:
+        NARS.print_error('Found a ROM which is device and runnable')
+        sys.exit(10)
+      if 'isdevice' in machine_attrib and 'runnable' not in machine_attrib:
+        NARS.print_error('isdevice but NOT runnable')
+        sys.exit(10)
+      if 'isdevice' not in machine_attrib and 'runnable' in machine_attrib:
+        NARS.print_error('NOT isdevice but runnable')
+        sys.exit(10)
 
       # --- Iterate through machine tag attributes (DEBUG) ---
       # for key in machine_EL.attrib:
@@ -1631,17 +1634,17 @@ def do_reduce_XML():
       for machine_child in machine_EL:
         if machine_child.tag == 'description':
           NARS.print_verb(' description = ' + machine_child.text);
-          description_output = ET.SubElement(game_output, 'description');
+          description_output = ET.SubElement(machine_output, 'description');
           description_output.text = machine_child.text;
 
         if machine_child.tag == 'year':
           NARS.print_verb(' year = ' + machine_child.text);
-          year_output = ET.SubElement(game_output, 'year');
+          year_output = ET.SubElement(machine_output, 'year');
           year_output.text = machine_child.text;
 
         if machine_child.tag == 'manufacturer':
           NARS.print_verb(' manufacturer = ' + machine_child.text);
-          manufacturer_output = ET.SubElement(game_output, 'manufacturer');
+          manufacturer_output = ET.SubElement(machine_output, 'manufacturer');
           manufacturer_output.text = machine_child.text;
 
         # Check machine orientation
@@ -1666,7 +1669,7 @@ def do_reduce_XML():
             sys.exit(10)
 
         if machine_child.tag == 'input':
-          input_output = ET.SubElement(game_output, 'input');
+          input_output = ET.SubElement(machine_output, 'input');
           input_output.attrib = machine_child.attrib
           # Traverse <input> children and copy <control> tags
           for input_child in machine_child:
@@ -1678,7 +1681,7 @@ def do_reduce_XML():
         # space in output XML.
         if machine_child.tag == 'driver':
           if 'status' in machine_child.attrib:
-            driver_output = ET.SubElement(game_output, 'driver')
+            driver_output = ET.SubElement(machine_output, 'driver')
             driver_output.attrib['status'] = machine_child.attrib['status']
           else:
             print('Machine "{0}" <driver> has no "status" attribute\n'.format(machine_name))
@@ -1690,7 +1693,7 @@ def do_reduce_XML():
           machine_with_CHD_list.append(machine_name);
 
         # --- List of devices with ROMs ---
-        if isdevice_flag and machine_child.tag == 'rom':
+        if flag_isDevice and machine_child.tag == 'rom':
           machine_isDevice_with_ROM_list.append(machine_name)
             
         # --- List of machines with ROMs ---
