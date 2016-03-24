@@ -61,8 +61,8 @@ def copy_ArtWork_file(fileName, artName, sourceDir, destDir):
   if not os.path.isfile(sourceFullFilename):
     return 1;
 
-  NARS.print_debug(' Copying ' + sourceFullFilename);
-  NARS.print_debug(' Into    ' + destFullFilename);
+  NARS.print_debug('Copying ' + sourceFullFilename);
+  NARS.print_debug('Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
@@ -95,12 +95,12 @@ def update_ArtWork_file(fileName, artName, sourceDir, destDir):
 
   # If sizes are equal Skip copy and return 1
   if sizeSource == sizeDest:
-    NARS.print_debug(' Updated ' + destFullFilename);
+    NARS.print_debug('Updated ' + destFullFilename);
     return 2;
 
   # destFile does not exist or sizes are different, copy.
-  NARS.print_debug(' Copying ' + sourceFullFilename);
-  NARS.print_debug(' Into    ' + destFullFilename);
+  NARS.print_debug('Copying ' + sourceFullFilename);
+  NARS.print_debug('Into    ' + destFullFilename);
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
@@ -121,11 +121,13 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
   for rom_copy_item in sorted(rom_list):
     # --- Update progress
     percentage = 100 * step / num_steps;
-    sys.stdout.write('{:3d}% '.format(percentage));
+    sys.stdout.write('{:5.2f}% '.format(percentage));
 
     # --- Copy file (this function succeeds or aborts program)
-    romFileName = rom_copy_item + '.zip';
-    NARS.copy_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run);
+    romFileName = rom_copy_item + '.zip'
+    source_path = sourceDir + romFileName
+    dest_path = destDir + romFileName
+    NARS.copy_file(source_path, dest_path, __prog_option_dry_run)
     num_copied_roms += 1;
     NARS.print_info('<Copied> ' + romFileName);
     sys.stdout.flush();
@@ -149,16 +151,18 @@ def update_ROM_list(rom_list, sourceDir, destDir):
     percentage = 100 * step / num_steps;
 
     # --- Copy file (this function succeeds or aborts program)
-    romFileName = rom_copy_item + '.zip';
-    ret = NARS.update_ROM_file(romFileName, sourceDir, destDir, __prog_option_dry_run);
+    romFileName = rom_copy_item + '.zip'
+    source_path = sourceDir + romFileName
+    dest_path = destDir + romFileName
+    ret = NARS.update_file(source_path, dest_path, __prog_option_dry_run)
     if ret == 0:
       # On default verbosity level only report copied files
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:5.2f}% '.format(percentage));
       num_copied_roms += 1;
       NARS.print_info('<Copied > ' + romFileName);
     elif ret == 1:
       if NARS.log_level >= NARS.Log.verb:
-        sys.stdout.write('{:3d}% '.format(percentage));
+        sys.stdout.write('{:5.2f}% '.format(percentage));
       num_updated_roms += 1;
       NARS.print_verb('<Updated> ' + romFileName);
     else:
@@ -208,48 +212,48 @@ def delete_redundant_NFO(destDir):
   print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files');
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
-  NARS.print_info('[Copying ArtWork]');
-  fanartSourceDir = filter_config.fanartSourceDir;
-  fanartDestDir = filter_config.fanartDestDir;
-  thumbsSourceDir = filter_config.thumbsSourceDir;
-  thumbsDestDir = filter_config.thumbsDestDir;
+  NARS.print_info('[Copying ArtWork]')
+  fanartSourceDir = filter_config.fanartSourceDir
+  fanartDestDir = filter_config.fanartDestDir
+  thumbsSourceDir = filter_config.thumbsSourceDir
+  thumbsDestDir = filter_config.thumbsDestDir
   
   # --- Check that directories exist
-  NARS.have_dir_or_abort(thumbsSourceDir);
-  NARS.have_dir_or_abort(thumbsDestDir);
-  NARS.have_dir_or_abort(fanartSourceDir);
-  NARS.have_dir_or_abort(fanartDestDir);
+  NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir')
+  NARS.have_dir_or_abort(thumbsDestDir, 'thumbsDestDir')
+  NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir')
+  NARS.have_dir_or_abort(fanartDestDir, 'fanartDestDir')
   
   # --- Copy artwork
-  num_steps = len(rom_copy_dic);
-  step = 0;
-  num_copied_thumbs = 0;
-  num_missing_thumbs = 0;
-  num_copied_fanart = 0;
-  num_missing_fanart = 0;
+  num_steps = len(rom_copy_dic)
+  step = 0
+  num_copied_thumbs = 0
+  num_missing_thumbs = 0
+  num_copied_fanart = 0
+  num_missing_fanart = 0
   for rom_baseName in sorted(rom_copy_dic):
     # --- Get artwork name
     art_baseName = rom_copy_dic[rom_baseName];
 
     # --- Update progress
-    percentage = 100 * step / num_steps;
-    sys.stdout.write('{:3d}% '.format(percentage));
+    percentage = 100 * step / num_steps
+    sys.stdout.write('{:5.2f}% '.format(percentage))
 
     # --- Thumbs
-    ret = copy_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
+    ret = copy_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir)
     if ret == 0:
       num_copied_thumbs += 1;
-      NARS.print_info('<Copied Thumb  > ' + art_baseName);
+      NARS.print_info('<Copied Thumb  > ' + art_baseName)
     elif ret == 1:
       num_missing_thumbs += 1;
-      NARS.print_info('<Missing Thumb > ' + art_baseName);
+      NARS.print_info('<Missing Thumb > ' + art_baseName)
     else:
-      NARS.print_error('Wrong value returned by copy_ArtWork_file()');
-      sys.exit(10);
+      NARS.print_error('Wrong value returned by copy_ArtWork_file()')
+      sys.exit(10)
 
     # --- Update progress
     percentage = 100 * step / num_steps;
-    sys.stdout.write('{:3d}% '.format(percentage));
+    sys.stdout.write('{:5.2f}% '.format(percentage));
 
     # --- Fanart
     ret = copy_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
@@ -267,34 +271,34 @@ def copy_ArtWork_list(filter_config, rom_copy_dic):
     step += 1;
 
   NARS.print_info('[Report]');
-  NARS.print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs));
-  NARS.print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs));
-  NARS.print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart));
-  NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart));
+  NARS.print_info('Copied thumbs ' + '{:6d}'.format(num_copied_thumbs))
+  NARS.print_info('Missing thumbs ' + '{:5d}'.format(num_missing_thumbs))
+  NARS.print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart))
+  NARS.print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart))
 
 def update_ArtWork_list(filter_config, rom_copy_dic):
-  NARS.print_info('[Updating ArtWork]');
+  NARS.print_info('[Updating ArtWork]')
   
-  thumbsSourceDir = filter_config.thumbsSourceDir;
-  thumbsDestDir = filter_config.thumbsDestDir;
-  fanartSourceDir = filter_config.fanartSourceDir;
-  fanartDestDir = filter_config.fanartDestDir;
+  thumbsSourceDir = filter_config.thumbsSourceDir
+  thumbsDestDir = filter_config.thumbsDestDir
+  fanartSourceDir = filter_config.fanartSourceDir
+  fanartDestDir = filter_config.fanartDestDir
 
   # --- Check that directories exist
-  NARS.have_dir_or_abort(thumbsSourceDir);
-  NARS.have_dir_or_abort(thumbsDestDir);
-  NARS.have_dir_or_abort(fanartSourceDir);
-  NARS.have_dir_or_abort(fanartDestDir);
+  NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir')
+  NARS.have_dir_or_abort(thumbsDestDir, 'thumbsDestDir')
+  NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir')
+  NARS.have_dir_or_abort(fanartDestDir, 'fanartDestDir')
   
   # --- Copy/update artwork
-  num_steps = len(rom_copy_dic);
-  step = 0;
-  num_copied_thumbs = 0;
-  num_updated_thumbs = 0;
-  num_missing_thumbs = 0;
-  num_copied_fanart = 0;
-  num_updated_fanart = 0;
-  num_missing_fanart = 0;
+  num_steps = len(rom_copy_dic)
+  step = 0
+  num_copied_thumbs = 0
+  num_updated_thumbs = 0
+  num_missing_thumbs = 0
+  num_copied_fanart = 0
+  num_updated_fanart = 0
+  num_missing_fanart = 0
   for rom_baseName in sorted(rom_copy_dic):
     # --- Update progress
     percentage = 100 * step / num_steps;
@@ -306,17 +310,17 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     ret = update_ArtWork_file(rom_baseName, art_baseName, thumbsSourceDir, thumbsDestDir);
     if ret == 0:
       # On default verbosity level only report copied files
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:5.2f}% '.format(percentage));
       num_copied_thumbs += 1;
       NARS.print_info('<Copied  Thumb > ' + art_baseName);
     elif ret == 1:
       # Also report missing artwork
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:5.2f}% '.format(percentage));
       num_missing_thumbs += 1;
       NARS.print_info('<Missing Thumb > ' + art_baseName);
     elif ret == 2:
       if NARS.log_level >= NARS.Log.verb:
-        sys.stdout.write('{:3d}% '.format(percentage));
+        sys.stdout.write('{:5.2f}% '.format(percentage));
       num_updated_thumbs += 1;
       NARS.print_verb('<Updated Thumb > ' + art_baseName);
     else:
@@ -327,17 +331,17 @@ def update_ArtWork_list(filter_config, rom_copy_dic):
     ret = update_ArtWork_file(rom_baseName, art_baseName, fanartSourceDir, fanartDestDir);
     if ret == 0:
       # Also report missing artwork
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:5.2f}% '.format(percentage));
       num_copied_fanart += 1;
       NARS.print_info('<Copied  Fanart> ' + art_baseName);
     elif ret == 1:
       # Also report missing artwork
-      sys.stdout.write('{:3d}% '.format(percentage));
+      sys.stdout.write('{:5.2f}% '.format(percentage));
       num_missing_fanart += 1;
       NARS.print_info('<Missing Fanart> ' + art_baseName);
     elif ret == 2:
       if NARS.log_level >= NARS.Log.verb:
-        sys.stdout.write('{:3d}% '.format(percentage));
+        sys.stdout.write('{:5.2f}% '.format(percentage));
       num_updated_fanart += 1;
       NARS.print_verb('<Updated Fanart> ' + art_baseName);
     else:
@@ -497,8 +501,8 @@ def parse_File_Config():
         # -- Mandatory config file options
         filter_class.name = root_child.attrib['name'];
         filter_class.shortname = root_child.attrib['shortname'];
-        NARS.print_debug(' name           = ' + filter_class.name);
-        NARS.print_debug(' shortname      = ' + filter_class.shortname);
+        NARS.print_debug('Name           = ' + filter_class.name);
+        NARS.print_debug('Shortname      = ' + filter_class.shortname);
         sourceDirFound = 0;
         destDirFound = 0;
 
@@ -518,39 +522,39 @@ def parse_File_Config():
         #   to avoid None objects later.
         for filter_child in root_child:
           if filter_child.tag == 'ROMsSource':
-            NARS.print_debug('ROMsSource    = ' + filter_child.text);
+            NARS.print_debug('ROMsSource     = ' + filter_child.text);
             sourceDirFound = 1;
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.sourceDir = tempDir;
 
           elif filter_child.tag == 'ROMsDest':
-            NARS.print_debug('ROMsDest      = ' + filter_child.text);
+            NARS.print_debug('ROMsDest       = ' + filter_child.text);
             destDirFound = 1;
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.destDir = tempDir;
 
           elif filter_child.tag == 'FanartSource':
-            NARS.print_debug('FanartSource = ' + filter_child.text);
+            NARS.print_debug('FanartSource   = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.fanartSourceDir = tempDir;
 
           elif filter_child.tag == 'FanartDest':
-            NARS.print_debug('FanartDest = ' + filter_child.text);
+            NARS.print_debug('FanartDest     = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.fanartDestDir = tempDir;
 
           elif filter_child.tag == 'ThumbsSource':
-            NARS.print_debug('ThumbsSource = ' + filter_child.text);
+            NARS.print_debug('ThumbsSource   = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsSourceDir = tempDir;
 
           elif filter_child.tag == 'ThumbsDest':
-            NARS.print_debug('ThumbsDest = ' + filter_child.text);
+            NARS.print_debug('ThumbsDest     = ' + filter_child.text);
             tempDir = filter_child.text;
             if tempDir[-1] != '/': tempDir = tempDir + '/';
             filter_class.thumbsDestDir = tempDir;
@@ -585,7 +589,7 @@ def parse_File_Config():
 
           elif filter_child.tag == 'NoIntroDat' and \
                filter_child.text is not None:
-            NARS.print_debug('NoIntroDat    = ' + filter_child.text);
+            NARS.print_debug('NoIntroDat     = ' + filter_child.text);
             filter_class.NoIntro_XML = filter_child.text;
 
         # - Trim blank spaces on filter lists
@@ -625,10 +629,10 @@ def get_Filter_Config(filterName):
   "Returns the configuration filter object given the filter name"
   for key in configuration.filter_dic:
     if key == filterName:
-      return configuration.filter_dic[key];
+      return configuration.filter_dic[key]
 
-  print_error('get_Filter_Config >> filter ' + filterName + ' not found in configuration file');
-  sys.exit(20);
+  NARS.print_error('get_Filter_Config >> filter "' + filterName + '" not found in configuration file')
+  sys.exit(20)
 
 # -----------------------------------------------------------------------------
 # Miscellaneous ArtWork functions
@@ -765,7 +769,7 @@ def get_NoIntro_Main_list(filter_config):
   __debug_parse_NoIntro_XML_Config = 0;
   
   XML_filename = filter_config.NoIntro_XML;
-  tree = NARS.XML_read_file(XML_filename, 'Parsing No-Intro XML DAT')
+  tree = NARS.XML_read_file_ElementTree(XML_filename, 'Parsing No-Intro XML DAT')
 
   # --- Raw list: literal information from the XML
   rom_raw_dict = {}; # Key is ROM baseName
@@ -1074,7 +1078,7 @@ def do_list_nointro(filterName):
   NARS.print_info('Filter name: ' + filterName);
   filter_config = get_Filter_Config(filterName);
   filename = filter_config.NoIntro_XML;
-  tree = NARS.XML_read_file(filename, "Parsing No-Intro XML DAT file ")
+  tree = NARS.XML_read_file_ElementTree(filename, "Parsing No-Intro XML DAT file ")
 
   # Child elements (NoIntro pclone XML)
   # Create a list containing game name
@@ -1102,31 +1106,31 @@ def do_list_nointro(filterName):
 def do_check_nointro(filterName):
   """Checks ROMs in sourceDir against NoIntro XML file"""
 
-  NARS.print_info('[Checking ROMs against No-Intro XML DAT]');
-  NARS.print_info('Filter name = ' + filterName);
-  filter_config = get_Filter_Config(filterName);
-  
+  NARS.print_info('[Checking ROMs against No-Intro XML DAT]')
+  NARS.print_info('Filter name = ' + filterName)
+  filter_config = get_Filter_Config(filterName)
+
   # --- Get parameters and check for errors
-  sourceDir = filter_config.sourceDir;
-  NARS.have_dir_or_abort(sourceDir);
+  sourceDir = filter_config.sourceDir
+  NARS.have_dir_or_abort(sourceDir, 'sourceDir')
 
   # --- Load No-Intro DAT
-  XML_filename = filter_config.NoIntro_XML;
+  XML_filename = filter_config.NoIntro_XML
   if XML_filename == None:
-    print_error('[ERROR] No-Intro XML DAT not configured for this filer.');
-    sys.exit(10);
-  tree = NARS.XML_read_file(XML_filename, "Parsing No-Intro XML DAT file ")
+    print_error('[ERROR] No-Intro XML DAT not configured for this filer.')
+    sys.exit(10)
+  tree = NARS.XML_read_file_ElementTree(XML_filename, "Parsing No-Intro XML DAT file ")
 
   # Child elements (NoIntro pclone XML):
-  nointro_roms = [];
-  num_games = 0;
-  root = tree.getroot();
+  nointro_roms = []
+  num_games = 0
+  root = tree.getroot()
   for game_EL in root:
     if game_EL.tag == 'game':
-      num_games += 1;
+      num_games += 1
       # Game attributes
-      game_attrib = game_EL.attrib;
-      nointro_roms.append(game_attrib['name'] + '.zip');
+      game_attrib = game_EL.attrib
+      nointro_roms.append(game_attrib['name'] + '.zip')
 
   # Check how many ROMs we have in sourceDir and the DAT
   NARS.print_info('[Scanning ROMs in sourceDir]');
@@ -1168,7 +1172,7 @@ def do_taglist(filterName):
   sourceDir = filter_config.sourceDir;
 
   # Check if dest directory exists
-  NARS.have_dir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(sourceDir, 'sourceDir');
 
   # Traverse directory, for every file extract properties, and add them to the
   # dictionary.
@@ -1181,13 +1185,17 @@ def do_taglist(filterName):
         sys.exit(10);
       else:
         for property in romProperties:
-          if propertiesDic.has_key(property):
+          if property in propertiesDic:
             propertiesDic[property] += 1;
           else:
             propertiesDic[property] = 1;
 
+  # Works for Python 2
   # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
-  sorted_propertiesDic = sorted(propertiesDic.iteritems(), key=operator.itemgetter(1))
+  # sorted_propertiesDic = sorted(propertiesDic.iteritems(), key=operator.itemgetter(1))
+  # This works on Python 3
+  sorted_propertiesDic = ((k, propertiesDic[k]) for k in sorted(propertiesDic, key=propertiesDic.get, reverse=False))
+    
   NARS.print_info('[Tag histogram]');
   for key in sorted_propertiesDic:
     NARS.print_info('{:6d}'.format(key[1]) + '  ' + key[0]);
@@ -1204,7 +1212,7 @@ def do_checkFilter(filterName):
   sourceDir = filter_config.sourceDir;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir);
+  NARS.have_dir_or_abort(sourceDir, 'sourceDir');
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
   if filter_config.NoIntro_XML == None:
@@ -1247,19 +1255,19 @@ def do_checkFilter(filterName):
 # Update ROMs in destDir
 def do_update(filterName):
   "Applies filter and updates (copies) ROMs"
-  NARS.print_info('[Copy/Update ROMs]');
-  NARS.print_info('Filter name: ' + filterName);
+  NARS.print_info('[Copy/Update ROMs]')
+  NARS.print_info('Filter name: ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
-  sourceDir = filter_config.sourceDir;
-  destDir = filter_config.destDir;
+  filter_config = get_Filter_Config(filterName)
+  sourceDir = filter_config.sourceDir
+  destDir = filter_config.destDir
 
   # --- Check for errors, missing paths, etc...
-  NARS.print_info('Source directory     : ' + sourceDir);
-  NARS.have_dir_or_abort(sourceDir);
-  NARS.print_info('Destination directory: ' + destDir);
-  NARS.have_dir_or_abort(destDir);
+  NARS.print_info('Source directory     : ' + sourceDir)
+  NARS.print_info('Destination directory: ' + destDir)
+  NARS.have_dir_or_abort(sourceDir, 'sourceDir')
+  NARS.have_dir_or_abort(destDir, 'destDir')
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
   if filter_config.NoIntro_XML == None:
@@ -1309,9 +1317,9 @@ def do_checkArtwork(filterName):
   fanartSourceDir = filter_config.fanartSourceDir;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir);
-  NARS.have_dir_or_abort(thumbsSourceDir);
-  NARS.have_dir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(destDir, 'destDir');
+  NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir');
+  NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir');
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
@@ -1397,9 +1405,9 @@ def do_update_artwork(filterName):
   fanartSourceDir = filter_config.fanartSourceDir;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir);
-  NARS.have_dir_or_abort(thumbsSourceDir);
-  NARS.have_dir_or_abort(fanartSourceDir);
+  NARS.have_dir_or_abort(destDir, 'destDir');
+  NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir');
+  NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir');
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = [];
@@ -1488,9 +1496,15 @@ def main(argv):
   global __prog_option_sync; # 1 update, 0 copies
 
   if args.verbose:
-    if args.verbose == 1:   NARS.change_log_level(NARS.Log.verb);
-    elif args.verbose == 2: NARS.change_log_level(NARS.Log.vverb);
-    elif args.verbose >= 3: NARS.change_log_level(NARS.Log.debug);
+    if args.verbose == 1:   
+      NARS.change_log_level(NARS.Log.verb)
+      NARS.print_info('Verbosity level set to VERBOSE')
+    elif args.verbose == 2: 
+      NARS.change_log_level(NARS.Log.vverb)
+      NARS.print_info('Verbosity level set to VERY VERBOSE')
+    elif args.verbose >= 3: 
+      NARS.change_log_level(NARS.Log.debug)
+      NARS.print_info('Verbosity level set to DEBUG')
   if args.log:
     __prog_option_log = 1;
   if args.logto:

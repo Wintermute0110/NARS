@@ -197,8 +197,8 @@ def sanitize_dir_name(dirName):
 #  2  Source file missing
 # -1  Copy error (exception)
 def copy_file(source_path, dest_path, __prog_option_dry_run):
-  print_debug('Copying ' + source_path);
-  print_debug('Into    ' + dest_path);
+  print_debug('Copying ' + source_path)
+  print_debug('Into    ' + dest_path)
 
   existsSource = os.path.isfile(source_path)
   if not existsSource:
@@ -219,14 +219,14 @@ def copy_file(source_path, dest_path, __prog_option_dry_run):
 #  2  Source file missing
 # -1  Copy/Stat error (exception)
 def update_file(source_path, dest_path, __prog_option_dry_run):
-  existsSource = os.path.isfile(source_path);
-  existsDest = os.path.isfile(dest_path);
+  existsSource = os.path.isfile(source_path)
+  existsDest = os.path.isfile(dest_path)
   if not existsSource:
     return 2
 
-  sizeSource = os.path.getsize(source_path);
+  sizeSource = os.path.getsize(source_path)
   if existsDest:
-    sizeDest = os.path.getsize(dest_path);
+    sizeDest = os.path.getsize(dest_path)
   else:
     sizeDest = -1
 
@@ -235,8 +235,8 @@ def update_file(source_path, dest_path, __prog_option_dry_run):
     return 1
 
   # destFile does not exist or sizes are different, copy.
-  print_debug(' Copying ' + source_path);
-  print_debug(' Into    ' + dest_path);
+  print_debug('Copying ' + source_path)
+  print_debug('Into    ' + dest_path)
   if not __prog_option_dry_run:
     try:
       shutil.copy(source_path, dest_path)
