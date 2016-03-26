@@ -136,11 +136,13 @@ def print_debug(print_str):
 # This function either succeeds or aborts the program. Check if file exists
 # before calling this.
 def delete_file(file_path, __prog_option_dry_run):
-  if not __prog_option_dry_run:
-    try:
-      os.remove(file_path);
-    except EnvironmentError:
-      print_debug("delete_ROM_file >> Error happened")
+  if __prog_option_dry_run:
+    return
+  try:
+    os.remove(file_path);
+  except EnvironmentError:
+    print_info('[WARNING] delete_file >> os.remove {0}'.format(file_path))
+    print_info('[WARNING] delete_file >> Exception EnvironmentError triggered')
 
 # Deletes directory CHD_dir, deleting CHD files first, then delete the directory
 # using rmdir. Abort if directory is not empty after cleaning CHD files.
@@ -148,32 +150,38 @@ def delete_file(file_path, __prog_option_dry_run):
 # n >= 0  Directory deleted and number of CHD files deleted (maybe 0)
 __DEBUG_delete_CHD_directory = 0
 def delete_CHD_directory(CHD_dir, __prog_option_dry_run):
-  num_CHD = 0
+  num_deleted_CHD = 0
 
   CHD_list = [];
   for file in os.listdir(CHD_dir):
     if file.endswith(".chd"):
       CHD_full_path = CHD_dir + '/' + file
-      if __DEBUG_delete_CHD_directory: print('CHD_list file {0}'.format(CHD_full_path))
+      if __DEBUG_delete_CHD_directory: 
+        print('CHD_list file {0}'.format(CHD_full_path))
       CHD_list.append(CHD_full_path);
 
   # Delete all CHD files inside directory
-  if not __prog_option_dry_run:
-    for file in CHD_list:
-      try:
-        os.remove(file)
-        if __DEBUG_delete_CHD_directory: print('Deleted CHD       {0}'.format(file))
-      except EnvironmentError:
-        print_debug("delete_CHD_directory >> Error happened deleting CHD file")
-      num_CHD += 1
+  if __prog_option_dry_run:
+    return
+  for file in CHD_list:
     try:
-      os.rmdir(CHD_dir)
-      if __DEBUG_delete_CHD_directory: print('Deleted directory {0}'.format(CHD_dir))
-    except OSError:
-      print_debug("delete_CHD_directory >> Directory not empty after deleting CHD file/s")
-      sys.exit(10)
+      os.remove(file)
+      if __DEBUG_delete_CHD_directory: 
+        print('Deleted CHD       {0}'.format(file))
+    except EnvironmentError:
+      print_info('[WARNING] delete_CHD_directory >> os.remove {0}'.format(file))
+      print_info('[WARNING] delete_CHD_directory >>  Error happened deleting CHD file')
+    num_deleted_CHD += 1
+  try:
+    os.rmdir(CHD_dir)
+    if __DEBUG_delete_CHD_directory: 
+      print('Deleted directory {0}'.format(CHD_dir))
+  except OSError:
+    print_info('[WARNING] delete_CHD_directory >> os.rmdir {0}'.format(CHD_dir))
+    print_info('[WARNING] delete_CHD_directory >> Directory not empty after deleting CHD file/s')
+    sys.exit(10)
 
-  return num_CHD
+  return num_deleted_CHD
 
 # if dirName is None, that means user did not configured it
 def have_dir_or_abort(dirName, infoStr):
@@ -204,12 +212,16 @@ def copy_file(source_path, dest_path, __prog_option_dry_run):
   if not existsSource:
     return 2
 
-  if not __prog_option_dry_run:
-    try:
-      shutil.copy(source_path, dest_path)
-    except EnvironmentError:
-      print_debug("copy_file >> EnvironmentError exception")
-      return -1
+  if __prog_option_dry_run:
+    return 0
+    
+  try:
+    shutil.copy(source_path, dest_path)
+  except EnvironmentError:
+    print_info('[WARNING] copy_file >> source_path {0}'.format(source_path))
+    print_info('[WARNING] copy_file >> dest_path {0}'.format(dest_path))
+    print_info('[WARNING] copy_file >> Exception EnvironmentError triggered')
+    return -1
 
   return 0
 
@@ -219,6 +231,9 @@ def copy_file(source_path, dest_path, __prog_option_dry_run):
 #  2  Source file missing
 # -1  Copy/Stat error (exception)
 def update_file(source_path, dest_path, __prog_option_dry_run):
+  print_debug('Updating ' + source_path)
+  print_debug('Into     ' + dest_path)
+
   existsSource = os.path.isfile(source_path)
   existsDest = os.path.isfile(dest_path)
   if not existsSource:
@@ -235,13 +250,16 @@ def update_file(source_path, dest_path, __prog_option_dry_run):
     return 1
 
   # destFile does not exist or sizes are different, copy.
-  print_debug('Copying ' + source_path)
-  print_debug('Into    ' + dest_path)
-  if not __prog_option_dry_run:
-    try:
-      shutil.copy(source_path, dest_path)
-    except EnvironmentError:
-      print_debug("update_ROM_file >> Error happened");
+  if __prog_option_dry_run:
+    return 0
+
+  try:
+    shutil.copy(source_path, dest_path)
+  except EnvironmentError:
+    print_info('[WARNING] update_file >> source_path {0}'.format(source_path))
+    print_info('[WARNING] update_file >> dest_path {0}'.format(dest_path))
+    print_info('[WARNING] update_file >> Exception EnvironmentError triggered')
+    return -1
 
   return 0
 
@@ -260,8 +278,8 @@ def copy_ROM_list(rom_list, sourceDir, destDir, __prog_option_sync, __prog_optio
   num_errors = 0
   for rom_copy_item in sorted(rom_list):
     romFileName = rom_copy_item + '.zip'
-    source_path = romFileName + sourceDir
-    dest_path = romFileName + destDir
+    source_path = sourceDir + romFileName
+    dest_path = destDir + romFileName
     num_roms += 1
     if __prog_option_sync:
       ret = update_file(source_path, dest_path, __prog_option_dry_run)
@@ -474,7 +492,7 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
 # Delete ROMs present in destDir not present in the filtered list
 # 1) Make a list of .zip files in destDir
 # 2) Delete all .zip files of games no in the filtered list
-def clean_ROMs_destDir(rom_copy_dic, destDir):
+def clean_ROMs_destDir(rom_copy_dic, destDir, __prog_option_dry_run):
   print_info('[Cleaning ROMs in ROMsDest]')
 
   rom_main_list = [];
@@ -486,8 +504,9 @@ def clean_ROMs_destDir(rom_copy_dic, destDir):
   for file in sorted(rom_main_list):
     basename, ext = os.path.splitext(file); # Remove extension
     if basename not in rom_copy_dic:
-      num_cleaned_roms += 1;
-      delete_ROM_file(file, destDir, __prog_option_dry_run);
+      num_cleaned_roms += 1
+      file_path = destDir + file
+      delete_file(file_path, __prog_option_dry_run)
       print_info('<Deleted> ' + file);
 
   print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
@@ -530,12 +549,12 @@ def clean_NFO_destDir(destDir, __prog_option_dry_run):
   for file in os.listdir(destDir):
     if file.endswith(".nfo"):
       # Chech if there is a corresponding ROM for this NFO file
-      thisFileName, thisFileExtension = os.path.splitext(file);
+      thisFileName, thisFileExtension = os.path.splitext(file)
       romFileName_temp = thisFileName + '.zip'
-      rom_file_path = romFileName_temp + destDir
+      rom_file_path = destDir + romFileName_temp
       if not os.path.isfile(rom_file_path):
-        nfo_file_path = file + destDir
-        delete_file(nfo_file_path, __prog_option_dry_run);
+        nfo_file_path = destDir + file
+        delete_file(nfo_file_path, __prog_option_dry_run)
         num_deletedNFO_files += 1
         print_info('<Deleted NFO> ' + file)
 
