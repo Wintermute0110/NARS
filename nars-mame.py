@@ -615,6 +615,24 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # -----------------------------------------------------------------------------
 mainFilter_str_length = 32
 
+def filter_do_Default(mame_xml_dic):
+  # A) Remove devices. Devices are non-runnable always.
+  mame_filtered_dic = {}
+  filtered_out_games = 0
+  for key in mame_xml_dic:
+    romObject = mame_xml_dic[key];
+    if romObject.isDevice:
+      filtered_out_games += 1
+      NARS.print_vverb('FILTERED ' + key);
+      continue
+    mame_filtered_dic[key] = mame_xml_dic[key]
+    NARS.print_debug('Included ' + key)
+  NARS.print_info('Removing devices'.ljust(mainFilter_str_length) + \
+                  ' Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                  ' | Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)))
+  
+  return mame_filtered_dic
+
 def filter_do_IncludeExclude(machines_dic, filterControl, fieldName, filterName):
   machines_dic_temp = {}
   num_included_machines = 0
@@ -700,125 +718,20 @@ def filter_substitute_swap_machines(machines_dic):
 def filter_MAME_machines(mame_xml_dic, filter_config):
   NARS.print_info('[Applying MAME filters]');
   NARS.print_info('NOTE: -vv if you want to see filters in action');
-  mainF_str_offset = 32
   
-  # --- Default filter: remove crap ---
-  NARS.print_info('<Default filter>')
-  # A) Remove devices. Devices are non-runnable always.
-  mame_filtered_dic = {}
-  filtered_out_games = 0
-  for key in mame_xml_dic:
-    romObject = mame_xml_dic[key];
-    if romObject.isDevice:
-      filtered_out_games += 1
-      NARS.print_vverb('FILTERED ' + key);
-      continue
-    mame_filtered_dic[key] = mame_xml_dic[key]
-    NARS.print_debug('Included ' + key)
-  NARS.print_info('Removing devices'.ljust(mainF_str_offset) + \
-                  ' Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                  ' | Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)))
-
   # ~~~~~ Main filter: Include and Exclude ~~~~~~
+  NARS.print_info('<Default filter>')
+  mame_xml_dic = filter_do_Default(mame_xml_dic)
   NARS.print_info('<Include filter>')
-  mame_filtered_dic = filter_main_filter(mame_filtered_dic, filter_config, 1)
+  mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 1)
   NARS.print_info('<Exclude filter>')
-  mame_filtered_dic = filter_main_filter(mame_filtered_dic, filter_config, 0)
-  mame_filtered_dic = filter_secondary_filter(mame_filtered_dic)
+  mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 0)
+  
+  # ~~~~~ Secondary filters ~~~~~~  
+  mame_xml_dic = filter_secondary_filter(mame_xml_dic)
 
   print('[DEBUG EXIT]')
   sys.exit(0)
-
-  # --- Apply MainFilter: NoSamples
-  if 'NoSamples' in filter_config.mainFilter:
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      if romObject.hasSamples:
-        filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key);
-      else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        NARS.print_debug('Included ' + key);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Filtering out samples'.ljust(mainF_str_offset) + \
-                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
-  else:
-    NARS.print_info('User wants games with samples');
-
-  # --- Apply MainFilter: NoMechanical
-  if 'NoMechanical' in filter_config.mainFilter:
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      if romObject.isMechanical:
-        filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key);
-      else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        NARS.print_debug('Included ' + key);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Filtering out mechanical games'.ljust(mainF_str_offset) + \
-                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
-  else:
-    NARS.print_info('User wants mechanical games');
-
-  # --- Apply MainFilter: NoBIOS
-  if 'NoBIOS' in filter_config.mainFilter:
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      if romObject.isBIOS:
-        filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key);
-      else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        NARS.print_debug('Included ' + key);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Filtering out BIOS'.ljust(mainF_str_offset) + \
-                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
-  else:
-    NARS.print_info('User wants BIOS ROMs');
-
-  # --- Apply MainFilter: NoNonworking
-  # http://www.mamedev.org/source/src/emu/info.c.html
-  # <driver color="good" emulation="good" graphic="good" 
-  #         savestate="supported" sound="good" status="good"/> 
-  #
-  # /* The status entry is an hint for frontend authors */
-  # /* to select working and not working games without */
-  # /* the need to know all the other status entries. */
-  # /* Games marked as status=good are perfectly emulated, games */
-  # /* marked as status=imperfect are emulated with only */
-  # /* some minor issues, games marked as status=preliminary */
-  # /* don't work or have major emulation problems. */
-  if 'NoNonworking' in filter_config.mainFilter:
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      if romObject.driver_status == 'preliminary':
-        filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key);
-      else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        NARS.print_debug('Included ' + key);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Filtering out Non-Working games'.ljust(mainF_str_offset) + \
-                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
-  else:
-    NARS.print_info('User wants Non-Working games');
 
   # --- Apply Driver filter
   NARS.print_info('<Driver filter>');
@@ -1081,6 +994,12 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     NARS.print_info('User wants all years')
+
+  # ~~~~~ Global ROM substitution ~~~~~
+
+
+  # ~~~~~ Local ROM substitution ~~~~~
+
 
   # --- ROM dependencies
   # Add ROMs (devices and BIOS) needed for other ROM to work.
