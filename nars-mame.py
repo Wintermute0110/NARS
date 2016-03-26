@@ -536,65 +536,69 @@ def get_ROM_main_list(sourceDir):
 
   return romMainList_dict;
 
-def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
+def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir, __prog_option_dry_run):
   "Generates game information files (NFO) in destDir"
 
-  NARS.print_info('[Generating NFO files]');
-  num_NFO_files = 0;
+  NARS.print_info('[Generating NFO files]')
+  if __prog_option_dry_run:
+    NARS.print_info('Dry run. Doing nothing.')
+    return
+
+  num_NFO_files = 0
   for rom_name in sorted(rom_copy_dic):
-    romObj = mame_filtered_dic[rom_name];
+    romObj = mame_filtered_dic[rom_name]
     # DEBUG: dump romObj
     # print dir(romObj)
-    NFO_filename = rom_name + '.nfo';
+    NFO_filename = rom_name + '.nfo'
     NFO_full_filename =  destDir + NFO_filename;
 
     # --- XML structure
     tree_output = ET.ElementTree();
-    root_output = a = ET.Element('game');
-    tree_output._setroot(root_output);
+    root_output = a = ET.Element('game')
+    tree_output._setroot(root_output)
 
     # <title>1944 - The Loop Master</title>
-    sub_element = ET.SubElement(root_output, 'title');
-    sub_element.text = romObj.description;
+    sub_element = ET.SubElement(root_output, 'title')
+    sub_element.text = romObj.description
 
     # <platform>MAME</platform>
-    sub_element = ET.SubElement(root_output, 'platform');
-    sub_element.text = 'MAME';
+    sub_element = ET.SubElement(root_output, 'platform')
+    sub_element.text = 'MAME'
 
     # <year>2000</year>
     # NOTE: some devices which are included as dependencies do not have
     # some fields. Write defaults.
-    sub_element = ET.SubElement(root_output, 'year');
+    sub_element = ET.SubElement(root_output, 'year')
     if hasattr(romObj, 'year'):
-      sub_element.text = romObj.year;
+      sub_element.text = romObj.year
     else:
       print('ROM has no year tag ' + rom_name)
       sub_element.text = '????';
 
     # <publisher></publisher>
-    sub_element = ET.SubElement(root_output, 'publisher');
+    sub_element = ET.SubElement(root_output, 'publisher')
     if hasattr(romObj, 'manufacturer'):
-      sub_element.text = romObj.manufacturer;
+      sub_element.text = romObj.manufacturer
     else:
       print('ROM has no publisher tag ' + rom_name)
-      sub_element.text = 'Unknown';
+      sub_element.text = 'Unknown'
 
     # <genre>Shooter / Flying Vertical</genre>
-    sub_element = ET.SubElement(root_output, 'genre');
+    sub_element = ET.SubElement(root_output, 'genre')
     if hasattr(romObj, 'category'):
-      sub_element.text = romObj.category;
+      sub_element.text = romObj.category
     else:
       print('ROM has no genre tag ' + rom_name)
-      sub_element.text = 'Unknown';
+      sub_element.text = 'Unknown'
 
     # <plot></plot>
     # Probably need to merge information from history.dat or mameinfo.dat
     # Now, just add some technical information about the game.
     plot_str = 'Name = ' + romObj.name + ' | Driver = ' + romObj.sourcefile;
     if hasattr(romObj, 'buttons'):
-      plot_str += ' | Buttons = ' + romObj.buttons;
+      plot_str += ' | Buttons = {:d}'.format(romObj.buttons)
     if hasattr(romObj, 'players'):
-      plot_str += ' | Players = ' + romObj.players;
+      plot_str += ' | Players = {:d}'.format(romObj.players)
     if hasattr(romObj, 'control_type'):
       plot_str += ' | Controls = ' + str(romObj.control_type);
     sub_element = ET.SubElement(root_output, 'plot');
@@ -607,7 +611,6 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
     tree_output.write(NFO_full_filename, xml_declaration=True, encoding='utf-8', method="xml")
     num_NFO_files += 1
 
-  NARS.print_info('[Report]')
   NARS.print_info('Generated ' + str(num_NFO_files) + ' NFO files')
 
 # -----------------------------------------------------------------------------
@@ -1008,9 +1011,58 @@ def filter_do_Years_tag(mame_xml_dic, filter_config):
 
   return machines_filtered_dic
 
-def filter_substitute_machines(machines_dic):
+def filter_do_substitute_machines(mame_xml_dic):
   
-  return machines_dic
+  return mame_xml_dic
+
+# Add ROMs (devices and BIOS) needed for other ROM to work.
+# Traverse the list of filtered games, and check if they have dependencies. If
+# so, add the dependencies to the filtered list.
+def filter_resolve_device_and_BIOS_dependencies(mame_xml_dic):
+  NARS.print_info('<Adding ROM dependencies (BIOS and devices with ROMs)>');
+  # NOTE: dictionaries cannot change size during iteration. Create auxiliary list.
+  dependencies_ROM_list = {}
+  for key in sorted(mame_xml_dic):
+    romObject = mame_xml_dic[key]
+    # --- BIOS dependencies ---
+    if len(romObject.BIOS_depends_list):
+      for BIOS_depend in romObject.BIOS_depends_list:
+        if BIOS_depend not in mame_xml_dic:
+          NARS.print_error('[ERROR] ROM name not found in mame_xml_dic')
+          sys.exit(10);
+        # Get ROM object from main, unfiltered dictionary
+        BIOS_romObj = mame_xml_dic[BIOS_depend];
+        # Only add dependency if not already in filtered list
+        if BIOS_depend not in dependencies_ROM_list:
+          dependencies_ROM_list[BIOS_depend] = BIOS_romObj;
+          NARS.print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
+                          BIOS_depend.ljust(11) + ' - Adding  to list')
+        else:
+          NARS.print_verb('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
+                           BIOS_depend.ljust(11) + ' - Already on list')
+
+    # --- Device dependencies ---
+    if len(romObject.device_depends_list):
+      for device_depend in romObject.device_depends_list:
+        if device_depend not in mame_xml_dic:
+          NARS.print_error('[ERROR] ROM name not found in mame_xml_dic')
+          sys.exit(10);
+        # Get ROM object from main, unfiltered dictionary
+        device_romObj = mame_xml_dic[device_depend];
+        # Only add dependency if not already in filtered list
+        if device_depend not in dependencies_ROM_list:
+          dependencies_ROM_list[device_depend] = device_romObj;
+          NARS.print_info('Game ' + key.ljust(8) + ' depends on device ' + \
+                          device_depend.ljust(11) + ' - Adding  to list')
+        else:
+          NARS.print_verb('Game ' + key.ljust(8) + ' depends on device ' + \
+                          device_depend.ljust(11) + ' - Already on list')
+
+  for key in dependencies_ROM_list:
+    romObject = dependencies_ROM_list[key]
+    mame_xml_dic[key] = romObject
+  
+  return mame_xml_dic
 
 # Main filtering function. Apply filters to main parent/clone dictionary.
 def filter_MAME_machines(mame_xml_dic, filter_config):
@@ -1024,7 +1076,7 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
   mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 1)
   NARS.print_info('<Exclude filter>')
   mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 0)
-  
+
   # ~~~~~ Secondary filters ~~~~~~  
   mame_xml_dic = filter_do_Driver_tag(mame_xml_dic, filter_config)
   mame_xml_dic = filter_do_Categories_tag(mame_xml_dic, filter_config)
@@ -1034,60 +1086,14 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
   mame_xml_dic = filter_do_Players_tag(mame_xml_dic, filter_config)
   mame_xml_dic = filter_do_Years_tag(mame_xml_dic, filter_config)
 
-  print('[DEBUG EXIT]')
-  sys.exit(0)
-
   # ~~~~~ Global ROM substitution ~~~~~
   
   # ~~~~~ Local ROM substitution ~~~~~
 
   # ~~~~~ ROM dependencies ~~~~~
-  # Add ROMs (devices and BIOS) needed for other ROM to work.
-  # Traverse the list of filtered games, and check if they have dependencies. If
-  # so, add the dependencies to the filtered list.
-  NARS.print_info('[Adding BIOS/device ROM dependencies]');
-  # NOTE: dictionaries cannot change size during iteration. Create auxiliary list.
-  dependencies_ROM_list = {};
-  for key in sorted(mame_filtered_dic):
-    romObject = mame_filtered_dic[key];
-    # --- BIOS dependencies ---
-    if len(romObject.BIOS_depends):
-      for BIOS_depend in romObject.BIOS_depends:
-        if BIOS_depend not in mame_xml_dic:
-          NARS.print_error('[ERROR] ROM name not found in mame_xml_dic');
-          sys.exit(10);
-        # Get ROM object from main, unfiltered dictionary
-        BIOS_romObj = mame_xml_dic[BIOS_depend];
-        # Only add dependency if not already in filtered list
-        if BIOS_depend not in dependencies_ROM_list:
-          dependencies_ROM_list[BIOS_depend] = BIOS_romObj;
-          NARS.print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
-                          BIOS_depend.ljust(11) + ' - Adding  to list');
-        else:
-          NARS.print_verb('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
-                           BIOS_depend.ljust(11) + ' - Already on list');
-    # --- Device dependencies ---
-    if len(romObject.device_depends):
-      for device_depend in romObject.device_depends:
-        if device_depend not in mame_xml_dic:
-          NARS.print_error('[ERROR] ROM name not found in mame_xml_dic');
-          sys.exit(10);
-        # Get ROM object from main, unfiltered dictionary
-        device_romObj = mame_xml_dic[device_depend];
-        # Only add dependency if not already in filtered list
-        if device_depend not in dependencies_ROM_list:
-          dependencies_ROM_list[device_depend] = device_romObj;
-          NARS.print_info('Game ' + key.ljust(8) + ' depends on device ' + \
-                          device_depend.ljust(11) + ' - Adding  to list');
-        else:
-          NARS.print_verb('Game ' + key.ljust(8) + ' depends on device ' + \
-                          device_depend.ljust(11) + ' - Already on list');
+  mame_xml_dic = filter_resolve_device_and_BIOS_dependencies(mame_xml_dic)
 
-  for key in dependencies_ROM_list:
-    romObject = dependencies_ROM_list[key];
-    mame_filtered_dic[key] = romObject;
-
-  return mame_filtered_dic;
+  return mame_xml_dic
 
 # -----------------------------------------------------------------------------
 # Parse Catver.ini and MAME reduced XML file
@@ -2559,8 +2565,8 @@ def do_checkFilter(filterName):
                        ' - ROM ' + romObject.name + '.zip')
 
     # --- Check if CHD exists ---
-    if len(romObject.CHD_depends) > 0:
-      for CHD_file in romObject.CHD_depends:
+    if len(romObject.CHD_depends_list) > 0:
+      for CHD_file in romObject.CHD_depends_list:
         num_CHD += 1
         CHDFullFilename = filter_config.destDir_CHD + '/' + \
                           romObject.name + '/' + CHD_file + '.chd'
@@ -2593,7 +2599,7 @@ def do_update(filterName):
   NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
+  filter_config = get_Filter_from_Config(filterName);
   sourceDir = filter_config.sourceDir;
   destDir = filter_config.destDir;
 
@@ -2608,7 +2614,7 @@ def do_update(filterName):
   rom_main_list = get_ROM_main_list(sourceDir)
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config)
+  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
   rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list)
 
   # --- Copy/Update ROMs into destDir -----------------------------------------
@@ -2616,11 +2622,11 @@ def do_update(filterName):
 
   # If --cleanROMs is on then delete unknown files.
   if __prog_option_clean_ROMs:
-    NARS.clean_ROMs_destDir(rom_copy_list, destDir)
+    NARS.clean_ROMs_destDir(rom_copy_list, destDir, __prog_option_dry_run)
 
   # --- Generate NFO XML files with information for launchers
   if __prog_option_generate_NFO:
-    generate_MAME_NFO_files(rom_copy_list, mame_filtered_dic, destDir)
+    generate_MAME_NFO_files(rom_copy_list, mame_filtered_dic, destDir, __prog_option_dry_run)
 
   # --- Delete NFO files of ROMs not present in the destination directory.
   if __prog_option_clean_NFO:
