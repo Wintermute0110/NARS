@@ -2641,15 +2641,15 @@ def do_update_CHD(filterName):
   NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
+  filter_config = get_Filter_from_Config(filterName);
   sourceDir = filter_config.sourceDir;
   destDir = filter_config.destDir;
-  sourceDir_CHD = filter_config.destDir_CHD;
+  sourceDir_CHD = filter_config.sourceDir_CHD;
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir, 'ROMsSource');
-  NARS.have_dir_or_abort(sourceDir_CHD, 'CHDsSource');
-  NARS.have_dir_or_abort(destDir, 'ROMsDest');
+  NARS.have_dir_or_abort(sourceDir, 'sourceDir');
+  NARS.have_dir_or_abort(sourceDir_CHD, 'sourceDir_CHD');
+  NARS.have_dir_or_abort(destDir, 'destDir');
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML();
@@ -2658,7 +2658,7 @@ def do_update_CHD(filterName):
   rom_main_list = get_ROM_main_list(sourceDir);
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config);
   rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list);
 
   # --- Create list of CHDs and samples needed --------------------------------
@@ -2669,7 +2669,7 @@ def do_update_CHD(filterName):
 
   # If --cleanCHDs is on then delete unknown CHD and directories.
   if __prog_option_clean_CHD:
-    clean_CHDs_destDir(CHD_dic, destDir)
+    NARS.clean_CHDs_destDir(CHD_dic, destDir, __prog_option_dry_run)
 
 # ----------------------------------------------------------------------------
 def do_check_Artwork(filterName):
@@ -2679,7 +2679,7 @@ def do_check_Artwork(filterName):
   NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
+  filter_config = get_Filter_from_Config(filterName);
   destDir = filter_config.destDir;
   thumbsSourceDir = filter_config.thumbsSourceDir;
   fanartSourceDir = filter_config.fanartSourceDir;
@@ -2700,7 +2700,7 @@ def do_check_Artwork(filterName):
   mame_xml_dic = parse_MAME_merged_XML();
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config);
   rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list);
   
   # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
@@ -2771,7 +2771,7 @@ def do_update_Artwork(filterName):
   NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
+  filter_config = get_Filter_from_Config(filterName);
   destDir = filter_config.destDir;
   thumbsSourceDir = filter_config.thumbsSourceDir;
   fanartSourceDir = filter_config.fanartSourceDir;
@@ -2796,7 +2796,7 @@ def do_update_Artwork(filterName):
   mame_xml_dic = parse_MAME_merged_XML();
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = apply_MAME_filters(mame_xml_dic, filter_config);
+  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config);
   rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list);
 
   # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
