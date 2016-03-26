@@ -634,7 +634,7 @@ def filter_do_Default(mame_xml_dic):
   return mame_filtered_dic
 
 def filter_do_IncludeExclude(machines_dic, filterControl, fieldName, filterName):
-  machines_dic_temp = {}
+  machines_filtered_dic = {}
   num_included_machines = 0
   filtered_out_games = 0
   for key in machines_dic:
@@ -642,7 +642,7 @@ def filter_do_IncludeExclude(machines_dic, filterControl, fieldName, filterName)
     booleanCondition = getattr(machineObject, fieldName)
     if (filterControl and booleanCondition) or (not filterControl and not booleanCondition):
       # Include Machine
-        machines_dic_temp[key] = machines_dic[key]
+        machines_filtered_dic[key] = machines_dic[key]
         num_included_machines += 1
         NARS.print_debug('Included ' + key)
       
@@ -650,12 +650,11 @@ def filter_do_IncludeExclude(machines_dic, filterControl, fieldName, filterName)
       # Exclude machine
         filtered_out_games += 1
         NARS.print_vverb('Excluded ' + key)
-  machines_dic = machines_dic_temp
   NARS.print_info(filterName.ljust(mainFilter_str_length) + \
                   ' Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                  ' | Remaining = ' + '{:5d}'.format(len(machines_dic)))
+                  ' | Remaining = ' + '{:5d}'.format(len(machines_filtered_dic)))
 
-  return machines_dic
+  return machines_filtered_dic
 
 __debug_filter_main_filter = 0
 # Main filter. <Include> and <Exclude> tags.
@@ -706,40 +705,14 @@ def filter_main_filter(machines_dic, filter_config, filterControl):
 
   return machines_dic
 
-def filter_secondary_filter(machines_dic):
+__debug_apply_MAME_filters_Driver_tag = 0
+def filter_do_Driver_tag(mame_xml_dic, filter_config):
+  NARS.print_info('<Driver filter>')
   
-  return machines_dic
-
-def filter_substitute_swap_machines(machines_dic):
-  
-  return machines_dic
-
-# Main filtering function. Apply filters to main parent/clone dictionary.
-def filter_MAME_machines(mame_xml_dic, filter_config):
-  NARS.print_info('[Applying MAME filters]');
-  NARS.print_info('NOTE: -vv if you want to see filters in action');
-  
-  # ~~~~~ Main filter: Include and Exclude ~~~~~~
-  NARS.print_info('<Default filter>')
-  mame_xml_dic = filter_do_Default(mame_xml_dic)
-  NARS.print_info('<Include filter>')
-  mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 1)
-  NARS.print_info('<Exclude filter>')
-  mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 0)
-  
-  # ~~~~~ Secondary filters ~~~~~~  
-  mame_xml_dic = filter_secondary_filter(mame_xml_dic)
-
-  print('[DEBUG EXIT]')
-  sys.exit(0)
-
-  # --- Apply Driver filter
-  NARS.print_info('<Driver filter>');
-  __debug_apply_MAME_filters_Driver_tag = 0;
-  if filter_config.driver is not None and filter_config.driver is not '':
-    driver_filter_expression = filter_config.driver;
+  if filter_config.driverFilter is not None:
+    driver_filter_expression = filter_config.driverFilter;
     filtered_out_games = 0;
-    mame_filtered_dic_temp = {};
+    machines_filtered_dic = {};
     NARS.print_info('Filter = "' + driver_filter_expression + '"');
     for key in sorted(mame_filtered_dic):
       romObject = mame_filtered_dic[key];
@@ -754,7 +727,7 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
         filtered_out_games += 1;
         NARS.print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
       else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        machines_filtered_dic[key] = mame_filtered_dic[key];
         NARS.print_debug('Included ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
       # --- DEBUG info
       if __debug_apply_MAME_filters_Driver_tag:
@@ -762,21 +735,20 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
         print('[DEBUG] Driver name list = ', sorted(driver_name_list))
         print('[DEBUG] Filter = "' + driver_filter_expression + '"')
         print('[DEBUG] boolean_result = ' + str(boolean_result))
-    # --- Update game list
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
     NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+                    ' / Remaining = ' + '{:5d}'.format(len(machines_filtered_dic)));
   else:
-    NARS.print_info('User wants all drivers');
+    NARS.print_info('User wants all drivers')
+    return mame_xml_dic
 
-  # --- Apply Categories filter
-  NARS.print_info('<Categories filter>');
-  __debug_apply_MAME_filters_Category_tag = 0;
-  if hasattr(filter_config, 'categories') and \
-             filter_config.categories is not None and \
-             filter_config.categories is not '':
-    categories_filter_expression = filter_config.categories;
+  return machines_filtered_dic
+
+__debug_apply_MAME_filters_Category_tag = 0
+def filter_do_Categories_tag(mame_xml_dic, filter_config):
+  NARS.print_info('<Categories filter>')
+
+  if filter_config.categoriesFilter is not None:
+    categories_filter_expression = filter_config.categoriesFilter;
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     NARS.print_info('Filter = "' + categories_filter_expression + '"');
@@ -805,15 +777,22 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
     NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                     ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    NARS.print_info('User wants all categories');
+    NARS.print_info('User wants all categories')
+    return mame_xml_dic
 
-  # --- Apply Controls filter
-  NARS.print_info('<Controls filter>');
-  __debug_apply_MAME_filters_Controls_tag = 0;
-  if hasattr(filter_config, 'controls') and \
-             filter_config.controls is not None and \
-             filter_config.controls is not '':
-    controls_type_filter_expression = filter_config.controls;
+  return machines_filtered_dic
+
+def filter_do_Orientation_tag(mame_xml_dic, filter_config):
+  NARS.print_info('<Orientation filter>')
+
+  return mame_xml_dic
+
+__debug_apply_MAME_filters_Controls_tag = 0
+def filter_do_Controls_tag(mame_xml_dic, filter_config):
+  NARS.print_info('<Controls filter>')
+
+  if filter_config.controlsFilter is not None:
+    controls_type_filter_expression = filter_config.controlsFilter;
     filtered_out_games = 0;
     mame_filtered_dic_temp = {};
     NARS.print_info('Filter = "' + controls_type_filter_expression + '"');
@@ -843,14 +822,16 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
     NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                     ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    NARS.print_info('User wants all controls');
+    NARS.print_info('User wants all controls')
+    return mame_xml_dic
 
-  # --- Apply Buttons filter
-  NARS.print_info('<Buttons filter>');
-  __debug_apply_MAME_filters_Buttons_tag = 0;
-  if hasattr(filter_config, 'buttons_exp') and \
-             filter_config.buttons_exp is not None and \
-             filter_config.buttons_exp is not '':
+  return machines_filtered_dic
+
+__debug_apply_MAME_filters_Buttons_tag = 0
+def filter_do_Buttons_tag(mame_xml_dic, filter_config):
+  NARS.print_info('<Buttons filter>')
+
+  if filter_config.buttons_exp is not None:
     button_filter_expression = filter_config.buttons_exp;
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
@@ -876,14 +857,16 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
     NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                     ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    NARS.print_info('User wants all buttons');
+    NARS.print_info('User wants all buttons')
+    return mame_xml_dic
 
-  # --- Apply Players filter
-  NARS.print_info('<Players filter>');
-  __debug_apply_MAME_filters_Players_tag = 0;
-  if hasattr(filter_config, 'players_exp') and \
-             filter_config.players_exp is not None and \
-             filter_config.players_exp is not '':
+  return machines_filtered_dic
+
+__debug_apply_MAME_filters_Players_tag = 0
+def filter_do_Players_tag(mame_xml_dic, filter_config):
+  NARS.print_info('<Players filter>')
+
+  if filter_config.players_exp is not None:
     players_filter_expression = filter_config.players_exp;
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
@@ -909,14 +892,16 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
     NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
                     ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
-    NARS.print_info('User wants all players');
+    NARS.print_info('User wants all players')
+    return mame_xml_dic
 
-  # --- Apply Years filter
-  NARS.print_info('<Year filter>');
-  __debug_apply_MAME_filters_years_tag = 0;
-  if hasattr(filter_config, 'year_exp') and \
-             filter_config.year_exp is not None and \
-             filter_config.year_exp is not '':
+  return machines_filtered_dic
+
+__debug_apply_MAME_filters_years_tag = 0
+def filter_do_Years_tag(mame_xml_dic, filter_config):
+  NARS.print_info('<Year filter>')
+
+  if filter_config.year_exp is not None:
     mame_filtered_dic_temp = {};
     filtered_out_games = 0;
     year_filter_expression = filter_config.year_exp;
@@ -994,14 +979,44 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
                ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
   else:
     NARS.print_info('User wants all years')
+    return mame_xml_dic
+
+  return machines_filtered_dic
+
+def filter_substitute_machines(machines_dic):
+  
+  return machines_dic
+
+# Main filtering function. Apply filters to main parent/clone dictionary.
+def filter_MAME_machines(mame_xml_dic, filter_config):
+  NARS.print_info('[Applying MAME filters]');
+  NARS.print_info('NOTE: -vv if you want to see filters in action');
+  
+  # ~~~~~ Main filter: Include and Exclude ~~~~~~
+  NARS.print_info('<Default filter>')
+  mame_xml_dic = filter_do_Default(mame_xml_dic)
+  NARS.print_info('<Include filter>')
+  mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 1)
+  NARS.print_info('<Exclude filter>')
+  mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 0)
+  
+  # ~~~~~ Secondary filters ~~~~~~  
+  mame_xml_dic = filter_do_Driver_tag(mame_xml_dic, filter_config)
+  mame_xml_dic = filter_do_Categories_tag(mame_xml_dic, filter_config)
+  mame_xml_dic = filter_do_Orientation_tag(mame_xml_dic, filter_config)
+  mame_xml_dic = filter_do_Controls_tag(mame_xml_dic, filter_config)
+  mame_xml_dic = filter_do_Buttons_tag(mame_xml_dic, filter_config)
+  mame_xml_dic = filter_do_Players_tag(mame_xml_dic, filter_config)
+  mame_xml_dic = filter_do_Years_tag(mame_xml_dic, filter_config)
+
+  print('[DEBUG EXIT]')
+  sys.exit(0)
 
   # ~~~~~ Global ROM substitution ~~~~~
-
-
+  
   # ~~~~~ Local ROM substitution ~~~~~
 
-
-  # --- ROM dependencies
+  # ~~~~~ ROM dependencies ~~~~~
   # Add ROMs (devices and BIOS) needed for other ROM to work.
   # Traverse the list of filtered games, and check if they have dependencies. If
   # so, add the dependencies to the filtered list.
