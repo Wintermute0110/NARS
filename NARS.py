@@ -202,7 +202,7 @@ def sanitize_dir_name(dirName):
 
 # Returns:
 #  0  File copied, no error
-#  2  Source file missing
+#  1  Source file missing
 # -1  Copy error (exception)
 def copy_file(source_path, dest_path, __prog_option_dry_run):
   print_debug('Copying ' + source_path)
@@ -210,7 +210,7 @@ def copy_file(source_path, dest_path, __prog_option_dry_run):
 
   existsSource = os.path.isfile(source_path)
   if not existsSource:
-    return 2
+    return 1
 
   if __prog_option_dry_run:
     return 0
@@ -227,8 +227,8 @@ def copy_file(source_path, dest_path, __prog_option_dry_run):
 
 # Returns:
 #  0  File copied (sizes different)
-#  1  File not copied (updated)
-#  2  Source file missing
+#  1  Source file missing
+#  2  File not copied (updated)
 # -1  Copy/Stat error (exception)
 def update_file(source_path, dest_path, __prog_option_dry_run):
   print_debug('Updating ' + source_path)
@@ -237,7 +237,7 @@ def update_file(source_path, dest_path, __prog_option_dry_run):
   existsSource = os.path.isfile(source_path)
   existsDest = os.path.isfile(dest_path)
   if not existsSource:
-    return 2
+    return 1
 
   sizeSource = os.path.getsize(source_path)
   if existsDest:
@@ -245,9 +245,9 @@ def update_file(source_path, dest_path, __prog_option_dry_run):
   else:
     sizeDest = -1
 
-  # If sizes are equal. Skip copy and return 1
+  # If sizes are equal. Skip copy and return 2
   if sizeSource == sizeDest:
-    return 1
+    return 2
 
   # destFile does not exist or sizes are different, copy.
   if __prog_option_dry_run:
@@ -418,9 +418,9 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
     art_baseName = rom_copy_dic[rom_baseName]
     num_artwork += 1
 
-    # --- Thumbs
-    thumb_file_path_source = art_baseName + thumbsSourceDir
-    thumb_file_path_dest = rom_baseName + thumbsDestDir
+    # --- Thumbs ---
+    thumb_file_path_source = thumbsSourceDir + art_baseName + '.png'
+    thumb_file_path_dest = thumbsDestDir + rom_baseName + '.png'
     if __prog_option_sync:
       ret = update_file(thumb_file_path_source, thumb_file_path_dest, __prog_option_dry_run)
     else:
@@ -428,29 +428,29 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
     # On default verbosity level only report copied files
     percentage = 100 * step / num_steps;    
     if ret == 0:
-      sys.stdout.write('{:3.0f}% '.format(percentage));
+      sys.stdout.write('{:3.0f}% '.format(percentage))
       num_copied_thumbs += 1;
-      print_info('<Copied  Thumb > ' + art_baseName);
+      print_info('<Copied  Thumb > ' + art_baseName)
     elif ret == 1:
-      sys.stdout.write('{:3.0f}% '.format(percentage));
+      sys.stdout.write('{:3.0f}% '.format(percentage))
       num_missing_thumbs += 1;
-      print_info('<Missing Thumb > ' + art_baseName);
+      print_info('<Missing Thumb > ' + art_baseName)
     elif ret == 2:
       if log_level >= Log.verb:
-        sys.stdout.write('{:3.0f}% '.format(percentage));
+        sys.stdout.write('{:3.0f}% '.format(percentage))
       num_updated_thumbs += 1
       print_verb('<Updated Thumb > ' + art_baseName)
     elif ret == -1:
       num_errors += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      print_info('<ERROR  > ' + art_baseName);
+      sys.stdout.write('{:3.0f}% '.format(percentage))
+      print_info('<ERROR  > ' + art_baseName)
     else:
-      print_error('Wrong value returned by copy_ArtWork_file()');
+      print_error('Wrong value returned by update_file()/copy_file()')
       sys.exit(10)
 
-    # --- Fanart
-    fanart_file_path_source = art_baseName + fanartSourceDir
-    fanart_file_path_dest = rom_baseName + fanartDestDir
+    # --- Fanart ---
+    fanart_file_path_source = fanartSourceDir + art_baseName + '.png'
+    fanart_file_path_dest = fanartDestDir + rom_baseName + '.png'
     if __prog_option_sync:
       ret = update_file(fanart_file_path_source, fanart_file_path_dest, __prog_option_dry_run)
     else:
@@ -459,22 +459,22 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
     if ret == 0:
       sys.stdout.write('{:3.0f}% '.format(percentage))
       num_copied_fanart += 1
-      print_info('<Copied  Thumb > ' + art_baseName)
+      print_info('<Copied  Fanart> ' + art_baseName)
     elif ret == 1:
       sys.stdout.write('{:3.0f}% '.format(percentage))
       num_missing_fanart += 1
-      print_info('<Missing Thumb > ' + art_baseName)
+      print_info('<Missing Fanart> ' + art_baseName)
     elif ret == 2:
       if log_level >= Log.verb:
         sys.stdout.write('{:3.0f}% '.format(percentage))
       num_updated_fanart += 1
-      print_verb('<Updated Thumb > ' + art_baseName)
+      print_verb('<Updated Fanart> ' + art_baseName)
     elif ret == -1:
       num_errors += 1;
       sys.stdout.write('{:3.0f}% '.format(percentage))
       print_info('<ERROR  > ' + art_baseName)
     else:
-      print_error('Wrong value returned by copy_ArtWork_file()')
+      print_error('Wrong value returned by update_file()/copy_file()')
       sys.exit(10)
 
     # --- Update progress
@@ -516,7 +516,7 @@ def clean_ROMs_destDir(rom_copy_dic, destDir, __prog_option_dry_run):
 # 2) Check if directory is a machine name in filtered list.
 # 3) If not, deleted directory with contents inside.
 __DEBUG_clean_CHDs_destDir = 0
-def clean_CHDs_destDir(CHD_dic, destDir):
+def clean_CHDs_destDir(CHD_dic, destDir, __prog_option_dry_run):
   print_info('[Cleaning ROMs in ROMsDest]')
 
   # directories_dic = { 'machine' : 'CHD_destDirectory'}
@@ -567,8 +567,8 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic, __prog_option_dry_run
   fanartDestDir = filter_config.fanartDestDir;
   
   # --- Check that directories exist
-  haveDir_or_abort(thumbsDestDir);
-  haveDir_or_abort(thumbsDestDir);
+  have_dir_or_abort(thumbsDestDir, 'thumbsDestDir');
+  have_dir_or_abort(fanartDestDir, 'fanartDestDir');
 
   # --- Delete unknown thumbs
   thumbs_file_list = [];
@@ -581,7 +581,7 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic, __prog_option_dry_run
     art_baseName, ext = os.path.splitext(file); # Remove extension
     if art_baseName not in artwork_copy_dic:
       num_cleaned_thumbs += 1;
-      thumb_file_path_dest = file + thumbsDestDir
+      thumb_file_path_dest = thumbsDestDir + file
       delete_file(thumb_file_path_dest, __prog_option_dry_run);
       print_info('<Deleted thumb > ' + file);
 
@@ -595,8 +595,9 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic, __prog_option_dry_run
   for file in sorted(fanart_file_list):
     art_baseName, ext = os.path.splitext(file); # Remove extension
     if art_baseName not in artwork_copy_dic:
-      num_cleaned_fanart += 1;
-      delete_ROM_file(file, fanartDestDir, __prog_option_dry_run);
+      num_cleaned_fanart += 1
+      fanart_file_path_dest = thumbsDestDir + file
+      delete_file(fanart_file_path_dest, __prog_option_dry_run);
       print_info('<Deleted fanart> ' + file);
 
   # Print eport
