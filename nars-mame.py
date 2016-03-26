@@ -2837,16 +2837,16 @@ def do_printHelp():
 \033[31mupdate-artwork <filter>\033[0m   Like copy-artwork, but also delete unknown images in artwork destination???
 
 \033[32mOptions:\033[0m
-\033[35m-h\033[0m, \033[35m--help\033[0m        Print short command reference
-\033[35m-v\033[0m, \033[35m--verbose\033[0m     Print more information about what's going on
-\033[35m-l\033[0m, \033[35m--log\033[0m         Save program output in xru-mame-log.txt.
-\033[35m--logto\033[0m \033[31m[logName]\033[0m Save program output in the file you specify.
-\033[35m--dryRun\033[0m          Don't modify destDir at all, just print the operations to be done.
-\033[35m--cleanROMs\033[0m       Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--generateNFO\033[0m     Generates NFO files with game information for the launchers.
-\033[35m--cleanNFO\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--cleanArtWork\033[0m    Deletes unknown Artowork in destination directories.
-\033[35m--cleanCHD\033[0m        Deletes unknown CHDs in destination directory.""")
+\033[35m-h\033[0m, \033[35m--help\033[0m         Print short command reference
+\033[35m-v\033[0m, \033[35m--verbose\033[0m      Print more information about what's going on
+\033[35m-l\033[0m, \033[35m--log\033[0m          Save program output in xru-mame-log.txt.
+\033[35m--logto\033[0m \033[31m[logName]\033[0m  Save program output in the file you specify.
+\033[35m--dryRun\033[0m           Don't modify destDir at all, just print the operations to be done.
+\033[35m--cleanROMs\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--generateNFO\033[0m      Generates NFO files with game information for the launchers.
+\033[35m--cleanNFO\033[0m         Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--cleanCHD\033[0m         Deletes unknown CHDs in destination directory.
+\033[35m--cleanArtWork\033[0m     Deletes unknown Artowork in destination directories.""")
 
 # -----------------------------------------------------------------------------
 # main function
