@@ -267,32 +267,34 @@ class Machine:
     self.name = None
     self.cloneof = None
     self.isClone = False
+    self.isParent = True
     self.isDevice = False
     self.isRunnable = True
-    self.sampleof = None
-    self.isSamples = False
     self.isMechanical = False
     self.isBIOS = False
+    self.sampleof = None
+    self.hasSamples = False
     self.sourcefile = None
     # XML Machine tags
-    self.description = None
-    self.year = None
-    self.manufacturer = None
-    self.driver_status = None
-    self.category = None
-    self.buttons = None
-    self.players = None
+    self.description = None        # str
+    self.year = None               # str
+    self.manufacturer = None       # str
+    self.driver_status = None      # str
+    self.isWorking = True          # bool
+    self.category = None           # str
+    self.buttons = 0               # int
+    self.players = 0               # int
     self.coins = 0                 # int
-    self.hasCoins = False
-    self.control_type_list = []
+    self.hasCoinSlot = False       # bool
+    self.control_type_list = []    # str list
     # Custom <NARS> attributes
-    self.hasROMs = True
-    self.hasSoftwareLists = False
-    self.orientation = None
+    self.hasROMs = True            # bool
+    self.hasSoftwareLists = False  # bool
+    self.orientation = None        # str
     # Custom <NARS> tags
-    self.BIOS_depends_list = []
-    self.device_depends_list = []
-    self.CHD_depends_list = []
+    self.BIOS_depends_list = []    # str list
+    self.device_depends_list = []  # str list
+    self.CHD_depends_list = []     # str list
 
 # Parses machine swaps in configuration filter, like <MachineSwap>tmnt --> tmnt2po</MachineSwap>
 # Returns a tuple with the first machine (original name) and the second machine (swapped).
@@ -611,59 +613,121 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # -----------------------------------------------------------------------------
 # Filtering functions
 # -----------------------------------------------------------------------------
-# Main filter. <Include> and <Exclude> tags.
-def filter_main_filter( ):
-  pass
+mainFilter_str_length = 32
 
-def filter_secondary_filter( ):
-  pass
+def filter_do_IncludeExclude(machines_dic, filterControl, fieldName, filterName):
+  machines_dic_temp = {}
+  num_included_machines = 0
+  filtered_out_games = 0
+  for key in machines_dic:
+    machineObject = machines_dic[key]
+    booleanCondition = getattr(machineObject, fieldName)
+    if (filterControl and booleanCondition) or (not filterControl and not booleanCondition):
+      # Include Machine
+        machines_dic_temp[key] = machines_dic[key]
+        num_included_machines += 1
+        NARS.print_debug('Included ' + key)
+      
+    else:
+      # Exclude machine
+        filtered_out_games += 1
+        NARS.print_vverb('Excluded ' + key)
+  machines_dic = machines_dic_temp
+  NARS.print_info(filterName.ljust(mainFilter_str_length) + \
+                  ' Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                  ' | Remaining = ' + '{:5d}'.format(len(machines_dic)))
+
+  return machines_dic
+
+__debug_filter_main_filter = 0
+# Main filter. <Include> and <Exclude> tags.
+# filterControl 1 Include filter
+#               0 Exclude filter
+#
+def filter_main_filter(machines_dic, filter_config, filterControl):
+  if filterControl:
+    filter_str_list = filter_config.includeFilter
+  else:
+    filter_str_list = filter_config.excludeFilter
+
+  if __debug_filter_main_filter:
+    print('filter_config = [' + ', '.join(filter_str_list) + ']')
+
+  # ~~~ Do nothing if user did not wrote tag or tag is empty ~~~
+  if filter_str_list == None:
+    NARS.print_info('Doing nothing')
+    return machines_dic
+
+  # ~~~ Traverse list ~~~
+  for filter_str in filter_str_list:
+    if filter_str == 'Parents':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'isParent', 'Parents')
+    elif filter_str ==  'Clones':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'isClone', 'Clones')
+    elif filter_str == 'Mechanical':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'isMechanical', 'Mechanical')
+    elif filter_str ==  'BIOS':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'isBIOS', 'BIOS')
+    elif filter_str ==  'Samples':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasSamples', 'Samples')
+    elif filter_str ==  'Working':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'isWorking', 'Working')
+    elif filter_str ==  'ROMs':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasROMs', 'ROMs')
+    elif filter_str ==  'CoinSlot':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasCoinSlot', 'CoinSlot')
+    elif filter_str ==  'SoftwareLists':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasSoftwareLists', 'SoftwareLists')
+    else:
+      if filter_config:
+        print('[ERROR] Unrecognised <Include> keyword "{0}"'.format(filter_str))
+      else:
+        print('[ERROR] Unrecognised <Exclude> keyword "{0}"'.format(filter_str))
+      print('[ERROR] Must be: Parents, Clones, Mechanical, BIOS, Samples, Working, ROMs, CoinSlot, SoftwareLists')
+      sys.exit(10)
+
+  return machines_dic
+
+def filter_secondary_filter(machines_dic):
+  
+  return machines_dic
+
+def filter_substitute_swap_machines(machines_dic):
+  
+  return machines_dic
 
 # Main filtering function. Apply filters to main parent/clone dictionary.
 def filter_MAME_machines(mame_xml_dic, filter_config):
   NARS.print_info('[Applying MAME filters]');
   NARS.print_info('NOTE: -vv if you want to see filters in action');
-
-  # --- Default filters: remove crap ---
-  NARS.print_info('<Main filter>');
-  mainF_str_offset = 32;
-  # What is "crap"?
-  # a) devices <game isdevice="yes" runnable="no"> 
-  #    Question: isdevice = yes implies runnable = no? In MAME 0.153b XML yes!
-  mame_filtered_dic = {};
-  filtered_out_games = 0;
+  mainF_str_offset = 32
+  
+  # --- Default filter: remove crap ---
+  NARS.print_info('<Default filter>')
+  # A) Remove devices. Devices are non-runnable always.
+  mame_filtered_dic = {}
+  filtered_out_games = 0
   for key in mame_xml_dic:
     romObject = mame_xml_dic[key];
-    if romObject.isdevice:
-      filtered_out_games += 1;
+    if romObject.isDevice:
+      filtered_out_games += 1
       NARS.print_vverb('FILTERED ' + key);
-      continue;
-    mame_filtered_dic[key] = mame_xml_dic[key];
-    NARS.print_debug('Included ' + key);
-  NARS.print_info('Default filter, removing devices'.ljust(mainF_str_offset) + \
-                  ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                  ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+      continue
+    mame_filtered_dic[key] = mame_xml_dic[key]
+    NARS.print_debug('Included ' + key)
+  NARS.print_info('Removing devices'.ljust(mainF_str_offset) + \
+                  ' Removed = ' + '{:5d}'.format(filtered_out_games) + \
+                  ' | Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)))
 
-  # --- Apply MainFilter: NoClones
-  # This is a special filter, and MUST be done first.
-  # Also, remove crap like chips, etc.
-  if 'NoClones' in filter_config.mainFilter:
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      if not romObject.isclone:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        NARS.print_debug('Included ' + key);
-      else:
-        filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Filtering out clones'.ljust(mainF_str_offset) + \
-                    ' - Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
-  else:
-    NARS.print_info('User wants clone ROMs');
+  # ~~~~~ Main filter: Include and Exclude ~~~~~~
+  NARS.print_info('<Include filter>')
+  mame_filtered_dic = filter_main_filter(mame_filtered_dic, filter_config, 1)
+  NARS.print_info('<Exclude filter>')
+  mame_filtered_dic = filter_main_filter(mame_filtered_dic, filter_config, 0)
+  mame_filtered_dic = filter_secondary_filter(mame_filtered_dic)
+
+  print('[DEBUG EXIT]')
+  sys.exit(0)
 
   # --- Apply MainFilter: NoSamples
   if 'NoSamples' in filter_config.mainFilter:
@@ -1150,6 +1214,7 @@ def parse_MAME_merged_XML():
     if 'cloneof' in game_attrib:
       num_clones += 1
       machineObj.isClone = True
+      machineObj.isParent = False
       machineObj.cloneof = game_attrib['cloneof']
       NARS.print_debug(' Clone of = ' + game_attrib['cloneof'])
     else:
@@ -1162,11 +1227,6 @@ def parse_MAME_merged_XML():
     if 'runnable' in game_attrib and game_attrib['runnable'] == 'no':
       machineObj.isRunnable = False
 
-    # --- Samples (isSamples defaults False) ---
-    if 'sampleof' in game_attrib:
-      machineObj.isSamples = True
-      machineObj.sampleof = game_attrib['sampleof']
-
     # --- Mechanical (isMechanical defaults False) ---
     if 'ismechanical' in game_attrib and game_attrib['ismechanical'] == 'yes':
       machineObj.isMechanical = True
@@ -1175,6 +1235,10 @@ def parse_MAME_merged_XML():
     if 'isbios' in game_attrib and game_attrib['isbios'] == 'yes':
       machineObj.isBIOS = True
 
+    # --- Samples (isSamples defaults False) ---
+    if 'sampleof' in game_attrib:
+      machineObj.sampleof = game_attrib['sampleof']
+      machineObj.hasSamples = True
     # --- Game driver ---
     if 'sourcefile' in game_attrib:
       # Remove the trailing '.c' or '.cpp' from driver name
@@ -1192,41 +1256,45 @@ def parse_MAME_merged_XML():
 
       # --- Driver status ---
       elif child_game.tag == 'driver':
-        driver_attrib = child_game.attrib;
+        driver_attrib = child_game.attrib
 
         # Driver status is good, imperfect, preliminary
         # preliminary games don't work or have major emulation problems
         # imperfect games are emulated with some minor issues
         # good games are perfectly emulated
         if 'status' in driver_attrib:
-          machineObj.driver_status = driver_attrib['status'];
-          NARS.print_debug(' Driver status = ' + driver_attrib['status']);
+          machineObj.driver_status = driver_attrib['status']
+          NARS.print_debug(' Driver status = ' + machineObj.driver_status)
+          if machineObj.driver_status == 'good' or machineObj.driver_status == 'imperfect':
+            machineObj.isWorking = True
+          elif machineObj.driver_status == 'preliminary':
+            machineObj.isWorking = False
+          else:
+            print('Unknown <driver> status {0} (machine {1}'.format(machineObj.driver_status, machineObj.name))
+            sys.exit(10)
         else:
-          machineObj.driver_status = 'unknown';
+          machineObj.driver_status = 'unknown'
 
       # --- Category ---
       elif child_game.tag == 'category':
-        machineObj.category = child_game.text;
+        machineObj.category = child_game.text
 
       # --- Controls ---
       elif child_game.tag == 'input':
-        control_attrib = child_game.attrib;
+        control_attrib = child_game.attrib
+        # buttons defaults to 0
         if 'buttons' in control_attrib:
-          machineObj.buttons = control_attrib['buttons'];
-        else:
-          # There are some games with no buttons attribute
-          machineObj.buttons = '0'
+          machineObj.buttons = int(control_attrib['buttons'])
 
+        # players defaults to 0
         if 'players' in control_attrib:
-          machineObj.players = control_attrib['players'];
-        else:
-          machineObj.players = None;
+          machineObj.players = int(control_attrib['players'])
 
+        # coins defaults to 0. hasCoinSlot defaults to False
         if 'coins' in control_attrib:
-          machineObj.coins = control_attrib['coins']
-          num_coins = int(control_attrib['coins'])
-          if num_coins > 0:
-            machineObj.hasCoins = True
+          machineObj.coins = int(control_attrib['coins'])
+          if machineObj.coins > 0:
+            machineObj.hasCoinSlot = True
 
         # A game may have more than one control (joystick, dial, ...)
         for control in child_game:
@@ -1241,17 +1309,25 @@ def parse_MAME_merged_XML():
         # --- <NARS> attributes ---
         nars_attrib = child_game.attrib
         # hasROMs defaults to True
-        if 'hasROM' in nars_attrib and nars_attrib['hasROM'] == 'no':
-          machineObj.hasROMs = False
+        if 'hasROMs' in nars_attrib:
+          if nars_attrib['hasROMs'] == 'no':
+            machineObj.hasROMs = False
+        else:
+          print('[ERROR] Not found <NARS hasROMs=... > (Machine {0})\n'.format(machineObj.name))
+          sys.exit(10)
 
         # hasSoftwareLists defaults to False
-        if 'hasSoftwareLists' in nars_attrib and nars_attrib['hasSoftwareLists'] == 'yes':
-          machineObj.hasSoftwareLists = True
+        if 'hasSoftwareLists' in nars_attrib:
+          if nars_attrib['hasSoftwareLists'] == 'yes':
+            machineObj.hasSoftwareLists = True
+        else:
+          print('[ERROR] Not found <NARS hasSoftwareLists=... > (Machine {0})\n'.format(machineObj.name))
+          sys.exit(10)
 
         if 'orientation' in nars_attrib:
           machineObj.orientation = nars_attrib['orientation']
         else:
-          print('[ERROR] Not found <NARS orientation=... >\n')
+          print('[ERROR] Not found <NARS orientation=... > (Machine {0})\n'.format(machineObj.name))
           sys.exit(10)
 
         # --- <NARS> tags ---
