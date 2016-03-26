@@ -613,7 +613,7 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir):
 # -----------------------------------------------------------------------------
 # Filtering functions
 # -----------------------------------------------------------------------------
-mainFilter_str_length = 32
+mainFilter_str_length = 25
 
 def filter_do_Default(mame_xml_dic):
   # A) Remove devices. Devices are non-runnable always.
@@ -628,8 +628,8 @@ def filter_do_Default(mame_xml_dic):
     mame_filtered_dic[key] = mame_xml_dic[key]
     NARS.print_debug('Included ' + key)
   NARS.print_info('Removing devices'.ljust(mainFilter_str_length) + \
-                  ' Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                  ' | Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)))
+                  'Removed  {:5d} | '.format(filtered_out_games) + \
+                  'Remaining  {:5d}'.format(len(mame_filtered_dic)))
   
   return mame_filtered_dic
 
@@ -651,8 +651,8 @@ def filter_do_IncludeExclude(machines_dic, filterControl, fieldName, filterName)
         filtered_out_games += 1
         NARS.print_vverb('Excluded ' + key)
   NARS.print_info(filterName.ljust(mainFilter_str_length) + \
-                  ' Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                  ' | Remaining = ' + '{:5d}'.format(len(machines_filtered_dic)))
+                  'Removed  {:5d} | '.format(filtered_out_games) + \
+                  'Remaining  {:5d}'.format(len(machines_filtered_dic)))
 
   return machines_filtered_dic
 
@@ -710,33 +710,34 @@ def filter_do_Driver_tag(mame_xml_dic, filter_config):
   NARS.print_info('<Driver filter>')
   
   if filter_config.driverFilter is not None:
-    driver_filter_expression = filter_config.driverFilter;
-    filtered_out_games = 0;
-    machines_filtered_dic = {};
-    NARS.print_info('Filter = "' + driver_filter_expression + '"');
-    for key in sorted(mame_filtered_dic):
-      romObject = mame_filtered_dic[key];
+    driver_filter_expression = filter_config.driverFilter
+    filtered_out_games = 0
+    machines_filtered_dic = {}
+    NARS.print_info('Filter expression "' + driver_filter_expression + '"')
+    for key in sorted(mame_xml_dic):
+      romObject = mame_xml_dic[key]
       driver_name_list = []
       driver_str = trim_driver_string(romObject.sourcefile)
       driver_name_list.append(driver_str)
       # --- Update search variable and call parser to evaluate expression
       NARS.set_parser_search_list(driver_name_list)
-      boolean_result = NARS.parse_exec(driver_filter_expression);
+      boolean_result = NARS.parse_exec(driver_filter_expression)
       # --- Filter ROM or not
       if not boolean_result:
-        filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
+        filtered_out_games += 1
+        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list))
       else:
-        machines_filtered_dic[key] = mame_filtered_dic[key];
-        NARS.print_debug('Included ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list));
-      # --- DEBUG info
+        machines_filtered_dic[key] = mame_xml_dic[key];
+        NARS.print_debug('Included ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list))
+      # --- DEBUG info ---
       if __debug_apply_MAME_filters_Driver_tag:
         print('[DEBUG] ----- Game = ' + key + ' -----')
         print('[DEBUG] Driver name list = ', sorted(driver_name_list))
         print('[DEBUG] Filter = "' + driver_filter_expression + '"')
         print('[DEBUG] boolean_result = ' + str(boolean_result))
-    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(machines_filtered_dic)));
+    NARS.print_info(' '.ljust(mainFilter_str_length) + \
+                    'Removed  {:5d} | '.format(filtered_out_games) + \
+                    'Remaining  {:5d}'.format(len(machines_filtered_dic)))
   else:
     NARS.print_info('User wants all drivers')
     return mame_xml_dic
@@ -748,44 +749,75 @@ def filter_do_Categories_tag(mame_xml_dic, filter_config):
   NARS.print_info('<Categories filter>')
 
   if filter_config.categoriesFilter is not None:
-    categories_filter_expression = filter_config.categoriesFilter;
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    NARS.print_info('Filter = "' + categories_filter_expression + '"');
-    for key in sorted(mame_filtered_dic):
-      romObject = mame_filtered_dic[key];
-      categories_type_list = [];
-      categories_type_list.append(romObject.category);
+    categories_filter_expression = filter_config.categoriesFilter
+    machines_filtered_dic = {}
+    filtered_out_games = 0
+    NARS.print_info('Filter expression "' + categories_filter_expression + '"')
+    for key in sorted(mame_xml_dic):
+      romObject = mame_xml_dic[key]
+      categories_type_list = []
+      categories_type_list.append(romObject.category)
       # --- Update search variable and call parser to evaluate expression
       NARS.set_parser_search_list(categories_type_list)
-      boolean_result = NARS.parse_exec(categories_filter_expression);
+      boolean_result = NARS.parse_exec(categories_filter_expression)
       # --- Filter ROM or not
       if not boolean_result:
-        filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
+        filtered_out_games += 1
+        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list))
       else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        NARS.print_debug('Included ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list));
+        machines_filtered_dic[key] = mame_xml_dic[key];
+        NARS.print_debug('Included ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list))
       # --- DEBUG info
       if __debug_apply_MAME_filters_Category_tag:
         print('[DEBUG] Category list = ', sorted(categories_type_list))
         print('[DEBUG] Filter = "' + categories_filter_expression + '"')
         print('[DEBUG] boolean_result = ' + str(boolean_result))
-    # --- Update game list
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info(' '.ljust(mainFilter_str_length) + \
+                    'Removed  {:5d} | '.format(filtered_out_games) + \
+                    'Remaining  {:5d}'.format(len(machines_filtered_dic)))
   else:
     NARS.print_info('User wants all categories')
     return mame_xml_dic
 
   return machines_filtered_dic
 
+__debug_apply_MAME_filters_Orientation_tag = 0
 def filter_do_Orientation_tag(mame_xml_dic, filter_config):
   NARS.print_info('<Orientation filter>')
 
-  return mame_xml_dic
+  if filter_config.orientationFilter is not None:
+    orientation_filter_expression = filter_config.orientationFilter
+    machines_filtered_dic = {}
+    filtered_out_games = 0;
+    NARS.print_info('Filter expression "' + orientation_filter_expression + '"')
+    for key in sorted(mame_xml_dic):
+      romObject = mame_xml_dic[key]
+      orientation_type_list = []
+      orientation_type_list.append(romObject.orientation)
+      # --- Update search variable and call parser to evaluate expression ---
+      NARS.set_parser_search_list(orientation_type_list)
+      boolean_result = NARS.parse_exec(orientation_filter_expression)
+      # --- Filter ROM or not ---
+      if not boolean_result:
+        filtered_out_games += 1
+        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' orientation ' + ', '.join(orientation_type_list))
+      else:
+        machines_filtered_dic[key] = mame_xml_dic[key]
+        NARS.print_debug('Included ' + key.ljust(8) + ' orientation ' + ', '.join(orientation_type_list))
+      # --- DEBUG info ---
+      if __debug_apply_MAME_filters_Orientation_tag:
+        print('[DEBUG] Machine {0}'.format(romObject.name))
+        print('[DEBUG] Orientation list = ', sorted(orientation_type_list))
+        print('[DEBUG] Filter = "' + orientation_filter_expression + '"')
+        print('[DEBUG] boolean_result = ' + str(boolean_result))
+    NARS.print_info(' '.ljust(mainFilter_str_length) + \
+                    'Removed  {:5d} | '.format(filtered_out_games) + \
+                    'Remaining  {:5d}'.format(len(machines_filtered_dic)))
+  else:
+    NARS.print_info('User wants all categories')
+    return mame_xml_dic
+
+  return machines_filtered_dic
 
 __debug_apply_MAME_filters_Controls_tag = 0
 def filter_do_Controls_tag(mame_xml_dic, filter_config):
@@ -794,33 +826,31 @@ def filter_do_Controls_tag(mame_xml_dic, filter_config):
   if filter_config.controlsFilter is not None:
     controls_type_filter_expression = filter_config.controlsFilter;
     filtered_out_games = 0;
-    mame_filtered_dic_temp = {};
-    NARS.print_info('Filter = "' + controls_type_filter_expression + '"');
-    for key in sorted(mame_filtered_dic):
+    machines_filtered_dic = {};
+    NARS.print_info('Filter expression "' + controls_type_filter_expression + '"')
+    for key in sorted(mame_xml_dic):
       # --- Some games may have two controls, so controls_type_list is a list
-      romObject = mame_filtered_dic[key];
-      controls_type_list = romObject.control_type;
+      romObject = mame_xml_dic[key]
+      controls_type_list = romObject.control_type
       # --- Update search variable and call parser to evaluate expression
       NARS.set_parser_search_list(controls_type_list)
-      boolean_result = NARS.parse_exec(controls_type_filter_expression);
+      boolean_result = NARS.parse_exec(controls_type_filter_expression)
       # --- Filter ROM or not
       if not boolean_result:
-        filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
+        filtered_out_games += 1
+        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list))
       else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
-        NARS.print_debug('Included ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list));
-      # --- DEBUG info
+        machines_filtered_dic[key] = mame_xml_dic[key];
+        NARS.print_debug('Included ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list))
+      # --- DEBUG info ---
       if __debug_apply_MAME_filters_Controls_tag:
         print('[DEBUG] ----- Game = ' + key + ' -----')
         print('[DEBUG] Control list = ', sorted(controls_type_list))
         print('[DEBUG] Filter = "' + controls_type_filter_expression + '"')
         print('[DEBUG] boolean_result = ' + str(boolean_result))
-    # --- Update game list
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info(' '.ljust(mainFilter_str_length) + \
+                    'Removed  {:5d} | '.format(filtered_out_games) + \
+                    'Remaining  {:5d}'.format(len(machines_filtered_dic)))
   else:
     NARS.print_info('User wants all controls')
     return mame_xml_dic
@@ -833,29 +863,28 @@ def filter_do_Buttons_tag(mame_xml_dic, filter_config):
 
   if filter_config.buttons_exp is not None:
     button_filter_expression = filter_config.buttons_exp;
-    mame_filtered_dic_temp = {};
+    machines_filtered_dic = {};
     filtered_out_games = 0;
-    NARS.print_info('Filter = "' + button_filter_expression + '"');
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      buttons_str = romObject.buttons;
-      buttons = int(buttons_str);
+    NARS.print_info('Filter expression "' + button_filter_expression + '"')
+    for key in mame_xml_dic:
+      romObject = mame_xml_dic[key]
+      buttons_str = romObject.buttons
+      buttons = int(buttons_str)
       if __debug_apply_MAME_filters_Buttons_tag:
         print('[DEBUG] Buttons number = ' + buttons_str)
         print('[DEBUG] Buttons filter = "' + button_filter_expression + '"')
-      boolean_result = eval(button_filter_expression, globals(), locals());
+      boolean_result = eval(button_filter_expression, globals(), locals())
 
       # If not all items are true, the game is NOT copied (filtered)
       if not boolean_result:
         filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key + ' buttons ' + buttons_str);
+        NARS.print_vverb('FILTERED ' + key + ' buttons ' + buttons_str)
       else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        machines_filtered_dic[key] = mame_xml_dic[key];
         NARS.print_debug('Included ' + key + ' buttons ' + buttons_str);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info(' '.ljust(mainFilter_str_length) + \
+                    'Removed  {:5d} | '.format(filtered_out_games) + \
+                    'Remaining  {:5d}'.format(len(machines_filtered_dic)))
   else:
     NARS.print_info('User wants all buttons')
     return mame_xml_dic
@@ -868,29 +897,28 @@ def filter_do_Players_tag(mame_xml_dic, filter_config):
 
   if filter_config.players_exp is not None:
     players_filter_expression = filter_config.players_exp;
-    mame_filtered_dic_temp = {};
+    machines_filtered_dic = {}
     filtered_out_games = 0;
-    NARS.print_info('Filter = "' + players_filter_expression + '"');
-    for key in mame_filtered_dic:
-      romObject = mame_filtered_dic[key];
-      players_str = romObject.players;
-      players = int(players_str);
+    NARS.print_info('Filter expression "' + players_filter_expression + '"')
+    for key in mame_xml_dic:
+      romObject = mame_xml_dic[key]
+      players_str = romObject.players
+      players = int(players_str)
       if __debug_apply_MAME_filters_Players_tag:
         print('[DEBUG] Players number = ' + players_str)
         print('[DEBUG] Players filter = "' + players_filter_expression + '"')
-      boolean_result = eval(players_filter_expression, globals(), locals());
+      boolean_result = eval(players_filter_expression, globals(), locals())
 
       # If not all items are true, the game is NOT copied (filtered)
       if not boolean_result:
         filtered_out_games += 1;
-        NARS.print_vverb('FILTERED ' + key + ' players ' + players_str);
+        NARS.print_vverb('FILTERED ' + key + ' players ' + players_str)
       else:
-        mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+        machines_filtered_dic[key] = mame_xml_dic[key];
         NARS.print_debug('Included ' + key + ' players ' + players_str);
-    mame_filtered_dic = mame_filtered_dic_temp;
-    del mame_filtered_dic_temp;
-    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-                    ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info(' '.ljust(mainFilter_str_length) + \
+                    'Removed  {:5d} | '.format(filtered_out_games) + \
+                    'Remaining  {:5d}'.format(len(mame_filtered_dic)))
   else:
     NARS.print_info('User wants all players')
     return mame_xml_dic
@@ -900,36 +928,35 @@ def filter_do_Players_tag(mame_xml_dic, filter_config):
 __debug_apply_MAME_filters_years_tag = 0
 def filter_do_Years_tag(mame_xml_dic, filter_config):
   NARS.print_info('<Year filter>')
+  year_YearExpansion = filter_config.year_YearExpansion_opt
+  if year_YearExpansion:
+    NARS.print_info('Year expansion activated')
+  else:
+    NARS.print_info('Year expansion deactivated')
 
   if filter_config.year_exp is not None:
-    mame_filtered_dic_temp = {};
-    filtered_out_games = 0;
-    year_filter_expression = filter_config.year_exp;
-    year_YearExpansion = filter_config.year_YearExpansion;
-    NARS.print_info('Filter = "' + year_filter_expression + '"');
-    if year_YearExpansion:
-      NARS.print_info('Year expansion activated')
-    else:
-      NARS.print_info('Year expansion deactivated')
-    for key in sorted(mame_filtered_dic):
-      romObject = mame_filtered_dic[key];
+    machines_filtered_dic = {}
+    filtered_out_games = 0
+    year_filter_expression = filter_config.year_exp
+    NARS.print_info('Filter expression "' + year_filter_expression + '"')    
+    for key in sorted(mame_xml_dic):
+      romObject = mame_xml_dic[key]
       # year is a string, convert to int
-      year_srt = romObject.year;
-
+      year_srt = romObject.year
       # Game year information:
       #  1 standard game or game with not-verified year (example 1998?)
       #  2 game that needs decade expansion (examples 198?, 199?) or
       #    full expansion (examples 19??, ????)
-      game_info = get_game_year_information(year_srt);
+      game_info = get_game_year_information(year_srt)
 
-      # Game is standard: do filtering
+      # Game is standard (no ? or strange characters): do filtering
       if game_info == 1:
         # Convert number string to int (supports games like 1997?)
-        year_list = trim_year_string(year_srt);
+        year_list = trim_year_string(year_srt)
         if len(year_list) != 1:
-          NARS.print_error('Logical error filtering year (standard year)');
-          sys.exit(10);
-        year = int(year_list[0]);
+          NARS.print_error('Logical error filtering year (standard year)')
+          sys.exit(10)
+        year = int(year_list[0])
         if __debug_apply_MAME_filters_years_tag:
           print('[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
                 ' / Filter = "' + year_filter_expression + '"')
@@ -939,7 +966,7 @@ def filter_do_Years_tag(mame_xml_dic, filter_config):
           filtered_out_games += 1;
           NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
         else:
-          mame_filtered_dic_temp[key] = mame_filtered_dic[key];
+          machines_filtered_dic[key] = mame_xml_dic[key];
           NARS.print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
 
       # Game needs expansion. If user activated this option expand wildcars and
@@ -948,8 +975,8 @@ def filter_do_Years_tag(mame_xml_dic, filter_config):
         if year_YearExpansion:
           year_list = trim_year_string(year_srt);
           if len(year_list) < 2:
-            print_error('Logical error filtering year (expanded year)');
-            sys.exit(10);
+            print('Logical error filtering year (expanded year)')
+            sys.exit(10)
           boolean_list = [];
           for year_str in year_list:
             year = int(year_str);
@@ -961,8 +988,8 @@ def filter_do_Years_tag(mame_xml_dic, filter_config):
           # Knowing the boolean results for the wildcard expansion, check if game
           # should be included or not.
           if any(boolean_list):
-            mame_filtered_dic_temp[key] = mame_filtered_dic[key]
-            print_debug('Included ' + key.ljust(8) + ' year ' + str(year))
+            machines_filtered_dic[key] = mame_xml_dic[key]
+            NARS.print_debug('Included ' + key.ljust(8) + ' year ' + str(year))
           else:
             filtered_out_games += 1
             NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year))
@@ -972,11 +999,9 @@ def filter_do_Years_tag(mame_xml_dic, filter_config):
       else:
         NARS.print_error('Wrong result returned by get_game_year_information() = ' + str(game_info))
         sys.exit(10)
-    # --- Update list of filtered games
-    mame_filtered_dic = mame_filtered_dic_temp
-    del mame_filtered_dic_temp
-    NARS.print_info('Removed = ' + '{:5d}'.format(filtered_out_games) + \
-               ' / Remaining = ' + '{:5d}'.format(len(mame_filtered_dic)));
+    NARS.print_info(' '.ljust(mainFilter_str_length) + \
+                    'Removed  {:5d} | '.format(filtered_out_games) + \
+                    'Remaining  {:5d}'.format(len(machines_filtered_dic)))
   else:
     NARS.print_info('User wants all years')
     return mame_xml_dic
