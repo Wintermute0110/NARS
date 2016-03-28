@@ -71,7 +71,7 @@ configuration = ConfigFile()
 # Returns a ConfigFile object
 parse_rjust = 16
 def parse_File_Config():
-  NARS.print_info('[Parsing config file]')
+  NARS.print_info('\033[1m[Parsing config file]\033[0m')
   tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
   root = tree.getroot()
 
@@ -1014,40 +1014,37 @@ def create_copy_list(romMain_list, filter_config):
 # -----------------------------------------------------------------------------
 # Main body functions
 # -----------------------------------------------------------------------------
+list_ljust = 16
 def do_list_filters():
-  "List of configuration file"
-
-  NARS.print_info('[Listing configuration file]')
+  NARS.print_info('\033[1m[Listing configuration file]\033[0m')
   tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Parsing configuration XML file")
 
-  # - This iterates through the collections
+  # --- This iterates through the collections ---
   root = tree.getroot();
   for collection in root:
     # print collection.tag, collection.attrib;
-    NARS.print_info('<ROM Collection>');
-    NARS.print_info('Short name      ' + collection.attrib['shortname']);
-    NARS.print_info('Name            ' + collection.attrib['name']);
+    NARS.print_info('\033[93m{ROM Collection}\033[0m')
+    NARS.print_info('Short name'.ljust(list_ljust) + collection.attrib['shortname'])
+    NARS.print_info('Name'.ljust(list_ljust) + collection.attrib['name'])
 
-    # - For every collection, iterate over the elements
-    # - This is not very efficient
+    # --- For every collection, iterate over the elements ---
     for collectionEL in collection:
       if collectionEL.tag == 'source':
-        NARS.print_verb('Source          ' + collectionEL.text);
+        NARS.print_verb('Source'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'dest':
-        NARS.print_verb('Destination     ' + collectionEL.text);
-      elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
-        NARS.print_verb('filterUpTags    ' + collectionEL.text);
-      elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
-        NARS.print_verb('filterDownTags  ' + collectionEL.text);
-      elif collectionEL.tag == 'includeTags' and collectionEL.text is not None:
-        NARS.print_verb('includeTags     ' + collectionEL.text);
-      elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
-        NARS.print_verb('excludeTags     ' + collectionEL.text);
+        NARS.print_verb('Destination'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'NoIntroDat' and collectionEL.text is not None:
-        NARS.print_info('NoIntroDat      ' + collectionEL.text);
+        NARS.print_info('NoIntroDat'.ljust(list_ljust) + collectionEL.text)
+      elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
+        NARS.print_verb('filterUpTags'.ljust(list_ljust) + collectionEL.text)
+      elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
+        NARS.print_verb('filterDownTags'.ljust(list_ljust) + collectionEL.text)
+      elif collectionEL.tag == 'includeTags' and collectionEL.text is not None:
+        NARS.print_verb('includeTags'.ljust(list_ljust) + collectionEL.text)
+      elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
+        NARS.print_verb('excludeTags'.ljust(list_ljust) + collectionEL.text)
 
     # Test if all mandatory elements are there
-    # TODO finish this
 
 def do_list_nointro(filterName):
   "List of NoIntro XML file"
@@ -1418,27 +1415,27 @@ def do_printHelp():
   print("""\033[32mUsage: nars-console.py [options] <command> [romSetName]\033[0m
 
 \033[32mCommands:\033[0m
-\033[31musage\033[0m                   Print usage information (this text)
-\033[31mlist-filters\033[0m            List every filter defined in the configuration file.
-\033[31mlist-nointro <filter>\033[0m   List every ROM set system defined in the No-Intro DAT file.
-\033[31mcheck-nointro <filter>\033[0m  Checks the ROMs you have and reports missing ROMs.
-\033[31mlist-tags <filter>\033[0m      Scan the source directory and reports the tags found.
-\033[31mcheck <filter>\033[0m          Applies ROM filters and prints a list of the scored ROMs.
-\033[31mcopy <filter>\033[0m           Applies ROM filters defined and copies ROMS from sourceDir into destDir.
-\033[31mupdate <filter>\033[0m         Like copy, but also delete unneeded ROMs in destDir.
-\033[31mcheck-artwork  <filter>\033[0m Reads the ROMs in destDir, checks if you have the corresponding artwork. 
-\033[31mcopy-artwork   <filter>\033[0m Reads the ROMs in destDir and tries to copy the artwork to destDir.
-\033[31mupdate-artwork <filter>\033[0m Like copy-artwork, but also delete unknown images in artwork destDir.
+\033[31musage\033[0m                    Print usage information (this text)
+\033[31mlist\033[0m                     List every filter defined in the configuration file.
+\033[31mlist-nointro <filter>\033[0m    List every ROM set system defined in the No-Intro DAT file.
+\033[31mcheck-nointro <filter>\033[0m   Checks the ROMs you have and reports missing ROMs.
+\033[31mlist-tags <filter>\033[0m       Scan the source directory and reports the tags found.
+\033[31mcheck <filter>\033[0m           Applies ROM filters and prints a list of the scored ROMs.
+\033[31mcopy <filter>\033[0m            Applies ROM filters defined and copies ROMS from sourceDir into destDir.
+\033[31mupdate <filter>\033[0m          Like copy, but also delete unneeded ROMs in destDir.
+\033[31mcheck-artwork  <filter>\033[0m  Reads the ROMs in destDir, checks if you have the corresponding artwork. 
+\033[31mcopy-artwork   <filter>\033[0m  Reads the ROMs in destDir and tries to copy the artwork to destDir.
+\033[31mupdate-artwork <filter>\033[0m  Like copy-artwork, but also delete unknown images in artwork destDir.
 
 \033[32mOptions:
-\033[35m-h\033[0m, \033[35m--help\033[0m              Print short command reference.
-\033[35m-v\033[0m, \033[35m--verbose\033[0m           Print more information about what's going on.
-\033[35m-l\033[0m, \033[35m--log\033[0m               Save program output in xru-console-log.txt.
-\033[35m--logto\033[0m \033[31m[logName]\033[0m       Save program output in the file you specify.
-\033[35m--dryRun\033[0m                Don't modify destDir at all, just print the operations to be done.
-\033[35m--cleanROMs\033[0m             Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--cleanNFO\033[0m              Deletes redundant NFO files in destination directory.
-\033[35m--cleanArtWork\033[0m          Deletes unknown artwork in destination.""")
+\033[35m-h\033[0m, \033[35m--help\033[0m               Print short command reference.
+\033[35m-v\033[0m, \033[35m--verbose\033[0m            Print more information about what's going on.
+\033[35m-l\033[0m, \033[35m--log\033[0m                Save program output in xru-console-log.txt.
+\033[35m--logto\033[0m \033[31m[logName]\033[0m        Save program output in the file you specify.
+\033[35m--dryRun\033[0m                 Don't modify destDir at all, just print the operations to be done.
+\033[35m--cleanROMs\033[0m              Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--cleanNFO\033[0m               Deletes redundant NFO files in destination directory.
+\033[35m--cleanArtWork\033[0m           Deletes unknown artwork in destination.""")
 
 # -----------------------------------------------------------------------------
 # main function
@@ -1456,7 +1453,7 @@ parser.add_argument('--cleanROMs', help="clean destDir of unknown ROMs", action=
 parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
 parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
 parser.add_argument('command', \
-   help="usage, list-filters, list-nointro, check-nointro, list-tags, \
+   help="usage, list, list-nointro, check-nointro, list-tags, \
          check, copy, update \
          check-artwork, copy-artwork, update-artwork", nargs = 1)
 parser.add_argument("romSetName", help="ROM collection name", nargs='?')
@@ -1502,7 +1499,7 @@ if command == 'list-nointro' or command == 'check-nointro' or \
 configuration = parse_File_Config()
 
 # --- Positional arguments that don't require a romSetName
-if command == 'list-filters':
+if command == 'list':
   do_list_filters()
 elif command == 'list-nointro':
   do_list_nointro(args.romSetName)
