@@ -38,6 +38,9 @@ __prog_option_clean_NFO = 0;
 __prog_option_clean_ArtWork = 0;
 __prog_option_sync = 0;
 
+# -----------------------------------------------------------------------------
+# Configuration file stuff
+# -----------------------------------------------------------------------------
 # --- Config file options global class (like a C struct) ---
 class ConfigFile:
   def __init__(self):
@@ -61,23 +64,15 @@ class ConfigFileFilter:
     self.includeTags     = None
     self.excludeTags     = None
 
-# Global variable with the filter configuration 
-configuration = ConfigFile();
-
-# -----------------------------------------------------------------------------
-# Configuration file functions
-# -----------------------------------------------------------------------------
-parse_rjust = 16
+# Global variable with the filter configuration
+configuration = ConfigFile()
 
 # Parses configuration file using ElementTree
 # Returns a ConfigFile object
+parse_rjust = 16
 def parse_File_Config():
-  NARS.print_info('[Parsing config file]');
-  try:
-    tree = ET.parse(__config_configFileName)
-  except IOError:
-    print_error('[ERROR] cannot find file ' + __config_configFileName)
-    sys.exit(10)
+  NARS.print_info('[Parsing config file]')
+  tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
   root = tree.getroot()
 
   # --- Configuration object returned ---
@@ -1431,149 +1426,107 @@ def do_printHelp():
 \033[31mcheck <filter>\033[0m          Applies ROM filters and prints a list of the scored ROMs.
 \033[31mcopy <filter>\033[0m           Applies ROM filters defined and copies ROMS from sourceDir into destDir.
 \033[31mupdate <filter>\033[0m         Like copy, but also delete unneeded ROMs in destDir.
-\033[31mcheck-artwork <filter>\033[0m  Reads the ROMs in destDir, checks if you have the corresponding artwork. 
-\033[31mcopy-artwork <filter>\033[0m   Reads the ROMs in destDir and tries to copy the artwork to destDir.
+\033[31mcheck-artwork  <filter>\033[0m Reads the ROMs in destDir, checks if you have the corresponding artwork. 
+\033[31mcopy-artwork   <filter>\033[0m Reads the ROMs in destDir and tries to copy the artwork to destDir.
 \033[31mupdate-artwork <filter>\033[0m Like copy-artwork, but also delete unknown images in artwork destDir.
 
 \033[32mOptions:
-\033[35m-h\033[0m, \033[35m--help\033[0m         Print short command reference.
-\033[35m-v\033[0m, \033[35m--verbose\033[0m      Print more information about what's going on.
-\033[35m-l\033[0m, \033[35m--log\033[0m          Save program output in xru-console-log.txt.
-\033[35m--logto\033[0m \033[31m[logName]\033[0m  Save program output in the file you specify.
-\033[35m--dryRun\033[0m           Don't modify destDir at all, just print the operations to be done.
-\033[35m--cleanROMs\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--cleanNFO\033[0m         Deletes redundant NFO files in destination directory.
-\033[35m--cleanArtWork\033[0m     Deletes unknown artwork in destination.""")
+\033[35m-h\033[0m, \033[35m--help\033[0m              Print short command reference.
+\033[35m-v\033[0m, \033[35m--verbose\033[0m           Print more information about what's going on.
+\033[35m-l\033[0m, \033[35m--log\033[0m               Save program output in xru-console-log.txt.
+\033[35m--logto\033[0m \033[31m[logName]\033[0m       Save program output in the file you specify.
+\033[35m--dryRun\033[0m                Don't modify destDir at all, just print the operations to be done.
+\033[35m--cleanROMs\033[0m             Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--cleanNFO\033[0m              Deletes redundant NFO files in destination directory.
+\033[35m--cleanArtWork\033[0m          Deletes unknown artwork in destination.""")
 
 # -----------------------------------------------------------------------------
 # main function
 # -----------------------------------------------------------------------------
-def main(argv):
-  print('\033[36mNARS Advanced ROM Sorting - Console ROMs\033[0m' + \
-        ' version ' + NARS.__software_version)
+print('\033[36mNARS Advanced ROM Sorting - Console No-Intro ROMs\033[0m' + \
+      ' version ' + NARS.__software_version)
 
-  # --- Command line parser
-  parser = argparse.ArgumentParser()
-  parser.add_argument('-v', '--verbose', help="be verbose", action="count")
-  parser.add_argument('-l', '--log', help="log output to default file", action='store_true')
-  parser.add_argument('--logto', help="log output to specified file", nargs = 1)
-  parser.add_argument('--dryRun', help="don't modify any files", action="store_true")
-  parser.add_argument('--cleanROMs', help="clean destDir of unknown ROMs", action="store_true")
-  parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
-  parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
-  parser.add_argument('command', \
-     help="usage, list-filters, list-nointro, check-nointro, list-tags, \
-           check, copy, update \
-           check-artwork, copy-artwork, update-artwork", nargs = 1)
-  parser.add_argument("romSetName", help="ROM collection name", nargs='?')
-  args = parser.parse_args();
+# --- Command line parser
+parser = argparse.ArgumentParser()
+parser.add_argument('-v', '--verbose', help="be verbose", action="count")
+parser.add_argument('-l', '--log', help="log output to default file", action='store_true')
+parser.add_argument('--logto', help="log output to specified file", nargs = 1)
+parser.add_argument('--dryRun', help="don't modify any files", action="store_true")
+parser.add_argument('--cleanROMs', help="clean destDir of unknown ROMs", action="store_true")
+parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
+parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
+parser.add_argument('command', \
+   help="usage, list-filters, list-nointro, check-nointro, list-tags, \
+         check, copy, update \
+         check-artwork, copy-artwork, update-artwork", nargs = 1)
+parser.add_argument("romSetName", help="ROM collection name", nargs='?')
+args = parser.parse_args();
 
-  # --- Optional arguments
-  # Needed to modify global copy of globvar
-  global __prog_option_log, __prog_option_log_filename;
-  global __prog_option_dry_run;
-  global __prog_option_clean_ROMs;
-  global __prog_option_clean_NFO;
-  global __prog_option_clean_ArtWork;
-  global __prog_option_sync; # 1 update, 0 copies
+# --- Optional arguments ---
+if args.verbose:
+  if args.verbose == 1:
+    NARS.change_log_level(NARS.Log.verb)
+    NARS.print_info('Verbosity level set to VERBOSE')
+  elif args.verbose == 2:
+    NARS.change_log_level(NARS.Log.vverb)
+    NARS.print_info('Verbosity level set to VERY VERBOSE')
+  elif args.verbose >= 3:
+    NARS.change_log_level(NARS.Log.debug)
+    NARS.print_info('Verbosity level set to DEBUG')
+if args.log:
+  __prog_option_log = 1
+if args.logto:
+  __prog_option_log = 1
+  __prog_option_log_filename = args.logto[0]
+if args.dryRun:       __prog_option_dry_run = 1
+if args.cleanROMs:    __prog_option_clean_ROMs = 1
+if args.cleanNFO:     __prog_option_clean_NFO = 1
+if args.cleanArtWork: __prog_option_clean_ArtWork = 1
 
-  if args.verbose:
-    if args.verbose == 1:   
-      NARS.change_log_level(NARS.Log.verb)
-      NARS.print_info('Verbosity level set to VERBOSE')
-    elif args.verbose == 2: 
-      NARS.change_log_level(NARS.Log.vverb)
-      NARS.print_info('Verbosity level set to VERY VERBOSE')
-    elif args.verbose >= 3: 
-      NARS.change_log_level(NARS.Log.debug)
-      NARS.print_info('Verbosity level set to DEBUG')
-  if args.log:
-    __prog_option_log = 1;
-  if args.logto:
-    __prog_option_log = 1;
-    __prog_option_log_filename = args.logto[0];
-  if args.dryRun:       __prog_option_dry_run = 1;
-  if args.cleanROMs:    __prog_option_clean_ROMs = 1;
-  if args.cleanNFO:     __prog_option_clean_NFO = 1;
-  if args.cleanArtWork: __prog_option_clean_ArtWork = 1;
-
-  # --- Positional arguments that don't require parsing of the config file
-  command = args.command[0];
-  if command == 'usage':
-    do_printHelp();
-    sys.exit(0);
-
-  # --- Read configuration file
-  global configuration;
-  configuration = parse_File_Config();
-
-  # --- Positional arguments that don't require a romSetName
-  if command == 'list-filters':
-    do_list_filters()
-
-  elif command == 'list-nointro':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    do_list_nointro(args.romSetName)
-
-  elif command == 'check-nointro':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    do_check_nointro(args.romSetName)
-
-  elif command == 'list-tags':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    do_taglist(args.romSetName)
-
-  elif command == 'check':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    do_checkFilter(args.romSetName)
-
-  elif command == 'copy':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    do_update(args.romSetName)
-
-  elif command == 'update':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    __prog_option_sync = 1
-    do_update(args.romSetName)
-
-  elif command == 'check-artwork':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    do_checkArtwork(args.romSetName)
-
-  elif command == 'copy-artwork':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    do_update_artwork(args.romSetName)
-
-  elif command == 'update-artwork':
-    if args.romSetName == None:
-      NARS.print_error('\033[31m[ERROR]\033[0m romSetName required')
-      sys.exit(10)
-    __prog_option_sync = 1
-    do_update_artwork(args.romSetName)
-
-  else:
-    NARS.print_error('Unrecognised command ' + command)
-    sys.exit(1)
-
+# --- Positional arguments that don't require parsing of the config file ---
+command = args.command[0]
+if command == 'usage':
+  do_printHelp()
   sys.exit(0)
 
-# Execute main function if script called from command line (not imported 
-# as module)
-if __name__ == "__main__":
-  main(sys.argv[1:])
+# --- Check arguments that require a filterName ---
+if command == 'list-nointro' or command == 'check-nointro' or \
+   command == 'list-tags' or \
+   command == 'check' or command == 'copy' or command == 'update' or \
+   command == 'check-artwork' or command == 'copy-artwork' or command == 'update-artwork':
+  if args.filterName == None:
+    print('\033[31m[ERROR]\033[0m Command "{0}" requires a filter name'.format(command))
+    sys.exit(10)
+
+# --- Read configuration file ---
+configuration = parse_File_Config()
+
+# --- Positional arguments that don't require a romSetName
+if command == 'list-filters':
+  do_list_filters()
+elif command == 'list-nointro':
+  do_list_nointro(args.romSetName)
+elif command == 'check-nointro':
+  do_check_nointro(args.romSetName)
+elif command == 'list-tags':
+  do_taglist(args.romSetName)
+elif command == 'check':
+  do_checkFilter(args.romSetName)
+elif command == 'copy':
+  do_update(args.romSetName)
+elif command == 'update':
+  __prog_option_sync = 1
+  do_update(args.romSetName)
+elif command == 'check-artwork':
+  do_checkArtwork(args.romSetName)
+elif command == 'copy-artwork':
+  do_update_artwork(args.romSetName)
+elif command == 'update-artwork':
+  __prog_option_sync = 1
+  do_update_artwork(args.romSetName)
+else:
+  print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
+  sys.exit(1)
+
+# Bye bye
+sys.exit(0)
