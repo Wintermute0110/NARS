@@ -20,11 +20,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-# --- Import stuff
 import sys, os, re, shutil
 import operator, argparse
-import xml.etree.ElementTree as ET # ElementTree XML parser
+import xml.etree.ElementTree as ET
 import NARS
 
 # --- Global variables ---
@@ -57,29 +55,29 @@ class ConfigFile:
 
 class ConfigFileFilter:
   def __init__(self):
-    # By default things are None, which means user didn't wrote them in config 
+    # By default things are None, which means user didn't wrote them in config
     # file OR no text was written ('', or blanks (spaces, tabs)).
-    self.name = None
+    self.name              = None
     # Directory names
-    self.sourceDir = None
-    self.destDir = None
-    self.sourceDir_CHD = None
-    self.fanartSourceDir = None
-    self.fanartDestDir = None
-    self.thumbsSourceDir = None
-    self.thumbsDestDir = None
-    self.samplesSourceDir = None
-    self.samplesDestDir = None
+    self.sourceDir         = None
+    self.destDir           = None
+    self.sourceDir_CHD     = None
+    self.fanartSourceDir   = None
+    self.fanartDestDir     = None
+    self.thumbsSourceDir   = None
+    self.thumbsDestDir     = None
+    self.samplesSourceDir  = None
+    self.samplesDestDir    = None
     # Filters
-    self.includeFilter = None
-    self.excludeFilter = None
-    self.driverFilter = None
-    self.categoriesFilter = None
+    self.includeFilter     = None
+    self.excludeFilter     = None
+    self.driverFilter      = None
+    self.categoriesFilter  = None
     self.orientationFilter = None
-    self.controlsFilter = None
-    self.buttons_exp = None
-    self.players_exp = None
-    self.year_exp = None
+    self.controlsFilter    = None
+    self.buttons_exp       = None
+    self.players_exp       = None
+    self.year_exp          = None
     # Options
     self.year_YearExpansion_opt = 0
     self.MachineSwap = {}
@@ -87,14 +85,18 @@ class ConfigFileFilter:
 # Global variable with the filter configuration
 configuration = ConfigFile()
 
+# Parses configuration file using ElementTree
+# Returns a ConfigFile object
+parse_rjust = 16
 def parse_File_Config():
-  "Parses configuration file"
   NARS.print_info('[Parsing config file]')
   tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
   root = tree.getroot()
 
-  # --- Configuration object
+  # --- Configuration object returned ---
   configFile = ConfigFile()
+
+  # --- Parse filters ---
   for root_child in root:
     # === Parse global tags ===
     if root_child.tag == 'MAME_XML':
@@ -123,12 +125,12 @@ def parse_File_Config():
       NARS.print_debug(' name = ' + root_child.attrib['name'])
       filter_class = ConfigFileFilter()
       filter_class.name = root_child.attrib['name']
-      sourceDirFound = 0;
-      destDirFound = 0;
+      sourceDirFound = 0
+      destDirFound = 0
       for filter_child in root_child:
         if filter_child.tag == 'ROMsSource':
           NARS.print_debug(' ROMsSource = ' + filter_child.text)
-          sourceDirFound = 1;
+          sourceDirFound = 1
           filter_class.sourceDir = fix_directory_name(filter_child.text)
         elif filter_child.tag == 'ROMsDest':
           NARS.print_debug(' ROMsDest = ' + filter_child.text)
@@ -2837,16 +2839,16 @@ def do_printHelp():
 \033[31mupdate-artwork <filter>\033[0m   Like copy-artwork, but also delete unknown images in artwork destination???
 
 \033[32mOptions:\033[0m
-\033[35m-h\033[0m, \033[35m--help\033[0m         Print short command reference
-\033[35m-v\033[0m, \033[35m--verbose\033[0m      Print more information about what's going on
-\033[35m-l\033[0m, \033[35m--log\033[0m          Save program output in xru-mame-log.txt.
-\033[35m--logto\033[0m \033[31m[logName]\033[0m  Save program output in the file you specify.
-\033[35m--dryRun\033[0m           Don't modify destDir at all, just print the operations to be done.
-\033[35m--cleanROMs\033[0m        Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--generateNFO\033[0m      Generates NFO files with game information for the launchers.
-\033[35m--cleanNFO\033[0m         Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--cleanCHD\033[0m         Deletes unknown CHDs in destination directory.
-\033[35m--cleanArtWork\033[0m     Deletes unknown Artowork in destination directories.""")
+\033[35m-h\033[0m, \033[35m--help\033[0m                Print short command reference
+\033[35m-v\033[0m, \033[35m--verbose\033[0m             Print more information about what's going on
+\033[35m-l\033[0m, \033[35m--log\033[0m                 Save program output in xru-mame-log.txt.
+\033[35m--logto\033[0m \033[31m[logName]\033[0m         Save program output in the file you specify.
+\033[35m--dryRun\033[0m                  Don't modify destDir at all, just print the operations to be done.
+\033[35m--cleanROMs\033[0m               Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--generateNFO\033[0m             Generates NFO files with game information for the launchers.
+\033[35m--cleanNFO\033[0m                Deletes ROMs in destDir not present in the filtered ROM list.
+\033[35m--cleanCHD\033[0m                Deletes unknown CHDs in destination directory.
+\033[35m--cleanArtWork\033[0m            Deletes unknown Artowork in destination directories.""")
 
 # -----------------------------------------------------------------------------
 # main function
@@ -2874,33 +2876,47 @@ parser.add_argument('command', \
 parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
 args = parser.parse_args();
 
-# --- Optional arguments
+# --- Optional arguments ---
 if args.verbose:
-  if args.verbose == 1:   NARS.change_log_level(NARS.Log.verb);
-  elif args.verbose == 2: NARS.change_log_level(NARS.Log.vverb);
-  elif args.verbose >= 3: NARS.change_log_level(NARS.Log.debug);
+  if args.verbose == 1:
+    NARS.change_log_level(NARS.Log.verb)
+    NARS.print_info('Verbosity level set to VERBOSE')
+  elif args.verbose == 2:
+    NARS.change_log_level(NARS.Log.vverb)
+    NARS.print_info('Verbosity level set to VERY VERBOSE')
+  elif args.verbose >= 3:
+    NARS.change_log_level(NARS.Log.debug)
+    NARS.print_info('Verbosity level set to DEBUG')
 if args.log:
-  __prog_option_log = 1;
+  __prog_option_log = 1
 if args.logto:
-  __prog_option_log = 1;
-  __prog_option_log_filename = args.logto[0];
-if args.dryRun:       __prog_option_dry_run = 1;
-if args.cleanROMs:    __prog_option_clean_ROMs = 1;
-if args.generateNFO:  __prog_option_generate_NFO = 1;
-if args.cleanNFO:     __prog_option_clean_NFO = 1;
-if args.cleanArtWork: __prog_option_clean_ArtWork = 1;
-if args.cleanCHD:     __prog_option_clean_CHD = 1;
+  __prog_option_log = 1
+  __prog_option_log_filename = args.logto[0]
+if args.dryRun:       __prog_option_dry_run = 1
+if args.cleanROMs:    __prog_option_clean_ROMs = 1
+if args.generateNFO:  __prog_option_generate_NFO = 1
+if args.cleanNFO:     __prog_option_clean_NFO = 1
+if args.cleanArtWork: __prog_option_clean_ArtWork = 1
+if args.cleanCHD:     __prog_option_clean_CHD = 1
 
-# --- Positional arguments that don't require parsing of the config file
-command = args.command[0];
+# --- Positional arguments that don't require parsing of the config file ---
+command = args.command[0]
 if command == 'usage':
-  do_printHelp();
-  sys.exit(0);
+  do_printHelp()
+  sys.exit(0)
 
-# --- Read configuration file
-configuration = parse_File_Config();
+# --- Check arguments that require a filterName ---
+if command == 'check' or command == 'copy' or command == 'update' or \
+   command == 'copy-chd' or command == 'update-chd' or \
+   command == 'check-artwork' or command == 'copy-artwork' or command == 'update-artwork':
+  if args.filterName == None:
+    print('\033[31m[ERROR]\033[0m Command "{0}" requires a filter name'.format(command))
+    sys.exit(10)
 
-# --- Positional arguments that don't require a filterName
+# --- Read configuration file ---
+configuration = parse_File_Config()
+
+# --- Positional arguments that don't require a filterName ---
 if command == 'reduce-XML':
   do_reduce_XML()
 elif command == 'merge-XML':
@@ -2918,50 +2934,27 @@ elif command == 'list-years':
 elif command == 'list':
   do_list_filters()
 elif command == 'check':
-  if args.filterName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-    sys.exit(10)
   do_checkFilter(args.filterName)
 elif command == 'copy':
-  if args.filterName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-    sys.exit(10)
   do_update(args.filterName)
 elif command == 'update':
-  if args.filterName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-    sys.exit(10)
   __prog_option_sync = 1
   do_update(args.filterName); 
 elif command == 'copy-chd':
-  if args.filterName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-    sys.exit(10)
   do_update_CHD(args.filterName)
 elif command == 'update-chd':
-  if args.filterName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-    sys.exit(10)
   __prog_option_sync = 1
   do_update_CHD(args.filterName)
 elif command == 'check-artwork':
-  if args.filterName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-    sys.exit(10)
   do_check_Artwork(args.filterName)
 elif command == 'copy-artwork':
-  if args.filterName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-    sys.exit(10)
   do_update_Artwork(args.filterName)
 elif command == 'update-artwork':
-  if args.filterName == None:
-    NARS.print_error('\033[31m[ERROR]\033[0m filterName required')
-    sys.exit(10)
   __prog_option_sync = 1
   do_update_Artwork(args.filterName)
 else:
-  NARS.print_error('Unrecognised command: ' + command)
+  print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
   sys.exit(1)
 
+# Bye bye
 sys.exit(0)
