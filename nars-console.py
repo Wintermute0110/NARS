@@ -101,39 +101,46 @@ def parse_File_Config():
       for filter_child in root_child:
         # ~~~ Directories ~~~
         if filter_child.tag == 'ROMsSource':
+          if filter_child.text == None: continue
           string = NARS.strip_string(filter_child.text)
           filter_class.sourceDir = NARS.sanitize_dir_name(string)
           NARS.print_debug('ROMsSource'.ljust(parse_rjust) + filter_class.sourceDir)
         elif filter_child.tag == 'ROMsDest':
+          if filter_child.text == None: continue
           string = NARS.strip_string(filter_child.text)
           filter_class.destDir = NARS.sanitize_dir_name(string) 
           NARS.print_debug('ROMsDest'.ljust(parse_rjust) + filter_class.destDir)          
         elif filter_child.tag == 'FanartSource':
+          if filter_child.text == None: continue
           string = NARS.strip_string(filter_child.text)
           filter_class.fanartSourceDir = NARS.sanitize_dir_name(string)
           NARS.print_debug('FanartSource'.ljust(parse_rjust) + filter_class.fanartSourceDir)
         elif filter_child.tag == 'FanartDest':
+          if filter_child.text == None: continue
           string = NARS.strip_string(filter_child.text)
           filter_class.fanartDestDir = NARS.sanitize_dir_name(string)
           NARS.print_debug('FanartDest'.ljust(parse_rjust) + filter_class.fanartDestDir)
         elif filter_child.tag == 'ThumbsSource':
+          if filter_child.text == None: continue
           string = NARS.strip_string(filter_child.text)
           filter_class.thumbsSourceDir = NARS.sanitize_dir_name(string)
           NARS.print_debug('ThumbsSource'.ljust(parse_rjust) + filter_class.thumbsSourceDir)
         elif filter_child.tag == 'ThumbsDest':
+          if filter_child.text == None: continue
           string = NARS.strip_string(filter_child.text)
           filter_class.thumbsDestDir = NARS.sanitize_dir_name(string)
           NARS.print_debug('ThumbsDest'.ljust(parse_rjust) + filter_class.thumbsDestDir)
         # ~~~ Files ~~~
         elif filter_child.tag == 'NoIntroDat':
+          if filter_child.text == None: continue
           filter_class.NoIntro_XML = NARS.strip_string(filter_child.text)
           NARS.print_debug('NoIntroDat'.ljust(parse_rjust) + filter_class.NoIntro_XML)
         # ~~~ Comma separated strings ~~~
         elif filter_child.tag == 'filterUpTags':
+          # If string is None then continue
+          if filter_child.text == None: continue
           # Trim comma-separated string
           str = NARS.strip_string(filter_child.text)
-          # If string is None then continue
-          if str == None: continue
           # Trim each list element separately
           str_list = str.split(",")
           for index, item in enumerate(str_list):
@@ -141,24 +148,24 @@ def parse_File_Config():
           filter_class.filterUpTags = str_list
           NARS.print_debug('filterUpTags'.ljust(parse_rjust) + ', '.join(str_list))
         elif filter_child.tag == 'filterDownTags':
+          if filter_child.text == None: continue
           str = NARS.strip_string(filter_child.text)
-          if str == None: continue
           str_list = str.split(",")
           for index, item in enumerate(str_list):
             str_list[index] = NARS.strip_string(item)
           filter_class.filterDownTags = str_list
           NARS.print_debug('filterDownTags'.ljust(parse_rjust) + ', '.join(str_list))
         elif filter_child.tag == 'includeTags':
+          if filter_child.text == None: continue
           str = NARS.strip_string(filter_child.text)
-          if str == None: continue
           str_list = str.split(",")
           for index, item in enumerate(str_list):
             str_list[index] = NARS.strip_string(item)
           filter_class.includeTags = str_list
           NARS.print_debug('includeTags'.ljust(parse_rjust) + ', '.join(str_list))
         elif filter_child.tag == 'excludeTags':
+          if filter_child.text == None: continue
           str = NARS.strip_string(filter_child.text)
-          if str == None: continue
           str_list = str.split(",")
           for index, item in enumerate(str_list):
             str_list[index] = NARS.strip_string(item)
@@ -699,26 +706,33 @@ def get_ROM_baseName(romFileName):
   regExp_result = regSearch.group()
   
   return regExp_result.strip();
-  
+
+# Given a list of upTags and downTags, numerically score a ROM
+# NOTE Either upTag_list or downTag_list may be None (user didn't configure them)
+#
+# Returns the score [int]
 def scoreROM(romTags, upTag_list, downTag_list):
-  score = 0;
+  score = 0
 
   # Iterate through the tags, and add/subtract points depending on the list
   # of given tags.
   for tag in romTags:
-    # - Up tags increase score
-    #   Tags defined first have more score
-    tag_score = len(upTag_list);
-    for upTag in upTag_list:
-      if tag == upTag:
-        score += tag_score;
-      tag_score -= 1;
-    # - Down tags decrease the score
-    tag_score = len(downTag_list);
-    for downTag in downTag_list:
-      if tag == downTag:
-        score -= tag_score;
-      tag_score -= 1;
+    # ~~~ Up tags increase score ~~~
+    if upTag_list != None:
+      # Tags defined first have more score
+      tag_score = len(upTag_list)
+      for upTag in upTag_list:
+        if tag == upTag:
+          score += tag_score
+        tag_score -= 1;
+
+    # ~~~ Down tags decrease the score ~~~
+    if downTag_list != None:
+      tag_score = len(downTag_list)
+      for downTag in downTag_list:
+        if tag == downTag:
+          score -= tag_score
+        tag_score -= 1
 
   return score;
 
@@ -903,37 +917,42 @@ def get_Tag_list(romMainList_list):
 
 def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
   "Score and filter the main ROM list"
-  NARS.print_info('[Filtering ROMs]');
-  __debug_main_ROM_list = 0;
+  NARS.print_info('[Filtering ROMs]')
+  __debug_main_ROM_list = 0
 
-  upTag_list = filter_config.filterUpTags;
-  downTag_list = filter_config.filterDownTags;
-  includeTag_list = filter_config.includeTags;
-  excludeTag_list = filter_config.excludeTags;
+  upTag_list      = filter_config.filterUpTags
+  downTag_list    = filter_config.filterDownTags
+  includeTag_list = filter_config.includeTags
+  excludeTag_list = filter_config.excludeTags
 
-  # --- Add ROM scores to ROM main list
+  # --- Add ROM scores to ROM main list ---
   for mainROM_obj in romMain_list:
-    scores_list = [];
+    scores_list = []
     for filename in mainROM_obj.filenames:
-      tags = rom_Tag_dic[filename];
-      ROM_score = scoreROM(tags, upTag_list, downTag_list);
-      scores_list.append(ROM_score);
-    mainROM_obj.scores = scores_list;
+      tags = rom_Tag_dic[filename]
+      ROM_score = scoreROM(tags, upTag_list, downTag_list)
+      scores_list.append(ROM_score)
+    mainROM_obj.scores = scores_list
 
-  # --- Add include/exclude filters to ROM main list
+  # --- Add include/exclude filters to ROM main list ---
   for mainROM_obj in romMain_list:
     include_list = [];
     for filename in mainROM_obj.filenames:
-      tags = rom_Tag_dic[filename];
-      has_excluded_tag = isTag(tags, excludeTag_list);
-      has_included_tag = isTag(tags, includeTag_list);
-      includeThisROM = 1;
-      if has_excluded_tag and not has_included_tag:
-        includeThisROM = 0;
-      include_list.append(includeThisROM);
-    mainROM_obj.include = include_list;
+      tags = rom_Tag_dic[filename]
+      # NOTE includeTag_list/excludeTag_list may be None (user didn't configure them)
+      isTag_include = 1  # By default include ROMs
+      isTag_exclude = 0  # By default not exclude ROMs
+      if includeTag_list != None:
+        isTag_include = isTag(tags, includeTag_list)
+      if excludeTag_list != None:
+        isTag_exclude = isTag(tags, excludeTag_list)
+      includeThisROM = 1
+      if isTag_exclude and not isTag_include:
+        includeThisROM = 0
+      include_list.append(includeThisROM)
+    mainROM_obj.include = include_list
 
-  # --- DEBUG: print main ROM list wiht scores and include flags
+  # --- DEBUG: print main ROM list wiht scores and include flags ---
   if __debug_main_ROM_list:
     print("[DEBUG main ROM list scored]")
     for mainROM_obj in romMain_list:
@@ -941,39 +960,39 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
       print(mainROM_obj.scores)
       print(mainROM_obj.include)
 
-  # - Order the main List based on scores and include flags
-  #   Don't remove excluded ROMs because they may be useful to copy
-  #   artwork (for example, the use has artwork for an excluded ROM
-  #   belonging to the same set as the first ROM).
-  romMain_list_sorted = [];
-  romSetName_list = [];
+  # Order the main List based on scores and include flags
+  # Don't remove excluded ROMs because they may be useful to copy
+  # artwork (for example, the use has artwork for an excluded ROM
+  # belonging to the same set as the first ROM).
+  romMain_list_sorted = []
+  romSetName_list = []
   for mainROM_obj in romMain_list:
     # --- Get a list with the indices of the sorted list
-    sorted_idx = [i[0] for i in sorted(enumerate(mainROM_obj.scores), key=lambda x:x[1])];
-    sorted_idx.reverse();
+    sorted_idx = [i[0] for i in sorted(enumerate(mainROM_obj.scores), key=lambda x:x[1])]
+    sorted_idx.reverse()
 
-    # --- List comprehension
-    mainROM_sorted = MainROM();
-    mainROM_sorted.filenames = [mainROM_obj.filenames[i] for i in sorted_idx];
-    mainROM_sorted.scores = [mainROM_obj.scores[i] for i in sorted_idx];
-    mainROM_sorted.include = [mainROM_obj.include[i] for i in sorted_idx];
-    # - Set name is the stripped name of the first ROM
-    #   This is compatible with both No-Intro and directory listings
-    setFileName = mainROM_sorted.filenames[0];
-    thisFileName, thisFileExtension = os.path.splitext(setFileName);
-    stripped_ROM_name = get_ROM_baseName(thisFileName);
-    mainROM_sorted.setName = stripped_ROM_name;
-    romMain_list_sorted.append(mainROM_sorted);
-    romSetName_list.append(stripped_ROM_name);
-  romMain_list = romMain_list_sorted;
+    # --- List comprehension ---
+    mainROM_sorted = MainROM()
+    mainROM_sorted.filenames = [mainROM_obj.filenames[i] for i in sorted_idx]
+    mainROM_sorted.scores = [mainROM_obj.scores[i] for i in sorted_idx]
+    mainROM_sorted.include = [mainROM_obj.include[i] for i in sorted_idx]
+    # Set name is the stripped name of the first ROM
+    # This is compatible with both No-Intro and directory listings
+    setFileName = mainROM_sorted.filenames[0]
+    thisFileName, thisFileExtension = os.path.splitext(setFileName)
+    stripped_ROM_name = get_ROM_baseName(thisFileName)
+    mainROM_sorted.setName = stripped_ROM_name
+    romMain_list_sorted.append(mainROM_sorted)
+    romSetName_list.append(stripped_ROM_name)
+  romMain_list = romMain_list_sorted
 
-  # --- Finally, sort the list by ROM set name for nice listings
-  sorted_idx = [i[0] for i in sorted(enumerate(romSetName_list), key=lambda x:x[1])];
-  romMain_list_sorted = [];
-  romMain_list_sorted = [romMain_list[i] for i in sorted_idx];
-  romMain_list = romMain_list_sorted;
+  # --- Finally, sort the list by ROM set name for nice listings ---
+  sorted_idx = [i[0] for i in sorted(enumerate(romSetName_list), key=lambda x:x[1])]
+  romMain_list_sorted = []
+  romMain_list_sorted = [romMain_list[i] for i in sorted_idx]
+  romMain_list = romMain_list_sorted
 
-  return romMain_list;
+  return romMain_list
 
 def create_copy_list(romMain_list, filter_config):
   "Creates the list of ROMs to be copied based on the ordered main ROM list"
@@ -1107,7 +1126,7 @@ def do_check_nointro(filterName):
 
   NARS.print_info('[Checking ROMs against No-Intro XML DAT]')
   NARS.print_info('Filter name = ' + filterName)
-  filter_config = get_Filter_Config(filterName)
+  filter_config = get_Filter_from_Config(filterName)
 
   # --- Get parameters and check for errors
   sourceDir = filter_config.sourceDir
@@ -1152,42 +1171,42 @@ def do_check_nointro(filterName):
   for game in sorted(nointro_roms):
     filename = sourceDir + game;
     if not os.path.isfile(filename):
-      NARS.print_verb('<Missing ROM> ' + game);
+      NARS.print_verb('{Missing ROM} ' + game);
       missing_roms += 1;
 
   NARS.print_info('[Report]');
-  NARS.print_info('Files in sourceDir: ' + str(len(file_list)));
-  NARS.print_info('Games in DAT      : ' + str(num_games));
-  NARS.print_info('Have ROMs         : ' + str(have_roms));
-  NARS.print_info('Missing ROMs      : ' + str(missing_roms));
-  NARS.print_info('Unknown ROMs      : ' + str(unknown_roms));
+  NARS.print_info('Files in sourceDir {:5d}'.format(len(file_list)))
+  NARS.print_info('Games in DAT       {:5d}'.format(num_games))
+  NARS.print_info('Have ROMs          {:5d}'.format(have_roms))
+  NARS.print_info('Missing ROMs       {:5d}'.format(missing_roms))
+  NARS.print_info('Unknown ROMs       {:5d}'.format(unknown_roms))
 
 def do_taglist(filterName):
   """Makes a histograms of the tags of the ROMs in sourceDir"""
 
-  NARS.print_info('[Listing tags]');
-  NARS.print_info('Filter name = ' + filterName);
-  filter_config = get_Filter_Config(filterName);
-  sourceDir = filter_config.sourceDir;
+  NARS.print_info('[Listing tags]')
+  NARS.print_info('Filter name = ' + filterName)
+  filter_config = get_Filter_Config(filterName)
+  sourceDir = filter_config.sourceDir
 
   # Check if dest directory exists
-  NARS.have_dir_or_abort(sourceDir, 'sourceDir');
+  NARS.have_dir_or_abort(sourceDir, 'sourceDir')
 
   # Traverse directory, for every file extract properties, and add them to the
   # dictionary.
-  propertiesDic = {};
+  propertiesDic = {}
   for file in os.listdir(sourceDir):
     if file.endswith(".zip"):
-      romProperties = extract_ROM_Tags_All(file);
+      romProperties = extract_ROM_Tags_All(file)
       if len(romProperties) == 0:
-        print_error(file + 'Has no tags!');
+        print_error(file + 'Has no tags!')
         sys.exit(10);
       else:
         for property in romProperties:
           if property in propertiesDic:
-            propertiesDic[property] += 1;
+            propertiesDic[property] += 1
           else:
-            propertiesDic[property] = 1;
+            propertiesDic[property] = 1
 
   # Works for Python 2
   # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
@@ -1204,10 +1223,10 @@ def do_checkFilter(filterName):
   """Applies filter and prints filtered parent/clone list"""
 
   NARS.print_info('[Check-filter ROM]');
-  NARS.print_info('Filter name = ' + filterName);
+  NARS.print_info('Filter name = ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
+  filter_config = get_Filter_from_Config(filterName);
   sourceDir = filter_config.sourceDir;
 
   # --- Check for errors, missing paths, etc...
@@ -1233,7 +1252,7 @@ def do_checkFilter(filterName):
   index_main = 0;
   for index_main in range(len(romMainList_list)):
     romObject = romMainList_list[index_main];
-    NARS.print_info("<ROM set> " + romObject.setName);
+    NARS.print_info("{ROM set} " + romObject.setName);
     for index in range(len(romObject.filenames)):
       # --- Check if file exists (maybe it does not exist for No-Intro lists)
       sourceFullFilename = sourceDir + romObject.filenames[index];
@@ -1258,7 +1277,7 @@ def do_update(filterName):
   NARS.print_info('Filter name: ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName)
+  filter_config = get_Filter_from_Config(filterName)
   sourceDir = filter_config.sourceDir
   destDir = filter_config.destDir
 
@@ -1290,17 +1309,17 @@ def do_update(filterName):
   
   # --- Copy/Update ROMs into destDir
   if __prog_option_sync:
-    update_ROM_list(rom_copy_list, sourceDir, destDir);
+    update_ROM_list(rom_copy_list, sourceDir, destDir)
   else:
-    copy_ROM_list(rom_copy_list, sourceDir, destDir);  
+    copy_ROM_list(rom_copy_list, sourceDir, destDir) 
 
   # --- If --cleanROMs is on then delete unknown files.
   if __prog_option_clean_ROMs:
-    clean_ROMs_destDir(destDir, rom_copy_list);
+    clean_ROMs_destDir(destDir, rom_copy_list)
 
   # --- Delete NFO files of ROMs not present in the destination directory.
   if __prog_option_clean_NFO:
-    delete_redundant_NFO(destDir);
+    delete_redundant_NFO(destDir)
 
 # ----------------------------------------------------------------------------
 def do_checkArtwork(filterName):
@@ -1310,22 +1329,22 @@ def do_checkArtwork(filterName):
   NARS.print_info('Filter name = ' + filterName);
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName);
-  destDir = filter_config.destDir;
-  thumbsSourceDir = filter_config.thumbsSourceDir;
-  fanartSourceDir = filter_config.fanartSourceDir;
+  filter_config = get_Filter_from_Config(filterName)
+  destDir = filter_config.destDir
+  thumbsSourceDir = filter_config.thumbsSourceDir
+  fanartSourceDir = filter_config.fanartSourceDir
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir, 'destDir');
-  NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir');
-  NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir');
+  NARS.have_dir_or_abort(destDir, 'destDir')
+  NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir')
+  NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir')
 
   # --- Create a list of ROMs in destDir
-  roms_destDir_list = [];
+  roms_destDir_list = []
   for file in os.listdir(destDir):
     if file.endswith(".zip"):
-      thisFileName, thisFileExtension = os.path.splitext(file);
-      roms_destDir_list.append(thisFileName);
+      thisFileName, thisFileExtension = os.path.splitext(file)
+      roms_destDir_list.append(thisFileName)
 
   # --- Obtain main parent/clone list, either based on DAT or filelist
   if filter_config.NoIntro_XML == None:
