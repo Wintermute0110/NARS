@@ -630,15 +630,15 @@ class MainROM:
 
 class NoIntro_ROM:
   def __init__(self, baseName):
-    self.baseName = baseName;
+    self.baseName = baseName
 
 class dir_ROM:
   def __init__(self, fileName):
-    self.fileName = fileName;
+    self.fileName = fileName
 
 def extract_ROM_Properties_Raw(romFileName):
   "Given a ROM file name extracts all the tags and returns a list"
-  __debug_propertyParsers = 0;
+  __debug_propertyParsers = 0
 
   romProperties_raw = [];
   romProperties_raw = re.findall("(\([^\(]*\))", romFileName);
@@ -649,29 +649,29 @@ def extract_ROM_Properties_Raw(romFileName):
     print('\n'.join(romProperties_raw))
     print('\n')
   
-  return romProperties_raw;
+  return romProperties_raw
 
 def extract_ROM_Tags_All(romFileName):
   "Given a ROM file name extracts all the tags and returns a list. Also parses tags"
-  __debug_propertyParsers = 0;
+  __debug_propertyParsers = 0
 
   # Extract Raw properties with parenthesis
-  romProperties_raw = [];
-  romProperties_raw = re.findall("(\([^\(]*\))", romFileName);
+  romProperties_raw = []
+  romProperties_raw = re.findall("(\([^\(]*\))", romFileName)
 
   # For every property chech if it has comma(s). If so, reparse the
   # property and create new properties
-  romProperties_all = [];
+  romProperties_all = []
   for property in romProperties_raw:
     # Strip parentehsis
-    property = property[1:-1];
+    property = property[1:-1]
     if __debug_propertyParsers:
       print('extract_ROM_Properties_All >> Property: ' + property)
     
-    match = re.search(",", property);
+    match = re.search(",", property)
     if match:
       # Re-parse the string and decompose into new properties
-      subProperties = re.findall("([^\,]*)", property);
+      subProperties = re.findall("([^\,]*)", property)
       for subPropertie in subProperties:
         if __debug_propertyParsers:
           print('extract_ROM_Properties_All >> subPropertie: "' + subPropertie + '"')
@@ -680,12 +680,12 @@ def extract_ROM_Tags_All(romFileName):
         # Non empty strings are "true", empty are "false"
         if subPropertie:
           # strip() is equivalent to Perl trim()
-          subPropertieOK = subPropertie.strip();
-          romProperties_all.append(subPropertieOK);
+          subPropertieOK = subPropertie.strip()
+          romProperties_all.append(subPropertieOK)
           if __debug_propertyParsers:
             print('extract_ROM_Properties_All >> Added subPropertie: "' + subPropertieOK + '"')
     else:
-      romProperties_all.append(property);
+      romProperties_all.append(property)
 
   # Debug print
   if __debug_propertyParsers:
@@ -698,14 +698,14 @@ def extract_ROM_Tags_All(romFileName):
 def get_ROM_baseName(romFileName):
   "Get baseName from filename (no extension, no tags)"
   
-  rom_baseName = '';
-  regSearch = re.search("[^\(\)]*", romFileName);
+  rom_baseName = ''
+  regSearch = re.search("[^\(\)]*", romFileName)
   if regSearch == None:
     print('Logical error')
     sys.exit(10)
   regExp_result = regSearch.group()
   
-  return regExp_result.strip();
+  return regExp_result.strip()
 
 # Given a list of upTags and downTags, numerically score a ROM
 # NOTE Either upTag_list or downTag_list may be None (user didn't configure them)
@@ -734,18 +734,18 @@ def scoreROM(romTags, upTag_list, downTag_list):
           score -= tag_score
         tag_score -= 1
 
-  return score;
+  return score
 
 def isTag(tags, tag_list):
-  result = 0;
+  result = 0
 
   for tag in tags:
     for testTag in tag_list:
       if tag == testTag:
-        result = 1;
-        return result;
+        result = 1
+        return result
 
-  return result;
+  return result
 
 # Parses a No-Intro DAT and creates an object with the XML information
 # Then, it creates a ROM main dictionary
@@ -756,150 +756,149 @@ def isTag(tags, tag_list):
 # The first game in the list is the parent game according to the DAT,
 # and the rest are the clones in no particular order.
 def get_NoIntro_Main_list(filter_config):
-  """Parses NoInto XML and makes a parent-clone list"""
-  __debug_parse_NoIntro_XML_Config = 0;
+  __debug_parse_NoIntro_XML_Config = 0
   
-  XML_filename = filter_config.NoIntro_XML;
+  XML_filename = filter_config.NoIntro_XML
   tree = NARS.XML_read_file_ElementTree(XML_filename, 'Parsing No-Intro XML DAT')
 
   # --- Raw list: literal information from the XML
-  rom_raw_dict = {}; # Key is ROM baseName
-  root = tree.getroot();
-  num_games = 0;
-  num_parents = 0;
-  num_clones = 0;
+  rom_raw_dict = {} # Key is ROM baseName
+  root = tree.getroot()
+  num_games = 0
+  num_parents = 0
+  num_clones = 0
   for game_EL in root:
     if game_EL.tag == 'game':
-      num_games += 1;
+      num_games += 1
 
       # --- Game attributes
       game_attrib = game_EL.attrib;
-      romName = game_attrib['name'];
-      romObject = NoIntro_ROM(romName);
+      romName = game_attrib['name']
+      romObject = NoIntro_ROM(romName)
       if __debug_parse_NoIntro_XML_Config:
         print('Game = ' + romName)
 
       if 'cloneof' in game_attrib:
-        num_clones += 1;
-        romObject.cloneof = game_attrib['cloneof'];
-        romObject.isclone = 1;
+        num_clones += 1
+        romObject.cloneof = game_attrib['cloneof']
+        romObject.isclone = 1
         if __debug_parse_NoIntro_XML_Config:
           print(' Clone of = ' + game_attrib['cloneof'])
       else:
-        num_parents += 1;
-        romObject.isclone = 0;
+        num_parents += 1
+        romObject.isclone = 0
 
       # Add new game to the list
       rom_raw_dict[romName] = romObject;
   del tree;
-  NARS.print_info('Total number of games = ' + str(num_games));
-  NARS.print_info('Number of parents = ' + str(num_parents));
-  NARS.print_info('Number of clones = ' + str(num_clones));
+  NARS.print_info('Total number of games {:5d}'.format(num_games))
+  NARS.print_info('Number of parents     {:5d}'.format(num_parents))
+  NARS.print_info('Number of clones      {:5d}'.format(num_clones))
 
-  # --- Create a parent-clone list
-  rom_pclone_dict = {};
+  # --- Create a parent-clone list ---
+  rom_pclone_dict = {}
   # Naive algorithm, two passes.
   # First traverse the raw list and make a list of parent games
   for key in rom_raw_dict:
-    gameObj = rom_raw_dict[key];
+    gameObj = rom_raw_dict[key]
     if not gameObj.isclone:
-      romObject = NoIntro_ROM(key);
-      romObject.hasClones = 0;
-      rom_pclone_dict[key] = romObject;
+      romObject = NoIntro_ROM(key)
+      romObject.hasClones = 0
+      rom_pclone_dict[key] = romObject
 
   # Second pass: traverse the raw list for clones and assign clone ROMS to 
   # their parents
-  num_parents = 0;
-  num_clones = 0;
+  num_parents = 0
+  num_clones = 0
   for key in rom_raw_dict:
-    gameObj = rom_raw_dict[key];
+    gameObj = rom_raw_dict[key]
     if gameObj.isclone:
-      num_clones += 1;
+      num_clones += 1
       # Find parent ROM. Raise error if not found
       if gameObj.cloneof in rom_pclone_dict:
         # Add clone ROM to the list of clones
-        parentObj = rom_pclone_dict[gameObj.cloneof];
+        parentObj = rom_pclone_dict[gameObj.cloneof]
         if not hasattr(parentObj, 'clone_list'):
-          parentObj.clone_list = [];
-          parentObj.hasClones = 1;
-        parentObj.clone_list.append(key);
+          parentObj.clone_list = []
+          parentObj.hasClones = 1
+        parentObj.clone_list.append(key)
       else:
-        print('Game "' + key + '"')
-        print('Parent "' + gameObj.cloneof + '"')
-        print('Parent ROM not found "' + gameObj.cloneof + '"')
+        print('[ERROR] Game "' + key + '"')
+        print('[ERROR] Parent "' + gameObj.cloneof + '"')
+        print('[ERROR] Parent ROM not found "' + gameObj.cloneof + '"')
         sys.exit(10)
     else:
-      num_parents += 1;
+      num_parents += 1
 
   # DEBUG: print parent-clone list
   for key in rom_pclone_dict:
-    romObj = rom_pclone_dict[key];
-    NARS.print_debug(" <Parent> '" + romObj.baseName + "'");
+    romObj = rom_pclone_dict[key]
+    NARS.print_debug("{Parent} '" + romObj.baseName + "'")
     if romObj.hasClones:
       for clone in romObj.clone_list:
-        NARS.print_debug("  <Clone> '" + clone + "'");
+        NARS.print_debug(" {Clone} '" + clone + "'")
 
   # --- Create ROM main list
-  romMainList_list = [];
+  romMainList_list = []
   for key in rom_pclone_dict:
-    romNoIntroObj = rom_pclone_dict[key];
+    romNoIntroObj = rom_pclone_dict[key]
     # - Create object and add first ROM (parent ROM)
-    mainROM = MainROM();
-    mainROM.filenames = [];
-    mainROM.filenames.append(romNoIntroObj.baseName + '.zip');    
+    mainROM = MainROM()
+    mainROM.filenames = []
+    mainROM.filenames.append(romNoIntroObj.baseName + '.zip')   
     # - If game has clones add them to the list of filenames
     if romNoIntroObj.hasClones:
       for clone in romNoIntroObj.clone_list:
-        mainROM.filenames.append(clone + '.zip');    
+        mainROM.filenames.append(clone + '.zip')  
     # - Add MainROM to the list
-    romMainList_list.append(mainROM);
+    romMainList_list.append(mainROM)
 
-  return romMainList_list;
+  return romMainList_list
 
 def get_directory_Main_list(filter_config):
   "Reads a directory and creates a unique ROM parent/clone list"
-  __debug_sourceDir_ROM_scanner = 0;
+  __debug_sourceDir_ROM_scanner = 0
   
   # --- Read all files in sourceDir
-  NARS.print_info('[Reading ROMs in source dir]');
-  sourceDir = filter_config.sourceDir;
-  romMainList_dict = {};
+  NARS.print_info('[Reading ROMs in source dir]')
+  sourceDir = filter_config.sourceDir
+  romMainList_dict = {}
   num_ROMs_sourceDir = 0;
   for file in os.listdir(sourceDir):
     if file.endswith(".zip"):
-      num_ROMs_sourceDir += 1;
-      romObject = dir_ROM(file);
-      romObject.baseName = get_ROM_baseName(file);
-      romMainList_dict[file] = romObject;
+      num_ROMs_sourceDir += 1
+      romObject = dir_ROM(file)
+      romObject.baseName = get_ROM_baseName(file)
+      romMainList_dict[file] = romObject
       if __debug_sourceDir_ROM_scanner:
         print("  ROM       '" + romObject.fileName + "'")
         print("   baseName '" + romObject.baseName + "'")
   NARS.print_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs')
   
   # --- Create a parent/clone list based on the baseName of the ROM
-  pclone_ROM_dict = {}; # Key is ROM basename
+  pclone_ROM_dict = {}  # Key is ROM basename
   for key in romMainList_dict:
-    baseName = romMainList_dict[key].baseName;
-    fileName = romMainList_dict[key].fileName;
+    baseName = romMainList_dict[key].baseName
+    fileName = romMainList_dict[key].fileName
     # If baseName exists, add this ROM to that
     if baseName in pclone_ROM_dict:
-      pclone_ROM_dict[baseName].append(fileName);
+      pclone_ROM_dict[baseName].append(fileName)
     # If not, create a new entry
     else:
-      filenames = [];
-      filenames.append(fileName);
-      pclone_ROM_dict[baseName] = filenames;
+      filenames = []
+      filenames.append(fileName)
+      pclone_ROM_dict[baseName] = filenames
   
   # --- Create ROM main list
-  romMainList_list = [];
+  romMainList_list = []
   for key in pclone_ROM_dict:
     # - Create object and add first ROM (parent ROM)
-    mainROM = MainROM();
-    mainROM.filenames = pclone_ROM_dict[key];
+    mainROM = MainROM()
+    mainROM.filenames = pclone_ROM_dict[key]
     # - Add MainROM to the list
-    romMainList_list.append(mainROM);   
+    romMainList_list.append(mainROM) 
 
-  return romMainList_list;
+  return romMainList_list
 
 # returns rom_Tag_dic
 #  key = ROM filename 'Super Mario (World) (Rev 1).zip'
@@ -907,13 +906,13 @@ def get_directory_Main_list(filter_config):
 def get_Tag_list(romMainList_list):
   "Extracts tags from filenames and creates a dictionary with them"
 
-  rom_Tag_dic = {};
+  rom_Tag_dic = {}
   for item in romMainList_list:
-    filenames_list = item.filenames;
+    filenames_list = item.filenames
     for filename in filenames_list:
-      rom_Tag_dic[filename] = extract_ROM_Tags_All(filename);
+      rom_Tag_dic[filename] = extract_ROM_Tags_All(filename)
    
-  return rom_Tag_dic;
+  return rom_Tag_dic
 
 def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
   "Score and filter the main ROM list"
@@ -1222,52 +1221,50 @@ def do_taglist(filterName):
 def do_checkFilter(filterName):
   """Applies filter and prints filtered parent/clone list"""
 
-  NARS.print_info('[Check-filter ROM]');
+  NARS.print_info('[Check-filter ROM]')
   NARS.print_info('Filter name = ' + filterName)
 
-  # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_from_Config(filterName);
-  sourceDir = filter_config.sourceDir;
+  # --- Get configuration for the selected filter and check for errors ---
+  filter_config = get_Filter_from_Config(filterName)
 
-  # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir, 'sourceDir');
-
-  # --- Obtain main parent/clone list, either based on DAT or filelist
+  # --- Obtain main parent/clone list, either based on DAT or filelist ---
   if filter_config.NoIntro_XML == None:
-    NARS.print_info('Using directory listing');
-    romMainList_list = get_directory_Main_list(filter_config);
+    NARS.print_info('Using directory listing')
+    romMainList_list = get_directory_Main_list(filter_config)
   else:
-    NARS.print_info('Using No-Intro parent/clone DAT');
-    romMainList_list = get_NoIntro_Main_list(filter_config);
+    NARS.print_info('Using No-Intro parent/clone DAT')
+    romMainList_list = get_NoIntro_Main_list(filter_config)
 
-  # --- Get tag list for every rom
-  rom_Tag_dic = get_Tag_list(romMainList_list);
+  # --- Get tag list for every rom ---
+  rom_Tag_dic = get_Tag_list(romMainList_list)
   
-  # --- Calculate scores based on filters and reorder the main
-  #     list with higher scores first. Also applies exclude/include filters.
-  romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config);
+  # Calculate scores based on filters and reorder the main
+  # list with higher scores first. Also applies exclude/include filters.
+  romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config)
 
-  # --- Print list in alphabetical order
+  # --- Print list in alphabetical order ---
+  sourceDir = filter_config.sourceDir
+  NARS.have_dir_or_abort(sourceDir, 'sourceDir')
   NARS.print_info("[List of scored parent/clone ROM sets]")
   index_main = 0;
   for index_main in range(len(romMainList_list)):
-    romObject = romMainList_list[index_main];
-    NARS.print_info("{ROM set} " + romObject.setName);
+    romObject = romMainList_list[index_main]
+    NARS.print_info("{ROM set} " + romObject.setName)
     for index in range(len(romObject.filenames)):
       # --- Check if file exists (maybe it does not exist for No-Intro lists)
-      sourceFullFilename = sourceDir + romObject.filenames[index];
-      fullROMFilename = os.path.isfile(sourceFullFilename);
-      haveFlag = 'H';
+      sourceFullFilename = sourceDir + romObject.filenames[index]
+      fullROMFilename = os.path.isfile(sourceFullFilename)
+      haveFlag = 'H'
       if not os.path.isfile(sourceFullFilename):
-        haveFlag = 'M';
-      excludeFlag = 'I';
+        haveFlag = 'M'
+      excludeFlag = 'I'
       if romObject.include[index] == 0:
-        excludeFlag = 'E';
+        excludeFlag = 'E'
 
       # --- Print
       NARS.print_info('  ' + '{:2d} '.format(romObject.scores[index]) + \
                       '[' + excludeFlag + haveFlag + '] ' + \
-                      romObject.filenames[index]);
+                      romObject.filenames[index])
 
 # ----------------------------------------------------------------------------
 # Update ROMs in destDir
