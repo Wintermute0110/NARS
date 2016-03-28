@@ -129,10 +129,28 @@ def print_vverb(print_str):
 def print_debug(print_str):
   pprint(Log.debug, print_str);
 
+# -----------------------------------------------------------------------------
+# Utility/miscellaneous functions
+# -----------------------------------------------------------------------------
+# Remove blank characters from string, at the beginning and the end.
+# If length of string is 0 after stripping then None is returned.
+def strip_string(string):
+  str = string.strip(' \n\r\t')
+  if len(str) < 1:
+    str = None
+
+  return str
 
 # -----------------------------------------------------------------------------
 # Filesystem low-level functions
 # -----------------------------------------------------------------------------
+# Adds a trailing '/' to directory names if not already present
+def sanitize_dir_name(dirName_str):
+  if dirName_str[-1] != '/':
+    dirName_str = dirName_str + '/'
+
+  return dirName_str
+
 # This function either succeeds or aborts the program. Check if file exists
 # before calling this.
 def delete_file(file_path, __prog_option_dry_run):
@@ -193,12 +211,6 @@ def have_dir_or_abort(dirName, infoStr):
   if not os.path.isdir(dirName):
     print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + infoStr + ' = ' + dirName)
     sys.exit(10)
-
-# Make sure directory name is OK.
-# a) dirName end with '/'. If not, add it.
-def sanitize_dir_name(dirName):
-  
-  return dirName
 
 # Returns:
 #  0  File copied, no error
