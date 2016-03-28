@@ -1048,34 +1048,59 @@ def do_list_filters():
 
 def do_list_nointro(filterName):
   "List of NoIntro XML file"
-  NARS.print_info('[Listing No-Intro XML DAT]');
-  NARS.print_info('Filter name: ' + filterName);
-  filter_config = get_Filter_Config(filterName);
-  filename = filter_config.NoIntro_XML;
+  NARS.print_info('\033[1m[Listing No-Intro XML DAT]\033[0m')
+  NARS.print_info('Filter name: ' + filterName)
+  filter_config = get_Filter_from_Config(filterName)
+  filename = filter_config.NoIntro_XML
+  if filename == None:
+    print('\033[31m[ERROR]\033[0m Filter "{0}", No-Intro DAT not configured!'.format(filterName))
+    sys.exit(10)
+
+  # Read No-Intro XML Parent-Clone DAT
   tree = NARS.XML_read_file_ElementTree(filename, "Parsing No-Intro XML DAT file ")
 
   # Child elements (NoIntro pclone XML)
-  # Create a list containing game name
-  num_games = 0;
-  root = tree.getroot();
-  gameList = [];
+  # Print game list as they appear in DAT file
+  num_games = 0
+  num_parents = 0
+  num_clones = 0
+  root = tree.getroot()
+
+  # ~~~ First pass to compute maximum string lengths and statistics ~~~
+  max_game_str_length = 0
   for game_EL in root:
-    if game_EL.tag == 'game':
-      num_games += 1;
-      # --- Game attributes
-      game_attrib = game_EL.attrib;
-      # print '<game> ' + game_attrib['name'];
-      gameList.append(game_attrib['name']);
+    if game_EL.tag != 'game':
+      continue
+    # --- Game attributes ---
+    if 'cloneof' in game_EL.attrib:
+      num_parents += 1
+    else:
+      num_clones += 1
+    if len(game_EL.attrib['name']) > max_game_str_length:
+      max_game_str_length = len(game_EL.attrib['name'])
 
-      # --- Iterate through the children of a game
-      # for game_child in game_EL:
-      #   if game_child.tag == 'description':
-      #     print '  <desc> ' + game_child.text;
+  # ~~~ Second pass print information ~~~
+  for game_EL in root:
+    if game_EL.tag != 'game':
+      continue
+    name = game_EL.attrib['name']
+    if 'cloneof' in game_EL.attrib:
+      game_kind = 'Clone'
+    else:
+      game_kind = 'Parent'
+    # ~~~ Tags ~~~
+    region_str = ''
+    for game_child in game_EL:
+      if game_child.tag == 'release':
+        if 'region' in game_child.attrib:
+          region_str = game_child.attrib['region']
+    NARS.print_info('{{game}} {0:<{ljustNum}}  {1:<6}  {2}'.format(\
+        game_EL.attrib['name'], game_kind, region_str, ljustNum=max_game_str_length))
 
-  # Print game list in alphabetical order
-  for game in sorted(gameList):
-    NARS.print_info('<game> ' + game);
-  NARS.print_info('Number of games in No-Intro XML DAT = ' + str(num_games));
+  NARS.print_info('[Report]')
+  NARS.print_info('Number of games   {:5d}'.format(num_games))
+  NARS.print_info('Number of parents {:5d}'.format(num_parents))
+  NARS.print_info('Number of clones  {:5d}'.format(num_clones))
 
 def do_check_nointro(filterName):
   """Checks ROMs in sourceDir against NoIntro XML file"""
@@ -1456,7 +1481,7 @@ parser.add_argument('command', \
    help="usage, list, list-nointro, check-nointro, list-tags, \
          check, copy, update \
          check-artwork, copy-artwork, update-artwork", nargs = 1)
-parser.add_argument("romSetName", help="ROM collection name", nargs='?')
+parser.add_argument("filterName", help="ROM collection name", nargs='?')
 args = parser.parse_args();
 
 # --- Optional arguments ---
@@ -1498,29 +1523,29 @@ if command == 'list-nointro' or command == 'check-nointro' or \
 # --- Read configuration file ---
 configuration = parse_File_Config()
 
-# --- Positional arguments that don't require a romSetName
+# --- Positional arguments that don't require a filterName
 if command == 'list':
   do_list_filters()
 elif command == 'list-nointro':
-  do_list_nointro(args.romSetName)
+  do_list_nointro(args.filterName)
 elif command == 'check-nointro':
-  do_check_nointro(args.romSetName)
+  do_check_nointro(args.filterName)
 elif command == 'list-tags':
-  do_taglist(args.romSetName)
+  do_taglist(args.filterName)
 elif command == 'check':
-  do_checkFilter(args.romSetName)
+  do_checkFilter(args.filterName)
 elif command == 'copy':
-  do_update(args.romSetName)
+  do_update(args.filterName)
 elif command == 'update':
   __prog_option_sync = 1
-  do_update(args.romSetName)
+  do_update(args.filterName)
 elif command == 'check-artwork':
-  do_checkArtwork(args.romSetName)
+  do_checkArtwork(args.filterName)
 elif command == 'copy-artwork':
-  do_update_artwork(args.romSetName)
+  do_update_artwork(args.filterName)
 elif command == 'update-artwork':
   __prog_option_sync = 1
-  do_update_artwork(args.romSetName)
+  do_update_artwork(args.filterName)
 else:
   print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
   sys.exit(1)

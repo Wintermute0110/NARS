@@ -627,7 +627,7 @@ def XML_read_file_ElementTree(filename, infoString):
     tree = ET.parse(filename)
   except IOError:
     print('\n')
-    print('\033[31m[ERROR]\033[0m cannot find file ' + filename)
+    print('\033[31m[ERROR]\033[0m Cannot find file "{0}"'.format(filename))
     sys.exit(10)
   print('done')
   sys.stdout.flush()
