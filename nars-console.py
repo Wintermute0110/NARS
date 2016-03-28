@@ -40,10 +40,26 @@ __prog_option_sync = 0;
 
 # --- Config file options global class (like a C struct) ---
 class ConfigFile:
-  pass
+  def __init__(self):
+    self.filter_dic = {}
 
 class ConfigFileFilter:
-  pass
+  def __init__(self):
+    # By default things are None, which means user didn't wrote them in config
+    # file OR no text was written ('', or blanks (spaces, tabs)).
+    self.name            = None  # str
+    self.shortname       = None  # str
+    self.sourceDir       = None
+    self.destDir         = None
+    self.NoIntro_XML     = None
+    self.fanartSourceDir = None
+    self.fanartDestDir   = None
+    self.thumbsSourceDir = None
+    self.thumbsDestDir   = None
+    self.filterUpTags    = None
+    self.filterDownTags  = None
+    self.includeTags     = None
+    self.excludeTags     = None
 
 # Global variable with the filter configuration 
 configuration = ConfigFile();
@@ -51,161 +67,124 @@ configuration = ConfigFile();
 # -----------------------------------------------------------------------------
 # Configuration file functions
 # -----------------------------------------------------------------------------
+parse_rjust = 16
+
+# Parses configuration file using ElementTree
+# Returns a ConfigFile object
 def parse_File_Config():
-  "Parses config file"
   NARS.print_info('[Parsing config file]');
   try:
-    tree = ET.parse(__config_configFileName);
+    tree = ET.parse(__config_configFileName)
   except IOError:
-    print_error('[ERROR] cannot find file ' + __config_configFileName);
-    sys.exit(10);
-  root = tree.getroot();
+    print_error('[ERROR] cannot find file ' + __config_configFileName)
+    sys.exit(10)
+  root = tree.getroot()
 
-  # --- Configuration object
-  configFile = ConfigFile();
-  configFile.filter_dic = {};
+  # --- Configuration object returned ---
+  configFile = ConfigFile()
 
-  # --- Parse filters
+  # --- Parse filters ---
   for root_child in root:
     if root_child.tag == 'collection':
-      NARS.print_debug('<collection>');
-      if 'name' in root_child.attrib:
-        filter_class = ConfigFileFilter();
-        
-        # -- Mandatory config file options
-        filter_class.name = root_child.attrib['name'];
-        filter_class.shortname = root_child.attrib['shortname'];
-        NARS.print_debug('Name           = ' + filter_class.name);
-        NARS.print_debug('Shortname      = ' + filter_class.shortname);
-        sourceDirFound = 0;
-        destDirFound = 0;
+      NARS.print_debug('{collection}')
+      # --- Mandatory attributes of <collection> tag ---
+      if 'name' not in root_child.attrib:
+        NARS.print_error('<collection> tag does not have name attribute')
+        sys.exit(10)
+      if 'shortname' not in root_child.attrib:
+        NARS.print_error('<collection> tag does not have shortname attribute')
+        sys.exit(10)
 
-        # - Optional config file options (deafault to empty string)
-        # NOTE: missing values from config file must be initialised to None
-        filter_class.fanartSourceDir = None;
-        filter_class.fanartDestDir = None;
-        filter_class.thumbsSourceDir = None;
-        filter_class.thumbsDestDir = None;
-        filter_class.filterUpTags = None;
-        filter_class.filterDownTags = None;
-        filter_class.includeTags = None;
-        filter_class.excludeTags = None;
-        filter_class.NoIntro_XML = None;
-        
-        # - Initialise variables for the ConfigFileFilter object
-        #   to avoid None objects later.
-        for filter_child in root_child:
-          if filter_child.tag == 'ROMsSource':
-            NARS.print_debug('ROMsSource     = ' + filter_child.text);
-            sourceDirFound = 1;
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.sourceDir = tempDir;
+      filter_class = ConfigFileFilter()
+      filter_class.name = NARS.strip_string(root_child.attrib['name'])
+      filter_class.shortname = NARS.strip_string(root_child.attrib['shortname'])
+      NARS.print_debug('Name'.ljust(parse_rjust) + filter_class.name)
+      NARS.print_debug('ShortName'.ljust(parse_rjust) + filter_class.shortname)
 
-          elif filter_child.tag == 'ROMsDest':
-            NARS.print_debug('ROMsDest       = ' + filter_child.text);
-            destDirFound = 1;
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.destDir = tempDir;
+      # Parse filter (<collection> tags)
+      # NOTE If tag is like this <tag></tag> then xml.text is None
+      for filter_child in root_child:
+        # ~~~ Directories ~~~
+        if filter_child.tag == 'ROMsSource':
+          string = NARS.strip_string(filter_child.text)
+          filter_class.sourceDir = NARS.sanitize_dir_name(string)
+          NARS.print_debug('ROMsSource'.ljust(parse_rjust) + filter_class.sourceDir)
+        elif filter_child.tag == 'ROMsDest':
+          string = NARS.strip_string(filter_child.text)
+          filter_class.destDir = NARS.sanitize_dir_name(string) 
+          NARS.print_debug('ROMsDest'.ljust(parse_rjust) + filter_class.destDir)          
+        elif filter_child.tag == 'FanartSource':
+          string = NARS.strip_string(filter_child.text)
+          filter_class.fanartSourceDir = NARS.sanitize_dir_name(string)
+          NARS.print_debug('FanartSource'.ljust(parse_rjust) + filter_class.fanartSourceDir)
+        elif filter_child.tag == 'FanartDest':
+          string = NARS.strip_string(filter_child.text)
+          filter_class.fanartDestDir = NARS.sanitize_dir_name(string)
+          NARS.print_debug('FanartDest'.ljust(parse_rjust) + filter_class.fanartDestDir)
+        elif filter_child.tag == 'ThumbsSource':
+          string = NARS.strip_string(filter_child.text)
+          filter_class.thumbsSourceDir = NARS.sanitize_dir_name(string)
+          NARS.print_debug('ThumbsSource'.ljust(parse_rjust) + filter_class.thumbsSourceDir)
+        elif filter_child.tag == 'ThumbsDest':
+          string = NARS.strip_string(filter_child.text)
+          filter_class.thumbsDestDir = NARS.sanitize_dir_name(string)
+          NARS.print_debug('ThumbsDest'.ljust(parse_rjust) + filter_class.thumbsDestDir)
+        # ~~~ Files ~~~
+        elif filter_child.tag == 'NoIntroDat':
+          filter_class.NoIntro_XML = NARS.strip_string(filter_child.text)
+          NARS.print_debug('NoIntroDat'.ljust(parse_rjust) + filter_class.NoIntro_XML)
+        # ~~~ Comma separated strings ~~~
+        elif filter_child.tag == 'filterUpTags':
+          # Trim comma-separated string
+          str = NARS.strip_string(filter_child.text)
+          # If string is None then continue
+          if str == None: continue
+          # Trim each list element separately
+          str_list = str.split(",")
+          for index, item in enumerate(str_list):
+            str_list[index] = NARS.strip_string(item)
+          filter_class.filterUpTags = str_list
+          NARS.print_debug('filterUpTags'.ljust(parse_rjust) + ', '.join(str_list))
+        elif filter_child.tag == 'filterDownTags':
+          str = NARS.strip_string(filter_child.text)
+          if str == None: continue
+          str_list = str.split(",")
+          for index, item in enumerate(str_list):
+            str_list[index] = NARS.strip_string(item)
+          filter_class.filterDownTags = str_list
+          NARS.print_debug('filterDownTags'.ljust(parse_rjust) + ', '.join(str_list))
+        elif filter_child.tag == 'includeTags':
+          str = NARS.strip_string(filter_child.text)
+          if str == None: continue
+          str_list = str.split(",")
+          for index, item in enumerate(str_list):
+            str_list[index] = NARS.strip_string(item)
+          filter_class.includeTags = str_list
+          NARS.print_debug('includeTags'.ljust(parse_rjust) + ', '.join(str_list))
+        elif filter_child.tag == 'excludeTags':
+          str = NARS.strip_string(filter_child.text)
+          if str == None: continue
+          str_list = str.split(",")
+          for index, item in enumerate(str_list):
+            str_list[index] = NARS.strip_string(item)
+          filter_class.excludeTags = str_list
+          NARS.print_debug('excludeTags'.ljust(parse_rjust) + ', '.join(str_list))
+        else:
+          print('[ERROR] Unrecognised tag {0} in configuration file'.format(filter_child.tag))
+          sys.exit(10)
 
-          elif filter_child.tag == 'FanartSource':
-            NARS.print_debug('FanartSource   = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.fanartSourceDir = tempDir;
+      # --- Aggregate filter to configuration main variable ---
+      configFile.filter_dic[filter_class.shortname] = filter_class
 
-          elif filter_child.tag == 'FanartDest':
-            NARS.print_debug('FanartDest     = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.fanartDestDir = tempDir;
+  return configFile
 
-          elif filter_child.tag == 'ThumbsSource':
-            NARS.print_debug('ThumbsSource   = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.thumbsSourceDir = tempDir;
-
-          elif filter_child.tag == 'ThumbsDest':
-            NARS.print_debug('ThumbsDest     = ' + filter_child.text);
-            tempDir = filter_child.text;
-            if tempDir[-1] != '/': tempDir = tempDir + '/';
-            filter_class.thumbsDestDir = tempDir;
-
-          elif filter_child.tag == 'filterUpTags' and \
-               filter_child.text is not None:
-            NARS.print_debug('filterUpTags   = ' + filter_child.text);
-            text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.filterUpTags = list;
-
-          elif filter_child.tag == 'filterDownTags' and \
-               filter_child.text is not None:
-            NARS.print_debug('filterDownTags = ' + filter_child.text);
-            text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.filterDownTags = list;
-
-          elif filter_child.tag == 'includeTags' and \
-               filter_child.text is not None:
-            NARS.print_debug('includeTags    = ' + filter_child.text);
-            text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.includeTags = list;
-
-          elif filter_child.tag == 'excludeTags' and \
-               filter_child.text is not None:
-            NARS.print_debug('excludeTags    = ' + filter_child.text);
-            text_string = filter_child.text;
-            list = text_string.split(",");
-            filter_class.excludeTags = list;
-
-          elif filter_child.tag == 'NoIntroDat' and \
-               filter_child.text is not None:
-            NARS.print_debug('NoIntroDat     = ' + filter_child.text);
-            filter_class.NoIntro_XML = filter_child.text;
-
-        # - Trim blank spaces on filter lists
-        if filter_class.filterUpTags is not None:
-          for index, item in enumerate(filter_class.filterUpTags):
-            filter_class.filterUpTags[index] = item.strip();
-
-        if filter_class.filterDownTags is not None:
-          for index, item in enumerate(filter_class.filterDownTags):
-            filter_class.filterDownTags[index] = item.strip();
-
-        if filter_class.includeTags is not None:
-          for index, item in enumerate(filter_class.includeTags):
-            filter_class.includeTags[index] = item.strip();
-
-        if filter_class.excludeTags is not None:
-          for index, item in enumerate(filter_class.excludeTags):
-            filter_class.excludeTags[index] = item.strip();
-
-        # - Check for errors in this filter
-        if not sourceDirFound:
-          NARS.print_error('source directory not found in config file');
-          sys.exit(10);
-        if not destDirFound:
-          NARS.print_error('destination directory not found in config file');
-          sys.exit(10);
-
-        # - Aggregate filter to configuration main variable
-        configFile.filter_dic[filter_class.shortname] = filter_class;
-      else:
-        NARS.print_error('<collection> tag does not have name attribute');
-        sys.exit(10);
-
-  return configFile;
-
-def get_Filter_Config(filterName):
+def get_Filter_from_Config(filterName):
   "Returns the configuration filter object given the filter name"
   for key in configuration.filter_dic:
     if key == filterName:
       return configuration.filter_dic[key]
 
-  NARS.print_error('get_Filter_Config >> filter "' + filterName + '" not found in configuration file')
+  print('[ERROR] get_Filter_from_Config >> filter "' + filterName + '" not found in configuration file')
   sys.exit(20)
 
 # -----------------------------------------------------------------------------
