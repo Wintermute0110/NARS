@@ -1,4 +1,4 @@
-<!-- Example configuration file for XBMC ROM utilities -->
+<!-- Example configuration file for NARS-mame -->
 <MAMEConfig>
 <General>
   <MAME_XML      >./DAT-mame/mame-0154.xml</MAME_XML>
@@ -8,13 +8,13 @@
 </General>
 
 <MAMEFilter name="main">
-  <ROMsSource>/home/xbmc/roms/roms-mame/</ROMsSource>
-  <ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-mame-main/</ROMsDest>
+  <ROMsSource>/home/kodi/roms/roms-mame/</ROMsSource>
+  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-mame-main/</ROMsDest>
 
-  <ThumbsSource>/home/xbmc/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
-  <FanartSource>/home/xbmc/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
-  <ThumbsDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
-  <FanartDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
+  <ThumbsSource>/home/kodi/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
+  <FanartSource>/home/kodi/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
+  <ThumbsDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
+  <FanartDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
 
   <!-- Main filter -->
   <!-- Main filter options:
@@ -81,14 +81,15 @@
        this option to expand game dates and not filter out games with invalid 
        dates (you probably do not want this, so comment it).
     -->
-  <YearsOpts>YearExpansion</YearsOpts>
+  <!-- <YearsOpts>YearExpansion</YearsOpts> -->
 </MAMEFilter>
 
 <MAMEFilter name="cps1">
-  <ROMsSource>/home/xbmc/roms/roms-mame/</ROMsSource>
-  <ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-mame-cps1/</ROMsDest>
+  <ROMsSource>/home/kodi/roms/roms-mame/</ROMsSource>
+  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-mame-cps1/</ROMsDest>
 
   <MainFilter>NoClones, NoSamples, NoMechanical</MainFilter>
   <Driver>cps1</Driver>
 </MAMEFilter>
+
 </MAMEConfig>

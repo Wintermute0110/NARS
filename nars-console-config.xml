@@ -1,16 +1,31 @@
-<!-- Example configuration file for XBMC ROM utilities -->
+<!-- Example configuration file for NARS-console -->
 <ROMcollections>
 
 <!-- Nintendo ROMS -->
-<collection name="SNES NoIntro" shortname="snes">
-  <NoIntroDat>/home/xbmc/roms/DATs/SNES Parent-Clone (20140608-202038).dat</NoIntroDat>
-  <ROMsSource>/home/xbmc/roms/roms-nintendo-snes/</ROMsSource>
-  <ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-nintendo-snes/</ROMsDest>
+<collection name="Nintendo SNES" shortname="snes">
+  <ROMsSource>/home/kodi/roms/roms-nintendo-snes/</ROMsSource>
+  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-nintendo-snes/</ROMsDest>
 
-  <ThumbsSource>/home/xbmc/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
-  <FanartSource>/home/xbmc/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
-  <ThumbsDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
-  <FanartDest  >/home/xbmc/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
+  <ThumbsSource>/home/kodi/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
+  <FanartSource>/home/kodi/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
+  <ThumbsDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
+  <FanartDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
+
+  <filterUpTags>Europe, World, Rev 1</filterUpTags>
+  <filterDownTags>Japan, Beta, Proto, France</filterDownTags>
+  <includeTags>Europe, USA</includeTags>
+  <excludeTags>Japan</excludeTags>
+</collection>
+
+<collection name="Nintendo SNES wit No-Intro DAT" shortname="snes_dat">
+  <NoIntroDat>/home/kodi/roms/DAT/SNES Parent-Clone (20140608).dat</NoIntroDat>
+  <ROMsSource>/home/kodi/roms/roms-nintendo-snes/</ROMsSource>
+  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-nintendo-snes/</ROMsDest>
+
+  <ThumbsSource>/home/kodi/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
+  <FanartSource>/home/kodi/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
+  <ThumbsDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
+  <FanartDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
 
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto, France</filterDownTags>
@@ -19,13 +34,14 @@
 </collection>
 
 <!-- Sega ROMS -->
-<collection name="Sega Mega Drive NoIntro" shortname="genesis">
-  <ROMsSource>/home/xbmc/roms/roms-sega-genesis/</ROMsSource>
-  <ROMsDest  >/home/xbmc/NUC-remote/ROMs/roms-sega-genesis/</ROMsDest>
+<collection name="Sega Mega Drive" shortname="genesis">
+  <ROMsSource>/home/kodi/roms/roms-sega-genesis/</ROMsSource>
+  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-sega-genesis/</ROMsDest>
 
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto</filterDownTags>
   <includeTags>Europe, USA</includeTags>
   <excludeTags>Japan</excludeTags>
 </collection>
+
 </ROMcollections>
