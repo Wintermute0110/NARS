@@ -26,19 +26,19 @@ import xml.etree.ElementTree as ET
 import NARS
 
 # --- Global variables ---
-__config_configFileName = 'nars-mame-config.xml';
-__config_logFileName = 'nars-mame-log.txt';
+__config_configFileName = 'nars-mame-config.xml'
+__config_logFileName    = 'nars-mame-log.txt'
 
 # --- Program options (from command line)
-__prog_option_log = 0;
-__prog_option_log_filename = __config_logFileName;
-__prog_option_dry_run = 0;
-__prog_option_clean_ROMs = 0;
-__prog_option_generate_NFO = 0;
-__prog_option_clean_NFO = 0;
-__prog_option_clean_ArtWork = 0;
-__prog_option_clean_CHD = 0;
-__prog_option_sync = 0;
+__prog_option_log = 0
+__prog_option_log_filename = __config_logFileName
+__prog_option_dry_run = 0
+__prog_option_clean_ROMs = 0
+__prog_option_generate_NFO = 0
+__prog_option_clean_NFO = 0
+__prog_option_clean_ArtWork = 0
+__prog_option_clean_CHD = 0
+__prog_option_sync = 0
 
 # -----------------------------------------------------------------------------
 # Configuration file stuff
@@ -81,9 +81,6 @@ class ConfigFileFilter:
     # Options
     self.year_YearExpansion_opt = 0
     self.MachineSwap = {}
-
-# Global variable with the filter configuration
-configuration = ConfigFile()
 
 # Parses configuration file using ElementTree
 # Returns a ConfigFile object
@@ -158,44 +155,44 @@ def parse_File_Config():
           NARS.print_debug(' SamplesDest = ' + filter_child.text)
           filter_class.samplesDestDir = fix_directory_name(filter_child.text)
         elif filter_child.tag == 'Include':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Include = ' + filter_child.text)
             filter_class.includeFilter = trim_list(filter_child.text.split(","))
         elif filter_child.tag == 'Exclude':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Exclude = ' + filter_child.text)
             filter_class.excludeFilter = trim_list(filter_child.text.split(","))
         elif filter_child.tag == 'Driver':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Driver = ' + filter_child.text)
             filter_class.driverFilter = filter_child.text
         elif filter_child.tag == 'Categories':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Categories = ' + filter_child.text)
             filter_class.categoriesFilter = filter_child.text
         elif filter_child.tag == 'Orientation':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Orientation = ' + filter_child.text)
             filter_class.orientationFilter = filter_child.text
         elif filter_child.tag == 'Controls':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Controls = ' + filter_child.text)
             filter_class.controlsFilter = filter_child.text
         elif filter_child.tag == 'Buttons':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Buttons = ' + filter_child.text)
             filter_class.buttons_exp = filter_child.text
         elif filter_child.tag == 'Players':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Players = ' + filter_child.text)
             filter_class.players_exp = filter_child.text
         elif filter_child.tag == 'Years':
-          if filter_child.text != None:
+          if filter_child.text is not None:
             NARS.print_debug(' Years = ' + filter_child.text)
             filter_class.year_exp = filter_child.text
         elif filter_child.tag == 'YearsOpts':
-          if filter_child.text != None:
-            NARS.print_debug(' YearsOpts = ' + filter_child.text);
+          if filter_child.text is not None:
+            NARS.print_debug(' YearsOpts = ' + filter_child.text)
             yearOpts_list = trim_list(filter_child.text.split(","))
             for option in yearOpts_list:
               # Only one option supported at the moment
@@ -316,11 +313,11 @@ def fix_directory_name(dirName_str):
 
 def add_to_histogram(key, hist_dic):
   if key in hist_dic:
-    hist_dic[key] += 1;
+    hist_dic[key] += 1
   else:
-    hist_dic[key] = 1;
+    hist_dic[key] = 1
 
-  return hist_dic;
+  return hist_dic
 
 # Removes trailing '.c' or '.cpp' from string
 #
@@ -334,56 +331,55 @@ def trim_driver_string(driver_str):
 
   # If driver name ends in .c, for example cps1.c, then trim .c
   if driver_str[-2:] == '.c':
-    old_driver_str = driver_str;
+    old_driver_str = driver_str
     driver_str = old_driver_str[:-2]
   # If driver name ends in .cpp, for example cps2.cpp, then trim .cpp
   elif driver_str[-4:] == '.cpp':
-    old_driver_str = driver_str;
+    old_driver_str = driver_str
     driver_str = old_driver_str[:-4]
 
   return driver_str
 
 def trim_list(input_list):
   for index, item in enumerate(input_list):
-    input_list[index] = item.strip();
+    input_list[index] = item.strip()
 
-  return input_list;
+  return input_list
 
 # Wildcard expansion range
-min_year = 1970;
-max_year = 2012;
+min_year = 1970
+max_year = 2016
 def trim_year_string(raw_year_text):
-  year_text = raw_year_text;
+  year_text = raw_year_text
 
   # --- Remove quotation marks at the end for some games
   if len(year_text) == 5 and year_text[4] == '?':
     # About array slicing, see this page. Does not work like C!
     # http://stackoverflow.com/questions/509211/pythons-slice-notation
-    year_text = year_text[0:4];
+    year_text = year_text[0:4]
 
   # --- Expand wildcards to numerical lists. Currently there are 6 cases
   # Basic expansion: 197?, 198?, 199?, 200?
   if year_text == '197?':
-    year_list = [str(x) for x in range(1970, 1979)];
+    year_list = [str(x) for x in range(1970, 1979)]
   elif year_text == '198?':
-    year_list = [str(x) for x in range(1980, 1989)];
+    year_list = [str(x) for x in range(1980, 1989)]
   elif year_text == '199?':
-    year_list = [str(x) for x in range(1990, 1999)];
+    year_list = [str(x) for x in range(1990, 1999)]
   elif year_text == '200?':
-    year_list = [str(x) for x in range(2000, 2009)];
+    year_list = [str(x) for x in range(2000, 2009)]
   # Full expansion: ????, 19??, 20??
   elif year_text == '19??':
-    year_list = [str(x) for x in range(min_year, 1999)];
+    year_list = [str(x) for x in range(min_year, 1999)]
   elif year_text == '20??':
-    year_list = [str(x) for x in range(2000, max_year)];
+    year_list = [str(x) for x in range(2000, max_year)]
   elif year_text == '????':
-    year_list = [str(x) for x in range(min_year, max_year)];
+    year_list = [str(x) for x in range(min_year, max_year)]
   # No expansion
   else:
-    year_list = [];
-    year_list.append(year_text);
+    year_list = [year_text]
 
-  return year_list;
+  return year_list
 
 # Game year information:
 # INPUT: takes a string as input
@@ -394,20 +390,20 @@ def trim_year_string(raw_year_text):
 def get_game_year_information(year_srt):
   # --- Remove quotation marks at the end for some games
   if len(year_srt) == 5 and year_srt[4] == '?':
-    year_srt = year_srt[0:4];
+    year_srt = year_srt[0:4]
 
   # --- Get game information
-  game_info = 1;
+  game_info = 1
   if year_srt == '197?' or year_srt == '198?' or \
      year_srt == '199?' or year_srt == '200?' or \
      year_srt == '19??' or year_srt == '20??' or \
      year_srt == '????':
-    game_info = 2;
+    game_info = 2
   elif not year_srt.isdigit():
-    print_error('Unknown MAME year string "' + year_srt + '"');
-    sys.exit(10);
+    print_error('Unknown MAME year string "' + year_srt + '"')
+    sys.exit(10)
 
-  return game_info;
+  return game_info
 
 # Splits string into words
 # See http://stackoverflow.com/questions/15929233/writing-a-tokenizer-in-python
@@ -417,21 +413,21 @@ def tokzr_WORD(txt):
 
 def fix_category_name(main_category, category):
   # Rename some categories
-  final_category = main_category;
+  final_category = main_category
   if category == 'System / BIOS':
-    final_category = 'BIOS';
+    final_category = 'BIOS'
   elif main_category == 'Electromechanical - PinMAME':
-    final_category = 'PinMAME';
+    final_category = 'PinMAME'
   elif main_category == 'Ball & Paddle':
-    final_category = 'Ball_and_Paddle';
+    final_category = 'Ball_and_Paddle'
   elif main_category == 'Misc.':
-    final_category = 'Misc';
+    final_category = 'Misc'
   elif main_category == 'Mini-Games':
-    final_category = 'Mini_Games';
+    final_category = 'Mini_Games'
   elif main_category == 'Fruit Machines':
-    final_category = 'Fruit_Machines';
+    final_category = 'Fruit_Machines'
   elif main_category == 'Not Classified':
-    final_category = 'Not_Classified';
+    final_category = 'Not_Classified'
 
   # New categories from AntoPISA extended catver.ini (after MAME/MESS merge)
   # If there are several words, all of them starting with upper case and
@@ -448,39 +444,39 @@ def fix_category_name(main_category, category):
   # If there is *Mature* in any category or subcategory, then
   # the game belongs to the Mature category
   if category.find('*Mature*') >= 0 or category.find('* Mature *') >= 0:
-    final_category = 'Mature';
+    final_category = 'Mature'
 
   # Regular expression to catch ilegal characters in categories
   # that may make the categories filter parser to fail.
-  result = re.search('[^\w_]+', final_category);
+  result = re.search('[^\w_]+', final_category)
   if result is not None:
-    NARS.print_error('Ilegal character found in category "' + final_category + '"');
-    sys.exit(10);
+    NARS.print_error('Ilegal character found in category "' + final_category + '"')
+    sys.exit(10)
 
   return final_category
 
 # rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
 def create_copy_list(mame_filtered_dic, rom_main_list):
-  "With list of filtered ROMs and list of source ROMs, create list of files to be copied"
+  """With list of filtered ROMs and list of source ROMs, create list of files to be copied"""
 
-  NARS.print_info('[Creating list of ROMs to be copied/updated]');
-  copy_list = [];
-  num_added_roms = 0;
+  NARS.print_info('[Creating list of ROMs to be copied/updated]')
+  copy_list = []
+  num_added_roms = 0
   if len(rom_main_list) == 0:
-    print_info('WARNING: Not found ANY ROM in sourceDir');
-    print_info('Check your configuration file');
+    print_info('WARNING: Not found ANY ROM in sourceDir')
+    print_info('Check your configuration file')
   else:
     for key_rom_name in mame_filtered_dic:
       # If the ROM is in the mame filtered list, then add to the copy list
       if key_rom_name in rom_main_list:
-        copy_list.append(key_rom_name);
-        num_added_roms += 1;
-        NARS.print_verb('Added ROM ' + key_rom_name);
+        copy_list.append(key_rom_name)
+        num_added_roms += 1
+        NARS.print_verb('Added ROM ' + key_rom_name)
       else:
-        NARS.print_info('Missing ROM ' + key_rom_name);
-  NARS.print_info('Added ' + str(num_added_roms) + ' ROMs');
+        NARS.print_info('Missing ROM ' + key_rom_name)
+  NARS.print_info('Added ' + str(num_added_roms) + ' ROMs')
 
-  return copy_list;
+  return copy_list
 
 # Creates a dictionary of CHDs to be copied. Diccionary key if the machine
 # name. Dictionary value is a list of the CHDs belonging to that machine. One
@@ -488,46 +484,46 @@ def create_copy_list(mame_filtered_dic, rom_main_list):
 # machine names.
 #
 # CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
-__debug_CHD_list = 1;
+__debug_CHD_list = 1
 def create_copy_CHD_dic(mame_filtered_dic):
-  "With list of filtered ROMs and, create list of CHDs to be copied"
+  """With list of filtered ROMs and, create list of CHDs to be copied"""
 
-  NARS.print_info('[Creating list of CHDs to be copied/updated]');
-  CHD_dic = {};
-  num_added_CHDs = 0;
+  NARS.print_info('[Creating list of CHDs to be copied/updated]')
+  CHD_dic = {}
+  num_added_CHDs = 0
   for key in sorted(mame_filtered_dic):
     if __debug_CHD_list:
       print('DEBUG: Machine {0}'.format(key))
-    romObject = mame_filtered_dic[key];
+    romObject = mame_filtered_dic[key]
     # CHD dependencies
     if hasattr(romObject, 'CHD_depends') and (romObject.CHD_depends):
-      CHD_list = [];
+      CHD_list = []
       for CHD_depend in romObject.CHD_depends:
         CHD_list.append(CHD_depend)
         num_added_CHDs += 1
         NARS.print_info('Game ' + key.ljust(8) + ' depends on CHD    ' + \
-                        CHD_depend.ljust(30) + ' - Adding  to list');
+                        CHD_depend.ljust(30) + ' - Adding  to list')
       CHD_dic[key] = CHD_list      
-  NARS.print_info('Added ' + str(num_added_CHDs) + ' CHDs');
+  NARS.print_info('Added ' + str(num_added_CHDs) + ' CHDs')
   if __debug_CHD_list:
     print('DEBUG: len(CHD_dic) = {0}'.format(len(CHD_dic)))
 
-  return CHD_dic;
+  return CHD_dic
 
 # This function should be renamed and put into NARS module.
 # This function should be refactored. For a file list there is no need to
 # use the Machine class!
 def get_ROM_main_list(sourceDir):
-  "Reads sourceDir and creates a dictionary of ROMs"
-  __debug_get_ROM_main_list = 0;
+  """Reads sourceDir and creates a dictionary of ROMs"""
+  __debug_get_ROM_main_list = 0
 
   # --- Parse sourceDir ROM list and create main ROM list
-  NARS.print_info('[Reading ROMs in source directory]');
-  romMainList_dict = {};
+  NARS.print_info('[Reading ROMs in source directory]')
+  romMainList_dict = {}
   for file in os.listdir(sourceDir):
     if file.endswith(".zip"):
-      thisFileName, thisFileExtension = os.path.splitext(file);
-      romFileName_temp = thisFileName + '.zip';
+      thisFileName, thisFileExtension = os.path.splitext(file)
+      romFileName_temp = thisFileName + '.zip'
       romObject = Machine()
       romObject.name = thisFileName
       romObject.filename = file
@@ -536,10 +532,10 @@ def get_ROM_main_list(sourceDir):
         print(romObject.name)
         print(romObject.filename)
 
-  return romMainList_dict;
+  return romMainList_dict
 
 def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir, __prog_option_dry_run):
-  "Generates game information files (NFO) in destDir"
+  """Generates game information files (NFO) in destDir"""
 
   NARS.print_info('[Generating NFO files]')
   if __prog_option_dry_run:
@@ -552,10 +548,10 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir, __prog_opt
     # DEBUG: dump romObj
     # print dir(romObj)
     NFO_filename = rom_name + '.nfo'
-    NFO_full_filename =  destDir + NFO_filename;
+    NFO_full_filename =  destDir + NFO_filename
 
     # --- XML structure
-    tree_output = ET.ElementTree();
+    tree_output = ET.ElementTree()
     root_output = a = ET.Element('game')
     tree_output._setroot(root_output)
 
@@ -575,7 +571,7 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir, __prog_opt
       sub_element.text = romObj.year
     else:
       print('ROM has no year tag ' + rom_name)
-      sub_element.text = '????';
+      sub_element.text = '????'
 
     # <publisher></publisher>
     sub_element = ET.SubElement(root_output, 'publisher')
@@ -596,20 +592,20 @@ def generate_MAME_NFO_files(rom_copy_dic, mame_filtered_dic, destDir, __prog_opt
     # <plot></plot>
     # Probably need to merge information from history.dat or mameinfo.dat
     # Now, just add some technical information about the game.
-    plot_str = 'Name = ' + romObj.name + ' | Driver = ' + romObj.sourcefile;
+    plot_str = 'Name = ' + romObj.name + ' | Driver = ' + romObj.sourcefile
     if hasattr(romObj, 'buttons'):
       plot_str += ' | Buttons = {:d}'.format(romObj.buttons)
     if hasattr(romObj, 'players'):
       plot_str += ' | Players = {:d}'.format(romObj.players)
     if hasattr(romObj, 'control_type'):
-      plot_str += ' | Controls = ' + str(romObj.control_type);
-    sub_element = ET.SubElement(root_output, 'plot');
-    sub_element.text = plot_str;
+      plot_str += ' | Controls = ' + str(romObj.control_type)
+    sub_element = ET.SubElement(root_output, 'plot')
+    sub_element.text = plot_str
 
     # --- Write output file (don't use miniDOM, is sloow)
     # See http://norwied.wordpress.com/2013/08/27/307/
-    NARS.print_verb('Writing ' + NFO_full_filename);
-    NARS.indent_ElementTree_XML(root_output);
+    NARS.print_verb('Writing ' + NFO_full_filename)
+    NARS.indent_ElementTree_XML(root_output)
     tree_output.write(NFO_full_filename, xml_declaration=True, encoding='utf-8', method="xml")
     num_NFO_files += 1
 
@@ -625,10 +621,10 @@ def filter_do_Default(mame_xml_dic):
   mame_filtered_dic = {}
   filtered_out_games = 0
   for key in mame_xml_dic:
-    romObject = mame_xml_dic[key];
+    romObject = mame_xml_dic[key]
     if romObject.isDevice:
       filtered_out_games += 1
-      NARS.print_vverb('FILTERED ' + key);
+      NARS.print_vverb('FILTERED ' + key)
       continue
     mame_filtered_dic[key] = mame_xml_dic[key]
     NARS.print_debug('Included ' + key)
@@ -676,7 +672,7 @@ def filter_main_filter(machines_dic, filter_config, filterControl):
     print('filter_config = [' + ', '.join(filter_str_list) + ']')
 
   # ~~~ Do nothing if user did not wrote tag or tag is empty ~~~
-  if filter_str_list == None:
+  if filter_str_list is None:
     NARS.print_info('Doing nothing')
     return machines_dic
 
@@ -732,7 +728,7 @@ def filter_do_Driver_tag(mame_xml_dic, filter_config):
         filtered_out_games += 1
         NARS.print_vverb('FILTERED ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list))
       else:
-        machines_filtered_dic[key] = mame_xml_dic[key];
+        machines_filtered_dic[key] = mame_xml_dic[key]
         NARS.print_debug('Included ' + key.ljust(8) + ' driver ' + ', '.join(driver_name_list))
       # --- DEBUG info ---
       if __debug_apply_MAME_filters_Driver_tag:
@@ -770,7 +766,7 @@ def filter_do_Categories_tag(mame_xml_dic, filter_config):
         filtered_out_games += 1
         NARS.print_vverb('FILTERED ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list))
       else:
-        machines_filtered_dic[key] = mame_xml_dic[key];
+        machines_filtered_dic[key] = mame_xml_dic[key]
         NARS.print_debug('Included ' + key.ljust(8) + ' category ' + ', '.join(categories_type_list))
       # --- DEBUG info
       if __debug_apply_MAME_filters_Category_tag:
@@ -793,7 +789,7 @@ def filter_do_Orientation_tag(mame_xml_dic, filter_config):
   if filter_config.orientationFilter is not None:
     orientation_filter_expression = filter_config.orientationFilter
     machines_filtered_dic = {}
-    filtered_out_games = 0;
+    filtered_out_games = 0
     NARS.print_info('Filter expression "' + orientation_filter_expression + '"')
     for key in sorted(mame_xml_dic):
       romObject = mame_xml_dic[key]
@@ -829,9 +825,9 @@ def filter_do_Controls_tag(mame_xml_dic, filter_config):
   NARS.print_info('<Controls filter>')
 
   if filter_config.controlsFilter is not None:
-    controls_type_filter_expression = filter_config.controlsFilter;
-    filtered_out_games = 0;
-    machines_filtered_dic = {};
+    controls_type_filter_expression = filter_config.controlsFilter
+    filtered_out_games = 0
+    machines_filtered_dic = {}
     NARS.print_info('Filter expression "' + controls_type_filter_expression + '"')
     for key in sorted(mame_xml_dic):
       # --- Some games may have two controls, so controls_type_list is a list
@@ -845,7 +841,7 @@ def filter_do_Controls_tag(mame_xml_dic, filter_config):
         filtered_out_games += 1
         NARS.print_vverb('FILTERED ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list))
       else:
-        machines_filtered_dic[key] = mame_xml_dic[key];
+        machines_filtered_dic[key] = mame_xml_dic[key]
         NARS.print_debug('Included ' + key.ljust(8) + ' controls ' + ', '.join(controls_type_list))
       # --- DEBUG info ---
       if __debug_apply_MAME_filters_Controls_tag:
@@ -867,9 +863,9 @@ def filter_do_Buttons_tag(mame_xml_dic, filter_config):
   NARS.print_info('<Buttons filter>')
 
   if filter_config.buttons_exp is not None:
-    button_filter_expression = filter_config.buttons_exp;
-    machines_filtered_dic = {};
-    filtered_out_games = 0;
+    button_filter_expression = filter_config.buttons_exp
+    machines_filtered_dic = {}
+    filtered_out_games = 0
     NARS.print_info('Filter expression "' + button_filter_expression + '"')
     for key in mame_xml_dic:
       romObject = mame_xml_dic[key]
@@ -882,11 +878,11 @@ def filter_do_Buttons_tag(mame_xml_dic, filter_config):
 
       # If not all items are true, the game is NOT copied (filtered)
       if not boolean_result:
-        filtered_out_games += 1;
+        filtered_out_games += 1
         NARS.print_vverb('FILTERED ' + key + ' buttons ' + buttons_str)
       else:
-        machines_filtered_dic[key] = mame_xml_dic[key];
-        NARS.print_debug('Included ' + key + ' buttons ' + buttons_str);
+        machines_filtered_dic[key] = mame_xml_dic[key]
+        NARS.print_debug('Included ' + key + ' buttons ' + buttons_str)
     NARS.print_info(' '.ljust(mainFilter_str_length) + \
                     'Removed  {:5d} | '.format(filtered_out_games) + \
                     'Remaining  {:5d}'.format(len(machines_filtered_dic)))
@@ -901,9 +897,9 @@ def filter_do_Players_tag(mame_xml_dic, filter_config):
   NARS.print_info('<Players filter>')
 
   if filter_config.players_exp is not None:
-    players_filter_expression = filter_config.players_exp;
+    players_filter_expression = filter_config.players_exp
     machines_filtered_dic = {}
-    filtered_out_games = 0;
+    filtered_out_games = 0
     NARS.print_info('Filter expression "' + players_filter_expression + '"')
     for key in mame_xml_dic:
       romObject = mame_xml_dic[key]
@@ -916,11 +912,11 @@ def filter_do_Players_tag(mame_xml_dic, filter_config):
 
       # If not all items are true, the game is NOT copied (filtered)
       if not boolean_result:
-        filtered_out_games += 1;
+        filtered_out_games += 1
         NARS.print_vverb('FILTERED ' + key + ' players ' + players_str)
       else:
-        machines_filtered_dic[key] = mame_xml_dic[key];
-        NARS.print_debug('Included ' + key + ' players ' + players_str);
+        machines_filtered_dic[key] = mame_xml_dic[key]
+        NARS.print_debug('Included ' + key + ' players ' + players_str)
     NARS.print_info(' '.ljust(mainFilter_str_length) + \
                     'Removed  {:5d} | '.format(filtered_out_games) + \
                     'Remaining  {:5d}'.format(len(mame_filtered_dic)))
@@ -963,33 +959,33 @@ def filter_do_Years_tag(mame_xml_dic, filter_config):
           sys.exit(10)
         year = int(year_list[0])
         if __debug_apply_MAME_filters_years_tag:
-          print('[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
+          print('[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) +
                 ' / Filter = "' + year_filter_expression + '"')
-        boolean_result = eval(year_filter_expression, globals(), locals());
+        boolean_result = eval(year_filter_expression, globals(), locals())
         # If not all items are true, the game is NOT copied (filtered)
         if not boolean_result:
-          filtered_out_games += 1;
-          NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year));
+          filtered_out_games += 1
+          NARS.print_vverb('FILTERED ' + key.ljust(8) + ' year ' + str(year))
         else:
-          machines_filtered_dic[key] = mame_xml_dic[key];
-          NARS.print_debug('Included ' + key.ljust(8) + ' year ' + str(year));
+          machines_filtered_dic[key] = mame_xml_dic[key]
+          NARS.print_debug('Included ' + key.ljust(8) + ' year ' + str(year))
 
       # Game needs expansion. If user activated this option expand wildcars and
       # then do filtering. If option not activated, discard game
       elif game_info == 2:
         if year_YearExpansion:
-          year_list = trim_year_string(year_srt);
+          year_list = trim_year_string(year_srt)
           if len(year_list) < 2:
             print('Logical error filtering year (expanded year)')
             sys.exit(10)
-          boolean_list = [];
+          boolean_list = []
           for year_str in year_list:
-            year = int(year_str);
+            year = int(year_str)
             if __debug_apply_MAME_filters_years_tag:
-              print('[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) + \
+              print('[DEBUG] Game ' + key.ljust(8) + ' / Year value = ' + str(year) +
                     ' / Filter = "' + year_filter_expression + '"')
             boolean_result = eval(year_filter_expression, globals(), locals())
-            boolean_list.append(boolean_result);
+            boolean_list.append(boolean_result)
           # Knowing the boolean results for the wildcard expansion, check if game
           # should be included or not.
           if any(boolean_list):
@@ -1021,7 +1017,7 @@ def filter_do_substitute_machines(mame_xml_dic):
 # Traverse the list of filtered games, and check if they have dependencies. If
 # so, add the dependencies to the filtered list.
 def filter_resolve_device_and_BIOS_dependencies(mame_xml_dic):
-  NARS.print_info('<Adding ROM dependencies (BIOS and devices with ROMs)>');
+  NARS.print_info('<Adding ROM dependencies (BIOS and devices with ROMs)>')
   # NOTE: dictionaries cannot change size during iteration. Create auxiliary list.
   dependencies_ROM_list = {}
   for key in sorted(mame_xml_dic):
@@ -1031,12 +1027,12 @@ def filter_resolve_device_and_BIOS_dependencies(mame_xml_dic):
       for BIOS_depend in romObject.BIOS_depends_list:
         if BIOS_depend not in mame_xml_dic:
           NARS.print_error('[ERROR] ROM name not found in mame_xml_dic')
-          sys.exit(10);
+          sys.exit(10)
         # Get ROM object from main, unfiltered dictionary
-        BIOS_romObj = mame_xml_dic[BIOS_depend];
+        BIOS_romObj = mame_xml_dic[BIOS_depend]
         # Only add dependency if not already in filtered list
         if BIOS_depend not in dependencies_ROM_list:
-          dependencies_ROM_list[BIOS_depend] = BIOS_romObj;
+          dependencies_ROM_list[BIOS_depend] = BIOS_romObj
           NARS.print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
                           BIOS_depend.ljust(11) + ' - Adding  to list')
         else:
@@ -1048,12 +1044,12 @@ def filter_resolve_device_and_BIOS_dependencies(mame_xml_dic):
       for device_depend in romObject.device_depends_list:
         if device_depend not in mame_xml_dic:
           NARS.print_error('[ERROR] ROM name not found in mame_xml_dic')
-          sys.exit(10);
+          sys.exit(10)
         # Get ROM object from main, unfiltered dictionary
-        device_romObj = mame_xml_dic[device_depend];
+        device_romObj = mame_xml_dic[device_depend]
         # Only add dependency if not already in filtered list
         if device_depend not in dependencies_ROM_list:
-          dependencies_ROM_list[device_depend] = device_romObj;
+          dependencies_ROM_list[device_depend] = device_romObj
           NARS.print_info('Game ' + key.ljust(8) + ' depends on device ' + \
                           device_depend.ljust(11) + ' - Adding  to list')
         else:
@@ -1068,8 +1064,8 @@ def filter_resolve_device_and_BIOS_dependencies(mame_xml_dic):
 
 # Main filtering function. Apply filters to main parent/clone dictionary.
 def filter_MAME_machines(mame_xml_dic, filter_config):
-  NARS.print_info('[Applying MAME filters]');
-  NARS.print_info('NOTE: -vv if you want to see filters in action');
+  NARS.print_info('[Applying MAME filters]')
+  NARS.print_info('NOTE: -vv if you want to see filters in action')
   
   # ~~~~~ Main filter: Include and Exclude ~~~~~~
   NARS.print_info('<Default filter>')
@@ -1101,68 +1097,67 @@ def filter_MAME_machines(mame_xml_dic, filter_config):
 # Parse Catver.ini and MAME reduced XML file
 # -----------------------------------------------------------------------------
 def parse_catver_ini():
-  "Parses Catver.ini and returns a ..."
+  """Parses Catver.ini and returns a ..."""
 
-  # --- Parse Catver.ini
-  # --- Create a histogram with the categories
-  NARS.print_info('[Parsing Catver.ini]');
-  cat_filename = configuration.Catver;
-  NARS.print_verb(' Opening ' + cat_filename);
-  final_categories_dic = {};
-  f = open(cat_filename, 'r');
+  # --- Parse Catver.ini and create a histogram with the categories ---
+  NARS.print_info('[Parsing Catver.ini]')
+  cat_filename = configuration.Catver
+  NARS.print_verb(' Opening ' + cat_filename)
+  final_categories_dic = {}
+  f = open(cat_filename, 'r')
   # 0 -> Looking for '[Category]' tag
   # 1 -> Reading categories
   # 2 -> Categories finished. STOP
-  read_status = 0;
+  read_status = 0
   for cat_line in f:
-    stripped_line = cat_line.strip();
+    stripped_line = cat_line.strip()
     if read_status == 0:
       if stripped_line == '[Category]':
-        read_status = 1;
+        read_status = 1
     elif read_status == 1:
-      line_list = stripped_line.split("=");
+      line_list = stripped_line.split("=")
       if len(line_list) == 1:
-        read_status = 2;
-        continue;
+        read_status = 2
+        continue
       else:
-        game_name = line_list[0];
-        category = line_list[1];
-        # --- Sub-categories  
-        sub_categories = category.split("/");
-        main_category = sub_categories[0].strip();
-        second_category = sub_categories[0].strip();
+        game_name = line_list[0]
+        category = line_list[1]
+        # --- Sub-categories ---
+        sub_categories = category.split("/")
+        main_category = sub_categories[0].strip()
+        second_category = sub_categories[0].strip()
 
         # NOTE: Only use the main category for filtering.
-        final_category = fix_category_name(main_category, category);
+        final_category = fix_category_name(main_category, category)
 
         # - Create final categories dictionary
-        final_categories_dic[game_name] = final_category;
+        final_categories_dic[game_name] = final_category
     elif read_status == 2:
-      break;
+      break
     else:
-      print_error('Unknown read_status FSM value');
-      sys.exit(10);
-  f.close();
+      print_error('Unknown read_status FSM value')
+      sys.exit(10)
+  f.close()
 
-  return final_categories_dic;
+  return final_categories_dic
 
 # Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
 # do_update_artwork()), but not in the do_list_*() functions.
 #
 # Returns dictionary machine_dict with key the Machine name and value a Machine object.
 def parse_MAME_merged_XML():
-  "Parses a MAME merged XML and creates a parent/clone list"
+  """Parses a MAME merged XML and creates a parent/clone list"""
 
-  filename = configuration.MergedInfo_XML;
-  NARS.print_info('[Parsing MAME merged XML]');
+  filename = configuration.MergedInfo_XML
+  NARS.print_info('[Parsing MAME merged XML]')
   tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
 
   # --- Raw list: literal information from the XML
-  machine_dict = {};
-  root = tree.getroot();
-  num_games = 0;
-  num_parents = 0;
-  num_clones = 0;
+  machine_dict = {}
+  root = tree.getroot()
+  num_games = 0
+  num_parents = 0
+  num_clones = 0
   for game_EL in root:
     # Skip non machine tags, if any
     if game_EL.tag != 'machine':
@@ -1206,6 +1201,7 @@ def parse_MAME_merged_XML():
     if 'sampleof' in game_attrib:
       machineObj.sampleof = game_attrib['sampleof']
       machineObj.hasSamples = True
+
     # --- Game driver ---
     if 'sourcefile' in game_attrib:
       # Remove the trailing '.c' or '.cpp' from driver name
@@ -1267,9 +1263,9 @@ def parse_MAME_merged_XML():
         for control in child_game:
           if control.tag == 'control':
             if 'type' in control.attrib:
-              machineObj.control_type_list.append(control.attrib['type'].title());
+              machineObj.control_type_list.append(control.attrib['type'].title())
         if len(machineObj.control_type_list) < 1:
-          machineObj.control_type_list.append('ButtonsOnly');
+          machineObj.control_type_list.append('ButtonsOnly')
 
       # --- <NARS> custom tag (attributes and sub-tags) ---
       elif child_game.tag == 'NARS':
@@ -1307,13 +1303,13 @@ def parse_MAME_merged_XML():
             machineObj.CHD_depends_list.append(NARS_tag.text)
 
     # --- Add new game to the list ---
-    machine_dict[game_attrib['name']] = machineObj;
+    machine_dict[game_attrib['name']] = machineObj
 
-  NARS.print_info('Number of machines  ' + str(num_games));
-  NARS.print_info('Number of parents   ' + str(num_parents));
-  NARS.print_info('Number of clones    ' + str(num_clones));
+  NARS.print_info('Number of machines  ' + str(num_games))
+  NARS.print_info('Number of parents   ' + str(num_parents))
+  NARS.print_info('Number of clones    ' + str(num_clones))
 
-  return machine_dict;
+  return machine_dict
 
 # -----------------------------------------------------------------------------
 # MAME XML is written by this file:
@@ -1563,23 +1559,23 @@ def parse_MAME_merged_XML():
 #  <CHD>chd1</CHD>
 #  <CHD>chd2</CHD>
 # </NARS>
-__debug_do_reduce_XML_dependencies = 0;
+__debug_do_reduce_XML_dependencies = 0
 def do_reduce_XML():
   """Strip out unused MAME XML information, and add ROM/CHD dependencies"""
 
-  NARS.print_info('[Reducing MAME XML machine database]');
-  input_filename = configuration.MAME_XML;
-  output_filename = configuration.MAME_XML_redux;
+  NARS.print_info('[Reducing MAME XML machine database]')
+  input_filename = configuration.MAME_XML
+  output_filename = configuration.MAME_XML_redux
 
   # --- Build XML output file ---
-  tree_output = ET.ElementTree();
-  root_output = ET.Element('mame');
-  tree_output._setroot(root_output);
+  tree_output = ET.ElementTree()
+  root_output = ET.Element('mame')
+  tree_output._setroot(root_output)
 
   # --- Read MAME XML input file ---
-  NARS.print_info('Reading MAME XML game database...');
-  NARS.print_info('NOTE: this will take a looong time...');
-  tree_input = NARS.XML_read_file_ElementTree(input_filename, "Parsing MAME XML file");
+  NARS.print_info('Reading MAME XML game database...')
+  NARS.print_info('NOTE: this will take a looong time...')
+  tree_input = NARS.XML_read_file_ElementTree(input_filename, "Parsing MAME XML file")
 
   # Several lists of machines.
   # Checking if a list has an element is SLOW. This lists will be transformed
@@ -1600,8 +1596,8 @@ def do_reduce_XML():
   # --- Traverse MAME XML input file ---
   # Root element:
   # <mame build="0.153 (Apr  7 2014)" debug="no" mameconfig="10">
-  root_input = tree_input.getroot();
-  root_output.attrib = root_input.attrib; # Copy mame attributes in output XML
+  root_input = tree_input.getroot()
+  root_output.attrib = root_input.attrib  # Copy mame attributes in output XML
 
   # Child elements we want to keep in the reduced XML:
   # NOTE since the mergue of MAME and MESS, <game> has been substituded by
@@ -1622,12 +1618,12 @@ def do_reduce_XML():
   # ...
   #   <driver status="imperfect" .../>
   # </machine>
-  NARS.print_info('[Reducing MAME XML database]');
+  NARS.print_info('[Reducing MAME XML database]')
   for machine_EL in root_input:
     flag_isDevice = 0
     flag_isRunnable = 1
     if machine_EL.tag == 'machine':
-      NARS.print_verb('[Machine]');
+      NARS.print_verb('[Machine]')
       machine_name = machine_EL.attrib['name']
 
       # Copy all machine attributes in output XML
@@ -1663,19 +1659,19 @@ def do_reduce_XML():
       #     keep into the output XML.
       for machine_child in machine_EL:
         if machine_child.tag == 'description':
-          NARS.print_verb(' description = ' + machine_child.text);
-          description_output = ET.SubElement(machine_output, 'description');
-          description_output.text = machine_child.text;
+          NARS.print_verb(' description = ' + machine_child.text)
+          description_output = ET.SubElement(machine_output, 'description')
+          description_output.text = machine_child.text
 
         if machine_child.tag == 'year':
-          NARS.print_verb(' year = ' + machine_child.text);
-          year_output = ET.SubElement(machine_output, 'year');
-          year_output.text = machine_child.text;
+          NARS.print_verb(' year = ' + machine_child.text)
+          year_output = ET.SubElement(machine_output, 'year')
+          year_output.text = machine_child.text
 
         if machine_child.tag == 'manufacturer':
-          NARS.print_verb(' manufacturer = ' + machine_child.text);
-          manufacturer_output = ET.SubElement(machine_output, 'manufacturer');
-          manufacturer_output.text = machine_child.text;
+          NARS.print_verb(' manufacturer = ' + machine_child.text)
+          manufacturer_output = ET.SubElement(machine_output, 'manufacturer')
+          manufacturer_output.text = machine_child.text
 
         # Check machine orientation
         if machine_child.tag == 'display':
@@ -1699,13 +1695,13 @@ def do_reduce_XML():
             sys.exit(10)
 
         if machine_child.tag == 'input':
-          input_output = ET.SubElement(machine_output, 'input');
+          input_output = ET.SubElement(machine_output, 'input')
           input_output.attrib = machine_child.attrib
           # Traverse <input> children and copy <control> tags
           for input_child in machine_child:
             if input_child.tag == 'control':
-              control_output = ET.SubElement(input_output, 'control');
-              control_output.attrib = input_child.attrib;
+              control_output = ET.SubElement(input_output, 'control')
+              control_output.attrib = input_child.attrib
 
         # From tag <driver> only copy attribute status, discard the rest to save
         # space in output XML.
@@ -1720,7 +1716,7 @@ def do_reduce_XML():
         # --- CHDs (disk) list ---
         if machine_child.tag == 'disk' and 'name' in machine_child.attrib and \
            'sha1' in machine_child.attrib:
-          machine_with_CHD_list.append(machine_name);
+          machine_with_CHD_list.append(machine_name)
 
         # --- List of devices with ROMs ---
         if flag_isDevice and machine_child.tag == 'rom':
@@ -1732,7 +1728,7 @@ def do_reduce_XML():
         
         # --- List of machines with Software Lists ---
         if machine_child.tag == 'softwarelist':
-          machine_with_SoftList_list.append(machine_name);
+          machine_with_SoftList_list.append(machine_name)
 
   # Transform lists into sets for quick membership testing. See comments above.
   machine_isBIOS_set = set(machine_isBIOS_list)
@@ -1748,19 +1744,19 @@ def do_reduce_XML():
   #                 machine_name : [device/bios/chd, device/bios/chd, ...], 
   #                 ...
   #               }
-  Device_depends_dic = {};
-  CHD_depends_dic = {};
-  parent_bios_depends_dic = {};
-  NARS.print_info('[Checking ROM dependencies (1st pass)]');
+  Device_depends_dic = {}
+  CHD_depends_dic = {}
+  parent_bios_depends_dic = {}
+  NARS.print_info('[Checking ROM dependencies (1st pass)]')
   for machine_EL in root_input:
     if machine_EL.tag == 'machine':
       machine_name = machine_EL.attrib['name']
       if 'romof' in machine_EL.attrib:
         # BIOS depends case a)
         if 'cloneof' not in machine_EL.attrib:
-          parent_bios_depends_dic[machine_name] = machine_EL.attrib['romof'];
+          parent_bios_depends_dic[machine_name] = machine_EL.attrib['romof']
           if __debug_do_reduce_XML_dependencies:
-            print('machine ' + '{:>12}'.format(machine_name) + ' BIOS depends on ' + \
+            print('machine ' + '{:>12}'.format(machine_name) + ' BIOS depends on ' +
                   machine_EL.attrib['romof'] + ' (1st pass)')
         # BIOS depends Case b) Parent should be checked
         else:
@@ -1772,8 +1768,8 @@ def do_reduce_XML():
       # BIOS dependencies are unique. However, device and CHD with dependencies
       # can be multiple. Create lists with all the dependencies, and then insert
       # that list into the dictionary as value.
-      device_depends_list = [];
-      CHD_depends_list = [];
+      device_depends_list = []
+      CHD_depends_list = []
       for game_child in machine_EL:
         # Check for devices
         if game_child.tag == 'device_ref':
@@ -1782,18 +1778,18 @@ def do_reduce_XML():
             # Check if device this is in the list of devices with ROMs
             if device_ref_name in machine_isDevice_with_ROM_set:
               if __debug_do_reduce_XML_dependencies:
-                print('machine ' + '{:>12}'.format(machine_name) + \
+                print('machine ' + '{:>12}'.format(machine_name) +
                       ' device depends on ' + device_ref_name)
-              device_depends_list.append(device_ref_name);
+              device_depends_list.append(device_ref_name)
           else:
-            print_error('device_ref has no name attribute!');
-            sys.exit(10);
+            print_error('device_ref has no name attribute!')
+            sys.exit(10)
         # Check for CHDs
         elif game_child.tag == 'disk':
           if 'sha1' in game_child.attrib:
             chd_name = game_child.attrib['name']
             if __debug_do_reduce_XML_dependencies:
-              print('machine ' + '{:>12}'.format(machine_name) + \
+              print('machine ' + '{:>12}'.format(machine_name) +
                     ' depends on CHD ' + chd_name)
             CHD_depends_list.append(chd_name)
 
@@ -1807,16 +1803,16 @@ def do_reduce_XML():
         CHD_depends_dic[machine_name] = CHD_depends_list
       if __debug_do_reduce_XML_dependencies:
         if num_device_depends > 1:
-          print('machine ' + '{:>12}'.format(machine_name) + ' depends on ' + \
+          print('machine ' + '{:>12}'.format(machine_name) + ' depends on ' +
                 str(num_device_depends) + ' devices with ROM')
         if num_CHD_depends > 1:
-          print('machine ' + '{:>12}'.format(machine_name) + ' depends on ' + \
+          print('machine ' + '{:>12}'.format(machine_name) + ' depends on ' +
                 str(num_CHD_depends) + ' CHDs')
     else:
       print('Found a no <machine> tag ' + machine_EL.tag)
       sys.exit(10)
 
-  BIOS_depends_dic = {};
+  BIOS_depends_dic = {}
   NARS.print_info('[Checking ROM dependencies (2nd pass)]')
   for machine_EL in root_input:
     if machine_EL.tag == 'machine':
@@ -1828,7 +1824,7 @@ def do_reduce_XML():
           chd_depends_list.append(machine_EL.attrib['romof'])
           BIOS_depends_dic[machine_name] = chd_depends_list
           if __debug_do_reduce_XML_dependencies:
-            print('machine = ' + '{:>12}'.format(machine_name) + \
+            print('machine = ' + '{:>12}'.format(machine_name) +
                   ' BIOS depends on ' + machine_EL.attrib['romof'])
         # BIOS depends case b) Parent should be checked
         else:
@@ -1837,21 +1833,21 @@ def do_reduce_XML():
             chd_depends_list.append(parent_bios_depends_dic[machine_EL.attrib['cloneof']])
             BIOS_depends_dic[machine_name] = chd_depends_list
             if __debug_do_reduce_XML_dependencies:
-              print('machine = ' + '{:>12}'.format(machine_name) + \
+              print('machine = ' + '{:>12}'.format(machine_name) +
                     ' is a clone that BIOS depends on ' + chd_depends_list[0])
     else:
       print('Found a no <machine> tag ' + machine_EL.tag)
       sys.exit(10)
 
   # --- To save memory destroy variables now
-  del tree_input;
-  del root_input;
+  del tree_input
+  del root_input
 
   # --- Incorporate dependencies into output XML ---
   NARS.print_info('[Merging ROM dependencies in output XML]')
   for machine_EL in root_output:
     if machine_EL.tag == 'machine':
-      machine_name = machine_EL.attrib['name'];
+      machine_name = machine_EL.attrib['name']
       has_BIOS_dep     = machine_name in BIOS_depends_dic
       has_devices_dep  = machine_name in Device_depends_dic
       has_CHDs_dep     = machine_name in CHD_depends_dic
@@ -1900,7 +1896,7 @@ def do_reduce_XML():
         CHD_list = CHD_depends_dic[machine_name]
         CHD_set = set(CHD_list)
         if len(CHD_set) != len(CHD_list):
-          print('[WARNING] machine ' + '{:>12}'.format(machine_name) + \
+          print('[WARNING] machine ' + '{:>12}'.format(machine_name) +
                 ' len(CHD_set) != len(CHD_list)')
         for CHD_unique_name in CHD_set:
           CHD_depends_tag = ET.SubElement(NARS_element, 'CHD')
@@ -1913,20 +1909,20 @@ def do_reduce_XML():
   # See http://broadcast.oreilly.com/2010/03/pymotw-creating-xml-documents.html
   # NOTE this approach works well but is very slooow
   if 0:
-    NARS.print_info('[Building reduced output XML file]');
-    rough_string = ET.tostring(root_output, 'utf-8');
-    reparsed = minidom.parseString(rough_string);
-    del root_output; # Reduce memory consumption
-    NARS.print_info('Writing reduced XML file ' + output_filename);
+    NARS.print_info('[Building reduced output XML file]')
+    rough_string = ET.tostring(root_output, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    del root_output  # Reduce memory consumption
+    NARS.print_info('Writing reduced XML file ' + output_filename)
     f = open(output_filename, "w")
     f.write(reparsed.toprettyxml(indent=" "))
     f.close()
 
   # --- Write output file (don't use miniDOM, is sloow)
   # See http://norwied.wordpress.com/2013/08/27/307/
-  NARS.print_info('[Writing output file]');
-  NARS.print_info('Writing reduced XML file ' + output_filename);
-  NARS.indent_ElementTree_XML(root_output);
+  NARS.print_info('[Writing output file]')
+  NARS.print_info('Writing reduced XML file ' + output_filename)
+  NARS.indent_ElementTree_XML(root_output)
   tree_output.write(output_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
 def do_merge():
@@ -1970,7 +1966,7 @@ def do_merge():
           year_output.text = machine_child.text
 
         if machine_child.tag == 'manufacturer':
-          manufacturer_output = ET.SubElement(machine_output, 'manufacturer');
+          manufacturer_output = ET.SubElement(machine_output, 'manufacturer')
           manufacturer_output.text = machine_child.text
 
         if machine_child.tag == 'input':
@@ -1979,7 +1975,7 @@ def do_merge():
           # Traverse children
           for input_child in machine_child:
             if input_child.tag == 'control':
-              control_output = ET.SubElement(input_output, 'control');
+              control_output = ET.SubElement(input_output, 'control')
               control_output.attrib = input_child.attrib
 
         if machine_child.tag == 'driver':
@@ -2018,11 +2014,11 @@ def do_merge():
   del tree_input
   del root_input
 
-  # --- Write output file (don't use miniDOM, is sloow)
+  # --- Write output file (don't use miniDOM, is sloooow)
   # See http://norwied.wordpress.com/2013/08/27/307/
-  NARS.print_info('[Writing output file]');
-  NARS.print_info('Output file ' + merged_filename);
-  NARS.indent_ElementTree_XML(root_output);
+  NARS.print_info('[Writing output file]')
+  NARS.print_info('Output file ' + merged_filename)
+  NARS.indent_ElementTree_XML(root_output)
   tree_output.write(merged_filename, xml_declaration=True, encoding='utf-8', method="xml")
 
   # Print report
@@ -2031,14 +2027,14 @@ def do_merge():
   NARS.print_info('NOTE Machines with no category are assigned to cateogory Unknown')
 
 def do_list_merged():
-  "Short list of MAME XML file"
+  """Short list of MAME XML file"""
 
-  NARS.print_info('[List reduced MAME XML]');
-  filename = configuration.MergedInfo_XML;
+  NARS.print_info('[List reduced MAME XML]')
+  filename = configuration.MergedInfo_XML
   tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
 
   # Root element (Reduced MAME XML):
-  root = tree.getroot();
+  root = tree.getroot()
 
   # Child elements (Reduced MAME XML):
   num_machines = 0
@@ -2054,9 +2050,9 @@ def do_list_merged():
   num_BIOS = 0
   for machine_EL in root:
     if machine_EL.tag == 'machine':
-      num_machines += 1;
-      machine_attrib = machine_EL.attrib;
-      NARS.print_info(machine_attrib['name']);
+      num_machines += 1
+      machine_attrib = machine_EL.attrib
+      NARS.print_info(machine_attrib['name'])
       # --- Machine attributes ---
       if 'cloneof' in machine_attrib:
         num_clones += 1
@@ -2113,7 +2109,7 @@ def do_list_merged():
         if CHD_element is not None:
           num_CHD += 1
 
-  NARS.print_info('[Report]');
+  NARS.print_info('[Report]')
   NARS.print_info('Number of machines      {0:6d}'.format(num_machines))
   NARS.print_info('Number of clones        {0:6d}'.format(num_clones))
   NARS.print_info('Machines with ROMs      {0:6d}'.format(num_ROMs))
@@ -2127,70 +2123,70 @@ def do_list_merged():
   NARS.print_info('Non-runnable machines   {0:6d}'.format(num_norunnable))
 
 def do_list_categories():
-  "Parses Catver.ini and prints the categories and how many games for each"
+  """Parses Catver.ini and prints the categories and how many games for each"""
 
-  __debug_do_list_categories = 0;
-  NARS.print_info('[Listing categories from Catver.ini]');
+  __debug_do_list_categories = 0
+  NARS.print_info('[Listing categories from Catver.ini]')
 
   # --- Create a histogram with the available categories based only in Catver.ini
-  cat_filename = configuration.Catver;
-  NARS.print_info('Parsing ' + cat_filename);
-  categories_dic = {};
-  main_categories_dic = {};
-  final_categories_dic = {};
-  f = open(cat_filename, 'r');
+  cat_filename = configuration.Catver
+  NARS.print_info('Parsing ' + cat_filename)
+  categories_dic = {}
+  main_categories_dic = {}
+  final_categories_dic = {}
+  f = open(cat_filename, 'r')
   # 0 -> Looking for '[Category]' tag
   # 1 -> Reading categories
   # 2 -> Categories finished. STOP
-  read_status = 0;
-  NARS.print_info('[Making categories histogram]');
+  read_status = 0
+  NARS.print_info('[Making categories histogram]')
   for cat_line in f:
-    stripped_line = cat_line.strip();
+    stripped_line = cat_line.strip()
     if __debug_do_list_categories:
       print('"' + stripped_line + '"')
     if read_status == 0:
       if stripped_line == '[Category]':
         if __debug_do_list_categories:
           print('Found [Category]')
-        read_status = 1;
+        read_status = 1
     elif read_status == 1:
-      line_list = stripped_line.split("=");
+      line_list = stripped_line.split("=")
       if len(line_list) == 1:
-        read_status = 2;
-        continue;
+        read_status = 2
+        continue
       else:
         if __debug_do_list_categories:
           print(line_list)
-        category = line_list[1];
+        category = line_list[1]
         if category in categories_dic:
-          categories_dic[category] += 1;
+          categories_dic[category] += 1
         else:
-          categories_dic[category] = 1;
+          categories_dic[category] = 1
         # --- Sub-categories  
-        sub_categories = category.split("/");
+        sub_categories = category.split("/")
         if __debug_do_list_categories:
           print(sub_categories)
-        main_category = sub_categories[0].strip();
-        second_category = sub_categories[0].strip();
+        main_category = sub_categories[0].strip()
+        second_category = sub_categories[0].strip()
         if main_category in main_categories_dic: 
-          main_categories_dic[main_category] += 1;
+          main_categories_dic[main_category] += 1
         else:
-          main_categories_dic[main_category] = 1;
+          main_categories_dic[main_category] = 1
 
         # NOTE Only use the main category for filtering.
-        final_category = fix_category_name(main_category, category);
+        final_category = fix_category_name(main_category, category)
 
         # Create final categories dictionary
         if final_category in final_categories_dic: 
-          final_categories_dic[final_category] += 1;
+          final_categories_dic[final_category] += 1
         else:
-          final_categories_dic[final_category] = 1;
+          final_categories_dic[final_category] = 1
     elif read_status == 2:
-      break;
+      break
     else:
-      print_error('Unknown read_status FSM value');
-      sys.exit(10);
-  f.close();
+      print_error('Unknown read_status FSM value')
+      sys.exit(10)
+  f.close()
 
   # --- Only print if very verbose ---
   if NARS.log_level >= NARS.Log.vverb:
@@ -2204,42 +2200,42 @@ def do_list_categories():
     # ~~~ DEBUG object dump ~~~
     # dumpclean(sorted_propertiesDic);
     # ~~~ Print if verbose ~~~
-    NARS.print_vverb('[Raw categories]');
+    NARS.print_vverb('[Raw categories]')
     for k, v in sorted_histo:
-      NARS.print_verb('{:6d}'.format(v) + '  ' + k);
+      NARS.print_verb('{:6d}'.format(v) + '  ' + k)
 
   # ~~~ Only print if verbose ~~~
   if NARS.log_level >= NARS.Log.verb:
     sorted_histo = ((k, main_categories_dic[k]) for k in sorted(main_categories_dic, key=main_categories_dic.get, reverse=False))
-    NARS.print_verb('[Main categories]');
+    NARS.print_verb('[Main categories]')
     for k, v in sorted_histo:
-      NARS.print_verb('{:6d}'.format(v) + '  ' + k);
+      NARS.print_verb('{:6d}'.format(v) + '  ' + k)
 
   # ~~~ By default only list final categories ~~~
   sorted_histo = ((k, final_categories_dic[k]) for k in sorted(final_categories_dic, key=final_categories_dic.get, reverse=False))
-  NARS.print_info('[Final (used) categories]');
+  NARS.print_info('[Final (used) categories]')
   num_categories = 0
   for k, v in sorted_histo:
-    NARS.print_info('{:6d}'.format(v) + '  ' + k);
+    NARS.print_info('{:6d}'.format(v) + '  ' + k)
     num_categories += 1
-  NARS.print_info('[Report]');
+  NARS.print_info('[Report]')
   NARS.print_info('Number of categories  ' + str(num_categories))
 
 __debug_do_list_drivers = 0
 def do_list_drivers():    
-  "Parses merged XML database and makes driver histogram and statistics"
+  """Parses merged XML database and makes driver histogram and statistics"""
 
-  NARS.print_info('[Listing MAME drivers]');
-  NARS.print_info('NOTE: clones are not included');
-  NARS.print_info('NOTE: mechanical are not included');
-  NARS.print_info('NOTE: devices are not included');
+  NARS.print_info('[Listing MAME drivers]')
+  NARS.print_info('NOTE: clones are not included')
+  NARS.print_info('NOTE: mechanical are not included')
+  NARS.print_info('NOTE: devices are not included')
 
-  filename = configuration.MergedInfo_XML;
+  filename = configuration.MergedInfo_XML
   tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # --- Do histogram ---
-  drivers_histo_dic = {};
-  root = tree.getroot();
+  drivers_histo_dic = {}
+  root = tree.getroot()
   for machine_EL in root:
     if machine_EL.tag == 'machine':
       machine_attrib = machine_EL.attrib
@@ -2271,41 +2267,41 @@ def do_list_drivers():
 #  sorted_histo = sorted(drivers_histo_dic.iteritems(), key=operator.itemgetter(1))
   # Valid in Python 3
   sorted_histo = ((k, drivers_histo_dic[k]) for k in sorted(drivers_histo_dic, key=drivers_histo_dic.get, reverse=False))
-  NARS.print_info('[Driver histogram]');
+  NARS.print_info('[Driver histogram]')
   num_drivers = 0
   for k, v in sorted_histo:
-    NARS.print_info('{:4d}'.format(v) + '  ' + k);
+    NARS.print_info('{:4d}'.format(v) + '  ' + k)
     num_drivers += 1
 
-  NARS.print_info('[Report]');
+  NARS.print_info('[Report]')
   NARS.print_info('Number of drivers {:5d}'.format(num_drivers))
 
 # See http://mamedev.org/source/src/emu/info.c.html, line 784
-__debug_do_list_controls = 0;
+__debug_do_list_controls = 0
 def do_list_controls():
-  "Parses merged XML database and makes a controls histogram"
+  """Parses merged XML database and makes a controls histogram"""
 
-  NARS.print_info('[Listing MAME controls]');
-  NARS.print_info('NOTE: clones are not included');
-  NARS.print_info('NOTE: mechanical are not included');
-  NARS.print_info('NOTE: devices are not included');
+  NARS.print_info('[Listing MAME controls]')
+  NARS.print_info('NOTE: clones are not included')
+  NARS.print_info('NOTE: mechanical are not included')
+  NARS.print_info('NOTE: devices are not included')
 
   # filename = configuration.MergedInfo_XML;
   filename = configuration.MAME_XML_redux
   tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # --- Histogram data
-  input_buttons_dic = {};
-  input_players_dic = {};
-  input_control_type_dic = {};
-  input_control_type_join_dic = {};
-  input_control_ways_dic = {};
+  input_buttons_dic = {}
+  input_players_dic = {}
+  input_control_type_dic = {}
+  input_control_type_join_dic = {}
+  input_control_ways_dic = {}
 
-  # --- Do histogram
-  root = tree.getroot();
+  # --- Do histogram ---
+  root = tree.getroot()
   for game_EL in root:
     if game_EL.tag == 'machine':
-      machine_attrib = game_EL.attrib;
+      machine_attrib = game_EL.attrib
 
       # If machine is a clone don't include it in the histogram
       if 'cloneof' in machine_attrib:
@@ -2319,59 +2315,59 @@ def do_list_controls():
 
       game_name = machine_attrib['name']
       if __debug_do_list_controls:
-        print('game = ' + game_name);
+        print('game = ' + game_name)
 
       # --- Histogram of controls
       for child_game_EL in game_EL:
         # --- Input tag found
         if child_game_EL.tag == 'input':
-          game_input_EL = child_game_EL;
+          game_input_EL = child_game_EL
 
           # --- Input attributes
           if 'buttons' in game_input_EL.attrib:
             if __debug_do_list_controls:
-              print(' buttons = ' + game_input_EL.attrib['buttons']);
-            input_buttons_dic = add_to_histogram(game_input_EL.attrib['buttons'], input_buttons_dic);
+              print(' buttons = ' + game_input_EL.attrib['buttons'])
+            input_buttons_dic = add_to_histogram(game_input_EL.attrib['buttons'], input_buttons_dic)
           else:
             if __debug_do_list_controls:
-              print(' no buttons');
-            input_buttons_dic = add_to_histogram('0', input_buttons_dic);
+              print(' no buttons')
+            input_buttons_dic = add_to_histogram('0', input_buttons_dic)
 
           if 'coins' in game_input_EL.attrib:
             if __debug_do_list_controls:
-              print(' coins = ' + game_input_EL.attrib['coins']);
+              print(' coins = ' + game_input_EL.attrib['coins'])
 
           if 'players' in game_input_EL.attrib:
             if __debug_do_list_controls:
-              print(' players = ' + game_input_EL.attrib['players']);
-            input_players_dic = add_to_histogram(game_input_EL.attrib['players'], input_players_dic);
+              print(' players = ' + game_input_EL.attrib['players'])
+            input_players_dic = add_to_histogram(game_input_EL.attrib['players'], input_players_dic)
           else:
             if __debug_do_list_controls:
               print(' no players')
-            input_buttons_dic = add_to_histogram('no players tag', input_buttons_dic);
+            input_buttons_dic = add_to_histogram('no players tag', input_buttons_dic)
 
           if 'tilt' in game_input_EL.attrib:
             if __debug_do_list_controls:
               print(' tilt = ' + game_input_EL.attrib['tilt'])
 
           # --- Iterate children
-          control_child_found = 0;
-          control_type_list = [];
+          control_child_found = 0
+          control_type_list = []
           for child in game_input_EL:
-            control_child_found = 1;
+            control_child_found = 1
             if __debug_do_list_controls:
               print(' Children = ' + child.tag)
 
             if 'type' in child.attrib:
               if __debug_do_list_controls:
                 print('  type = ' + child.attrib['type'])
-              input_control_type_dic = add_to_histogram(child.attrib['type'].title(), input_control_type_dic);
-              control_type_list.append(child.attrib['type']);
+              input_control_type_dic = add_to_histogram(child.attrib['type'].title(), input_control_type_dic)
+              control_type_list.append(child.attrib['type'])
 
             if 'ways' in child.attrib:
               if __debug_do_list_controls:
                 print('  ways = ' + child.attrib['ways'])
-              input_control_ways_dic = add_to_histogram(child.attrib['ways'], input_control_ways_dic);
+              input_control_ways_dic = add_to_histogram(child.attrib['ways'], input_control_ways_dic)
 
             if 'ways2' in child.attrib:
               if __debug_do_list_controls:
@@ -2381,17 +2377,17 @@ def do_list_controls():
               if __debug_do_list_controls:
                 print('  ways3 = ' + child.attrib['ways3'])
 
-          text_not_found = 'ButtonsOnly';
+          text_not_found = 'ButtonsOnly'
           if len(control_type_list) < 1:
-            control_type_list.append(text_not_found);
-          input_control_type_join_dic = add_to_histogram(', '.join(sorted(control_type_list)), input_control_type_join_dic);
+            control_type_list.append(text_not_found)
+          input_control_type_join_dic = add_to_histogram(', '.join(sorted(control_type_list)), input_control_type_join_dic)
 
           # --- If no additional controls, only buttons???
           if not control_child_found:
             if text_not_found in input_control_type_dic:
-              input_control_type_dic[text_not_found] += 1;
+              input_control_type_dic[text_not_found] += 1
             else:                          
-              input_control_type_dic[text_not_found] = 1;
+              input_control_type_dic[text_not_found] = 1
 
   NARS.print_info('[Input - control - type histogram (per game)]')
   sorted_histo = ((k, input_control_type_join_dic[k]) for k in sorted(input_control_type_join_dic, key=input_control_type_join_dic.get, reverse=False))
@@ -2423,26 +2419,26 @@ def do_list_controls():
     NARS.print_info('{:5d}'.format(v) + '  ' + k)
 
 def do_list_years():
-  "Parses merged XML database and makes a controls histogram"
+  """Parses merged XML database and makes a controls histogram"""
 
-  NARS.print_info('[Listing MAME controls]');
-  NARS.print_info('NOTE: clones are not included');
-  NARS.print_info('NOTE: mechanical are not included');
-  NARS.print_info('NOTE: devices are not included');
+  NARS.print_info('[Listing MAME controls]')
+  NARS.print_info('NOTE: clones are not included')
+  NARS.print_info('NOTE: mechanical are not included')
+  NARS.print_info('NOTE: devices are not included')
 
   # filename = configuration.MergedInfo_XML;
   filename = configuration.MAME_XML_redux
   tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # --- Histogram data
-  years_dic = {};
-  raw_years_dic = {};
+  years_dic = {}
+  raw_years_dic = {}
 
   # --- Do histogram
-  root = tree.getroot();
+  root = tree.getroot()
   for game_EL in root:
     if game_EL.tag == 'machine':
-      machine_attrib = game_EL.attrib;
+      machine_attrib = game_EL.attrib
 
       # If machine is a clone don't include it in the histogram
       if 'cloneof' in machine_attrib:
@@ -2458,32 +2454,32 @@ def do_list_years():
       game_name = machine_attrib['name']
 
       # --- Histogram of years
-      has_year = 0;
+      has_year = 0
       for child_game_EL in game_EL:
         if child_game_EL.tag == 'year':
-          has_year = 1;
-          game_year_EL = child_game_EL;
-          raw_year_text = game_year_EL.text;
+          has_year = 1
+          game_year_EL = child_game_EL
+          raw_year_text = game_year_EL.text
           # Remove quotation marks from some years
           # Expand wildcards to numerical lists. Currently there are 6 cases
-          year_list = trim_year_string(raw_year_text);
+          year_list = trim_year_string(raw_year_text)
 
           # --- Make histogram
           for number in year_list:
-            years_dic = add_to_histogram(number, years_dic);
-          raw_years_dic = add_to_histogram(raw_year_text, raw_years_dic);
+            years_dic = add_to_histogram(number, years_dic)
+          raw_years_dic = add_to_histogram(raw_year_text, raw_years_dic)
 
       if not has_year:
-        years_dic = add_to_histogram('no year', years_dic);
-        raw_years_dic = add_to_histogram('no year', raw_years_dic);
+        years_dic = add_to_histogram('no year', years_dic)
+        raw_years_dic = add_to_histogram('no year', raw_years_dic)
 
-  NARS.print_info('[Release year histogram (raw)]');
+  NARS.print_info('[Release year histogram (raw)]')
   sorted_histo = ((k, raw_years_dic[k]) for k in sorted(raw_years_dic, key=raw_years_dic.get, reverse=False))
   for k, v in sorted_histo:
     NARS.print_info('{:5d}'.format(v) + '  ' + k)
   print(' ')
 
-  NARS.print_info('[Release year histogram (trimmed)]');
+  NARS.print_info('[Release year histogram (trimmed)]')
   sorted_histo = ((k, years_dic[k]) for k in sorted(years_dic, key=years_dic.get, reverse=False))
   for k, v in sorted_histo:
     NARS.print_info('{:5d}'.format(v) + '  ' + k)
@@ -2496,7 +2492,7 @@ def do_list_filters():
   tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Parsing configuration XML file")
 
   # Iterate over XML root object
-  root = tree.getroot();
+  root = tree.getroot()
   for root_child in root:
     if root_child.tag == 'MAME_XML':
       NARS.print_info('MAME_XML        ' + root_child.text)
@@ -2513,18 +2509,18 @@ def do_list_filters():
       NARS.print_info('Name        ' + root_child.attrib['name'])
       for root_child_node in root_child:
         if root_child_node.tag == 'ROMsSource':
-          NARS.print_info('ROMsSource  ' + root_child_node.text);
+          NARS.print_info('ROMsSource  ' + root_child_node.text)
         elif root_child_node.tag == 'ROMsDest':
-          NARS.print_info('ROMsDest    ' + root_child_node.text);
+          NARS.print_info('ROMsDest    ' + root_child_node.text)
     else:
       print('Tag with wrong name ' + root_child.tag)
       sys.exit(10)
 
 # ----------------------------------------------------------------------------
 def do_checkFilter(filterName):
-  "Applies filter and copies ROMs into destination directory"
+  """Applies filter and copies ROMs into destination directory"""
 
-  NARS.print_info('[Checking filter]');
+  NARS.print_info('[Checking filter]')
   NARS.print_info('Filter name = ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
@@ -2595,15 +2591,15 @@ def do_checkFilter(filterName):
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
 def do_update(filterName):
-  "Applies filter and copies ROMs into destination directory"
+  """Applies filter and copies ROMs into destination directory"""
 
-  NARS.print_info('[Copy/Update ROMs]');
-  NARS.print_info('Filter name = ' + filterName);
+  NARS.print_info('[Copy/Update ROMs]')
+  NARS.print_info('Filter name = ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_from_Config(filterName);
-  sourceDir = filter_config.sourceDir;
-  destDir = filter_config.destDir;
+  filter_config = get_Filter_from_Config(filterName)
+  sourceDir = filter_config.sourceDir
+  destDir = filter_config.destDir
 
   # --- Check for errors, missing paths, etc...
   NARS.have_dir_or_abort(sourceDir, 'ROMsSource')
@@ -2637,34 +2633,34 @@ def do_update(filterName):
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
 def do_update_CHD(filterName):
-  "Applies filter and copies ROMs into destination directory"
+  """Applies filter and copies ROMs into destination directory"""
 
-  NARS.print_info('[Copy/Update CHDs]');
-  NARS.print_info('Filter name = ' + filterName);
+  NARS.print_info('[Copy/Update CHDs]')
+  NARS.print_info('Filter name = ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_from_Config(filterName);
-  sourceDir = filter_config.sourceDir;
-  destDir = filter_config.destDir;
-  sourceDir_CHD = filter_config.sourceDir_CHD;
+  filter_config = get_Filter_from_Config(filterName)
+  sourceDir = filter_config.sourceDir
+  destDir = filter_config.destDir
+  sourceDir_CHD = filter_config.sourceDir_CHD
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir, 'sourceDir');
-  NARS.have_dir_or_abort(sourceDir_CHD, 'sourceDir_CHD');
-  NARS.have_dir_or_abort(destDir, 'destDir');
+  NARS.have_dir_or_abort(sourceDir, 'sourceDir')
+  NARS.have_dir_or_abort(sourceDir_CHD, 'sourceDir_CHD')
+  NARS.have_dir_or_abort(destDir, 'destDir')
 
   # --- Get MAME parent/clone dictionary --------------------------------------
-  mame_xml_dic = parse_MAME_merged_XML();
+  mame_xml_dic = parse_MAME_merged_XML()
 
   # --- Create main ROM list in sourceDir -------------------------------------
-  rom_main_list = get_ROM_main_list(sourceDir);
+  rom_main_list = get_ROM_main_list(sourceDir)
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config);
-  rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list);
+  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
+  rom_copy_list = create_copy_list(mame_filtered_dic, rom_main_list)
 
   # --- Create list of CHDs and samples needed --------------------------------
-  CHD_dic = create_copy_CHD_dic(mame_filtered_dic);
+  CHD_dic = create_copy_CHD_dic(mame_filtered_dic)
 
   # --- Copy/Update CHDs into destDir -----------------------------------------
   NARS.copy_CHD_dic(CHD_dic, sourceDir_CHD, destDir, __prog_option_sync, __prog_option_dry_run)
@@ -2675,138 +2671,138 @@ def do_update_CHD(filterName):
 
 # ----------------------------------------------------------------------------
 def do_check_Artwork(filterName):
-  "Checks for missing artwork and prints a report"
+  """Checks for missing artwork and prints a report"""
 
-  NARS.print_info('[Check-ArtWork]');
-  NARS.print_info('Filter name = ' + filterName);
+  NARS.print_info('[Check-ArtWork]')
+  NARS.print_info('Filter name = ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_from_Config(filterName);
-  destDir = filter_config.destDir;
-  thumbsSourceDir = filter_config.thumbsSourceDir;
-  fanartSourceDir = filter_config.fanartSourceDir;
+  filter_config = get_Filter_from_Config(filterName)
+  destDir = filter_config.destDir
+  thumbsSourceDir = filter_config.thumbsSourceDir
+  fanartSourceDir = filter_config.fanartSourceDir
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir, 'ROMsDest');
-  NARS.have_dir_or_abort(thumbsSourceDir, 'ThumbsSource');
-  NARS.have_dir_or_abort(fanartSourceDir, 'FanartSource');
+  NARS.have_dir_or_abort(destDir, 'ROMsDest')
+  NARS.have_dir_or_abort(thumbsSourceDir, 'ThumbsSource')
+  NARS.have_dir_or_abort(fanartSourceDir, 'FanartSource')
 
   # --- Create a list of ROMs in destDir
-  roms_destDir_list = [];
+  roms_destDir_list = []
   for file in os.listdir(destDir):
     if file.endswith(".zip"):
-      thisFileName, thisFileExtension = os.path.splitext(file);
-      roms_destDir_list.append(thisFileName);
+      thisFileName, thisFileExtension = os.path.splitext(file)
+      roms_destDir_list.append(thisFileName)
 
   # --- Get MAME parent/clone dictionary --------------------------------------
-  mame_xml_dic = parse_MAME_merged_XML();
+  mame_xml_dic = parse_MAME_merged_XML()
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config);
-  rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list);
+  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
+  rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list)
   
   # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
   # Crate a dictionary where key and value are the same (no artwork
   # substitution in xru-mame).
-  artwork_copy_dic = {};
+  artwork_copy_dic = {}
   for rom in rom_copy_list:
-    artwork_copy_dic[rom] = rom;
+    artwork_copy_dic[rom] = rom
 
   # --- Print list in alphabetical order
-  NARS.print_info('[Artwork report]');
-  num_original = 0;
-  num_replaced = 0;
-  num_have_thumbs = 0;
-  num_missing_thumbs = 0;
-  num_have_fanart = 0;
-  num_missing_fanart = 0;
+  NARS.print_info('[Artwork report]')
+  num_original = 0
+  num_replaced = 0
+  num_have_thumbs = 0
+  num_missing_thumbs = 0
+  num_have_fanart = 0
+  num_missing_fanart = 0
   for rom_baseName in sorted(roms_destDir_list):
-    NARS.print_info("Game        " + rom_baseName + ".zip");    
+    NARS.print_info("Game        " + rom_baseName + ".zip")
     if rom_baseName not in artwork_copy_dic:
       print(' Not found')
     else:
-      art_baseName = artwork_copy_dic[rom_baseName];
+      art_baseName = artwork_copy_dic[rom_baseName]
 
       # --- Check if artwork exist
-      thumb_Source_fullFileName = thumbsSourceDir + art_baseName + '.png';
-      fanart_Source_fullFileName = fanartSourceDir + art_baseName + '.png';
+      thumb_Source_fullFileName = thumbsSourceDir + art_baseName + '.png'
+      fanart_Source_fullFileName = fanartSourceDir + art_baseName + '.png'
 
       # - Has artwork been replaced?
       if rom_baseName != art_baseName:
-        num_replaced += 1;
+        num_replaced += 1
         print(' Replaced   ' + art_baseName)
       else:
-        num_original += 1;
+        num_original += 1
         print(' Original   ' + art_baseName)
 
       # - Have thumb
       if not os.path.isfile(thumb_Source_fullFileName):
-        num_missing_thumbs += 1;
+        num_missing_thumbs += 1
         print(' Missing T  ' + art_baseName + '.png')
       else:
-        num_have_thumbs += 1;
+        num_have_thumbs += 1
         print(' Have T     ' + art_baseName + '.png')
 
       # - Have fanart
       if not os.path.isfile(fanart_Source_fullFileName):
-        num_missing_fanart += 1;
+        num_missing_fanart += 1
         print(' Missing F  ' + art_baseName + '.png')
       else:
-        num_have_fanart += 1;
+        num_have_fanart += 1
         print(' Have F     ' + art_baseName + '.png')
 
   NARS.print_info('[Report]')
-  NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)));
-  NARS.print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)));
-  NARS.print_info('Number of original ArtWork = ' + str(num_original));
-  NARS.print_info('Number of replaced ArtWork = ' + str(num_replaced));
-  NARS.print_info('Number of have Thumbs    = ' + str(num_have_thumbs));
-  NARS.print_info('Number of missing Thumbs = ' + str(num_missing_thumbs));
-  NARS.print_info('Number of have Fanart    = ' + str(num_have_fanart));
-  NARS.print_info('Number of missing Fanart = ' + str(num_missing_fanart));
+  NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)))
+  NARS.print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)))
+  NARS.print_info('Number of original ArtWork = ' + str(num_original))
+  NARS.print_info('Number of replaced ArtWork = ' + str(num_replaced))
+  NARS.print_info('Number of have Thumbs    = ' + str(num_have_thumbs))
+  NARS.print_info('Number of missing Thumbs = ' + str(num_missing_thumbs))
+  NARS.print_info('Number of have Fanart    = ' + str(num_have_fanart))
+  NARS.print_info('Number of missing Fanart = ' + str(num_missing_fanart))
 
 # ----------------------------------------------------------------------------
 def do_update_Artwork(filterName):
-  "Reads ROM destDir and copies Artwork"
+  """Reads ROM destDir and copies Artwork"""
 
-  NARS.print_info('[Updating/copying ArtWork]');
-  NARS.print_info('Filter name = ' + filterName);
+  NARS.print_info('[Updating/copying ArtWork]')
+  NARS.print_info('Filter name = ' + filterName)
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_from_Config(filterName);
-  destDir = filter_config.destDir;
-  thumbsSourceDir = filter_config.thumbsSourceDir;
-  fanartSourceDir = filter_config.fanartSourceDir;
-  thumbsDestDir = filter_config.thumbsDestDir;
-  fanartDestDir = filter_config.fanartDestDir;
+  filter_config = get_Filter_from_Config(filterName)
+  destDir = filter_config.destDir
+  thumbsSourceDir = filter_config.thumbsSourceDir
+  fanartSourceDir = filter_config.fanartSourceDir
+  thumbsDestDir = filter_config.thumbsDestDir
+  fanartDestDir = filter_config.fanartDestDir
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir, 'ROMsDest');
-  NARS.have_dir_or_abort(thumbsSourceDir, 'ThumbsSource');
-  NARS.have_dir_or_abort(fanartSourceDir, 'FanartSource');
-  NARS.have_dir_or_abort(thumbsDestDir, 'ThumbsDest');
-  NARS.have_dir_or_abort(fanartDestDir, 'FanartDest');
+  NARS.have_dir_or_abort(destDir, 'ROMsDest')
+  NARS.have_dir_or_abort(thumbsSourceDir, 'ThumbsSource')
+  NARS.have_dir_or_abort(fanartSourceDir, 'FanartSource')
+  NARS.have_dir_or_abort(thumbsDestDir, 'ThumbsDest')
+  NARS.have_dir_or_abort(fanartDestDir, 'FanartDest')
 
   # --- Create a list of ROMs in destDir
-  roms_destDir_list = [];
+  roms_destDir_list = []
   for file in os.listdir(destDir):
     if file.endswith(".zip"):
-      thisFileName, thisFileExtension = os.path.splitext(file);
-      roms_destDir_list.append(thisFileName);
+      thisFileName, thisFileExtension = os.path.splitext(file)
+      roms_destDir_list.append(thisFileName)
 
   # --- Get MAME parent/clone dictionary --------------------------------------
-  mame_xml_dic = parse_MAME_merged_XML();
+  mame_xml_dic = parse_MAME_merged_XML()
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config);
-  rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list);
+  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
+  rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list)
 
   # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
   # Crate a dictionary where key and value are the same (no artwork
   # substitution in xru-mame).
-  artwork_copy_dic = {};
+  artwork_copy_dic = {}
   for rom in rom_copy_list:
-    artwork_copy_dic[rom] = rom;
+    artwork_copy_dic[rom] = rom
 
   # --- Copy/Update artwork    
   NARS.copy_ArtWork_list(filter_config, artwork_copy_dic, __prog_option_sync, __prog_option_dry_run)
@@ -2853,7 +2849,7 @@ def do_printHelp():
 # -----------------------------------------------------------------------------
 # main function
 # -----------------------------------------------------------------------------
-print('\033[36mNARS Advanced ROM Sorting - MAME edition\033[0m' + \
+print('\033[36mNARS Advanced ROM Sorting - MAME edition\033[0m' +
       ' version ' + NARS.__software_version)
 
 # --- Command line parser
@@ -2867,14 +2863,14 @@ parser.add_argument('--generateNFO', help="generate NFO files", action="store_tr
 parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
 parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
 parser.add_argument('--cleanCHD', help="clean unknown CHDs", action="store_true")
-parser.add_argument('command', \
+parser.add_argument('command',
     help="usage, reduce-XML, merge, list-merged, \
           list-categories, list-drivers, list-controls, list-years,\
           list, check, copy, update \
           copy-chd, update-chd \
           check-artwork, copy-artwork, update-artwork", nargs = 1)
 parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
-args = parser.parse_args();
+args = parser.parse_args()
 
 # --- Optional arguments ---
 if args.verbose:
@@ -2909,7 +2905,7 @@ if command == 'usage':
 if command == 'check' or command == 'copy' or command == 'update' or \
    command == 'copy-chd' or command == 'update-chd' or \
    command == 'check-artwork' or command == 'copy-artwork' or command == 'update-artwork':
-  if args.filterName == None:
+  if args.filterName is None:
     print('\033[31m[ERROR]\033[0m Command "{0}" requires a filter name'.format(command))
     sys.exit(10)
 
@@ -2926,11 +2922,11 @@ elif command == 'list-merged':
 elif command == 'list-categories':
   do_list_categories()
 elif command == 'list-drivers':
-  do_list_drivers();
+  do_list_drivers()
 elif command == 'list-controls':
-  do_list_controls();
+  do_list_controls()
 elif command == 'list-years':
-  do_list_years();
+  do_list_years()
 elif command == 'list':
   do_list_filters()
 elif command == 'check':
@@ -2939,7 +2935,7 @@ elif command == 'copy':
   do_update(args.filterName)
 elif command == 'update':
   __prog_option_sync = 1
-  do_update(args.filterName); 
+  do_update(args.filterName)
 elif command == 'copy-chd':
   do_update_CHD(args.filterName)
 elif command == 'update-chd':

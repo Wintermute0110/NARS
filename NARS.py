@@ -43,7 +43,7 @@ import xml.etree.cElementTree as cET
 # -----------------------------------------------------------------------------
 # Global variables
 # -----------------------------------------------------------------------------
-__software_version = '0.2.0_alpha1';
+__software_version = '0.2.0_alpha1'
 
 # -----------------------------------------------------------------------------
 # DEBUG functions
@@ -77,9 +77,9 @@ class Log():
   debug = 6 # Debug: -vvv
 
 # ---  Console print and logging
-f_log = 0;     # Log file descriptor
-log_level = 3; # Log level
-file_log = 0;  # User wants file log
+f_log = 0      # Log file descriptor
+log_level = 3  # Log level
+file_log = 0   # User wants file log
 
 def init_log_system(__prog_option_log):
   global file_log
@@ -93,9 +93,9 @@ def init_log_system(__prog_option_log):
       f_log = open(__prog_option_log_filename, 'w')
 
 def change_log_level(level):
-  global log_level;
+  global log_level
 
-  log_level = level;
+  log_level = level
 
 # --- Print/log to a specific level  
 def pprint(level, print_str):
@@ -107,27 +107,27 @@ def pprint(level, print_str):
   if file_log:
     if level <= log_level:
       if print_str[-1] != '\n':
-        print_str += '\n';
+        print_str += '\n'
       f_log.write(print_str) # python will convert \n to os.linesep
 
 # --- Some useful function overloads
 def print_error(print_str):
-  pprint(Log.error, print_str);
+  pprint(Log.error, print_str)
 
 def print_warn(print_str):
-  pprint(Log.warn, print_str);
+  pprint(Log.warn, print_str)
 
 def print_info(print_str):
-  pprint(Log.info, print_str);
+  pprint(Log.info, print_str)
 
 def print_verb(print_str):
-  pprint(Log.verb, print_str);
+  pprint(Log.verb, print_str)
 
 def print_vverb(print_str):
-  pprint(Log.vverb, print_str);
+  pprint(Log.vverb, print_str)
 
 def print_debug(print_str):
-  pprint(Log.debug, print_str);
+  pprint(Log.debug, print_str)
 
 # -----------------------------------------------------------------------------
 # Utility/miscellaneous functions
@@ -157,7 +157,7 @@ def delete_file(file_path, __prog_option_dry_run):
   if __prog_option_dry_run:
     return
   try:
-    os.remove(file_path);
+    os.remove(file_path)
   except EnvironmentError:
     print_info('[WARNING] delete_file >> os.remove {0}'.format(file_path))
     print_info('[WARNING] delete_file >> Exception EnvironmentError triggered')
@@ -170,13 +170,13 @@ __DEBUG_delete_CHD_directory = 0
 def delete_CHD_directory(CHD_dir, __prog_option_dry_run):
   num_deleted_CHD = 0
 
-  CHD_list = [];
+  CHD_list = []
   for file in os.listdir(CHD_dir):
     if file.endswith(".chd"):
       CHD_full_path = CHD_dir + '/' + file
       if __DEBUG_delete_CHD_directory: 
         print('CHD_list file {0}'.format(CHD_full_path))
-      CHD_list.append(CHD_full_path);
+      CHD_list.append(CHD_full_path)
 
   # Delete all CHD files inside directory
   if __prog_option_dry_run:
@@ -203,7 +203,7 @@ def delete_CHD_directory(CHD_dir, __prog_option_dry_run):
 
 # if dirName is None, that means user did not configured it
 def have_dir_or_abort(dirName, infoStr):
-  if dirName == None:
+  if dirName is None:
     print_error('\033[31m[ERROR]\033[0m Directory ' + infoStr + ' not configured.')
     print_error('\033[31m[ERROR]\033[0m Add tag ' + infoStr + ' to configuration file.')
     sys.exit(10)
@@ -279,9 +279,9 @@ def update_file(source_path, dest_path, __prog_option_dry_run):
 # Filesystem helper functions
 # -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir, __prog_option_sync, __prog_option_dry_run):
-  print_info('[Copying ROMs into destDir]');
+  print_info('[Copying ROMs into destDir]')
 
-  num_steps = len(rom_list);
+  num_steps = len(rom_list)
   step = 0 # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
   num_roms = 0
   num_copied_roms = 0
@@ -300,54 +300,54 @@ def copy_ROM_list(rom_list, sourceDir, destDir, __prog_option_sync, __prog_optio
     # On default verbosity level only report copied files and errors
     percentage = 100 * step / num_steps
     if ret == 0:
-      num_copied_roms += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      print_info('<Copied > ' + romFileName);
+      num_copied_roms += 1
+      sys.stdout.write('{:3.0f}% '.format(percentage))
+      print_info('<Copied > ' + romFileName)
     elif ret == 1:
-      num_updated_roms += 1;
+      num_updated_roms += 1
       if log_level >= Log.verb:
-        sys.stdout.write('{:3.0f}% '.format(percentage));
-      print_verb('<Updated> ' + romFileName);
+        sys.stdout.write('{:3.0f}% '.format(percentage))
+      print_verb('<Updated> ' + romFileName)
     elif ret == 2:
-      num_missing_roms += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      print_info('<Missing> ' + romFileName);
+      num_missing_roms += 1
+      sys.stdout.write('{:3.0f}% '.format(percentage))
+      print_info('<Missing> ' + romFileName)
     elif ret == -1:
-      num_errors += 1;
-      sys.stdout.write('{:3.0f}% '.format(percentage));
-      print_info('<ERROR  > ' + romFileName);
+      num_errors += 1
+      sys.stdout.write('{:3.0f}% '.format(percentage))
+      print_info('<ERROR  > ' + romFileName)
     else:
       print_error('Wrong value returned by update_ROM_file()')
       sys.exit(10)
     # --- Update progress
-    step += 1;
+    step += 1
 
-  print_info('[Report]');
-  print_info('Total CHDs   ' + '{:4d}'.format(num_roms));
-  print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_roms));
-  print_info('Update CHDs  ' + '{:4d}'.format(num_updated_roms));
-  print_info('Missing CHDs ' + '{:4d}'.format(num_missing_roms));
-  print_info('Copy errors  ' + '{:4d}'.format(num_errors));
+  print_info('[Report]')
+  print_info('Total CHDs   ' + '{:4d}'.format(num_roms))
+  print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_roms))
+  print_info('Update CHDs  ' + '{:4d}'.format(num_updated_roms))
+  print_info('Missing CHDs ' + '{:4d}'.format(num_missing_roms))
+  print_info('Copy errors  ' + '{:4d}'.format(num_errors))
 
 #
 # CHD_dic = { 'machine_name' : ['chd1', 'chd2', ...], ... }
 #
 __debug_copy_CHD_dic = 0
 def copy_CHD_dic(CHD_dic, sourceDir, destDir, __prog_option_sync, __prog_option_dry_run):
-  print_info('[Copying CHDs into destDir]');
+  print_info('[Copying CHDs into destDir]')
 
   # If user did not configure CHDs source directory then do nothing
   if sourceDir == None or sourceDir == '':
-    print_info('CHD source directory not configured');
-    print_info('Skipping CHD copy');
+    print_info('CHD source directory not configured')
+    print_info('Skipping CHD copy')
     return
 
   if not os.path.exists(sourceDir):
     print_error('CHD source directory not found ' + sourceDir)
-    sys.exit(10);
+    sys.exit(10)
 
   # --- Copy CHDs ---
-  num_steps = len(CHD_dic);
+  num_steps = len(CHD_dic)
   step = 0 # 0 here prints [0, ..., 99%], 1 prints [1, ..., 100%]
   num_CHD = 0
   num_copied_CHD = 0
@@ -361,7 +361,7 @@ def copy_CHD_dic(CHD_dic, sourceDir, destDir, __prog_option_sync, __prog_option_
     if __debug_copy_CHD_dic: print('CHD dir = {0}\n'.format(chdDestDir))
     if not os.path.isdir(chdDestDir):
       if __debug_copy_CHD_dic: print('Creating CHD dir = {0}\n'.format(chdDestDir))
-      os.makedirs(chdDestDir);
+      os.makedirs(chdDestDir)
 
     # Iterate over this machine CHD list and copy them. Abort if CHD cannot be
     # copied
@@ -399,21 +399,21 @@ def copy_CHD_dic(CHD_dic, sourceDir, destDir, __prog_option_sync, __prog_option_
         sys.exit(10)
       sys.stdout.flush()
     # --- Update progress
-    step += 1;
+    step += 1
 
-  print_info('[Report]');
-  print_info('Total CHDs   ' + '{:4d}'.format(num_CHD));
-  print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_CHD));
-  print_info('Update CHDs  ' + '{:4d}'.format(num_updated_CHD));
-  print_info('Missing CHDs ' + '{:4d}'.format(num_missing_CHD));
-  print_info('Copy errors  ' + '{:4d}'.format(num_errors));
+  print_info('[Report]')
+  print_info('Total CHDs   ' + '{:4d}'.format(num_CHD))
+  print_info('Copied CHDs  ' + '{:4d}'.format(num_copied_CHD))
+  print_info('Update CHDs  ' + '{:4d}'.format(num_updated_CHD))
+  print_info('Missing CHDs ' + '{:4d}'.format(num_missing_CHD))
+  print_info('Copy errors  ' + '{:4d}'.format(num_errors))
 
 def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_option_dry_run):
-  print_info('[Copying ArtWork]');
-  fanartSourceDir = filter_config.fanartSourceDir;
-  fanartDestDir = filter_config.fanartDestDir;
-  thumbsSourceDir = filter_config.thumbsSourceDir;
-  thumbsDestDir = filter_config.thumbsDestDir;
+  print_info('[Copying ArtWork]')
+  fanartSourceDir = filter_config.fanartSourceDir
+  fanartDestDir = filter_config.fanartDestDir
+  thumbsSourceDir = filter_config.thumbsSourceDir
+  thumbsDestDir = filter_config.thumbsDestDir
 
   # --- Copy artwork
   num_steps = len(rom_copy_dic)
@@ -438,14 +438,14 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
     else:
       ret = copy_file(thumb_file_path_source, thumb_file_path_dest, __prog_option_dry_run)
     # On default verbosity level only report copied files
-    percentage = 100 * step / num_steps;    
+    percentage = 100 * step / num_steps
     if ret == 0:
       sys.stdout.write('{:3.0f}% '.format(percentage))
-      num_copied_thumbs += 1;
+      num_copied_thumbs += 1
       print_info('<Copied  Thumb > ' + art_baseName)
     elif ret == 1:
       sys.stdout.write('{:3.0f}% '.format(percentage))
-      num_missing_thumbs += 1;
+      num_missing_thumbs += 1
       print_info('<Missing Thumb > ' + art_baseName)
     elif ret == 2:
       if log_level >= Log.verb:
@@ -453,7 +453,7 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
       num_updated_thumbs += 1
       print_verb('<Updated Thumb > ' + art_baseName)
     elif ret == -1:
-      num_errors += 1;
+      num_errors += 1
       sys.stdout.write('{:3.0f}% '.format(percentage))
       print_info('<ERROR  > ' + art_baseName)
     else:
@@ -482,7 +482,7 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
       num_updated_fanart += 1
       print_verb('<Updated Fanart> ' + art_baseName)
     elif ret == -1:
-      num_errors += 1;
+      num_errors += 1
       sys.stdout.write('{:3.0f}% '.format(percentage))
       print_info('<ERROR  > ' + art_baseName)
     else:
@@ -490,7 +490,7 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
       sys.exit(10)
 
     # --- Update progress
-    step += 1;
+    step += 1
 
   print_info('[Report]')
   print_info('Artwork files ' + '{:6d}'.format(num_artwork))  
@@ -507,19 +507,19 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
 def clean_ROMs_destDir(rom_copy_dic, destDir, __prog_option_dry_run):
   print_info('[Cleaning ROMs in ROMsDest]')
 
-  rom_main_list = [];
+  rom_main_list = []
   for file in os.listdir(destDir):
     if file.endswith(".zip"):
-      rom_main_list.append(file);
+      rom_main_list.append(file)
 
-  num_cleaned_roms = 0;
+  num_cleaned_roms = 0
   for file in sorted(rom_main_list):
-    basename, ext = os.path.splitext(file); # Remove extension
+    basename, ext = os.path.splitext(file)  # Remove extension
     if basename not in rom_copy_dic:
       num_cleaned_roms += 1
       file_path = destDir + file
       delete_file(file_path, __prog_option_dry_run)
-      print_info('<Deleted> ' + file);
+      print_info('<Deleted> ' + file)
 
   print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
 
@@ -532,10 +532,10 @@ def clean_CHDs_destDir(CHD_dic, destDir, __prog_option_dry_run):
   print_info('[Cleaning ROMs in ROMsDest]')
 
   # directories_dic = { 'machine' : 'CHD_destDirectory'}
-  directories_dic = {};
+  directories_dic = {}
   for file in os.listdir(destDir):
     # if __DEBUG_clean_CHDs_destDir: print('listdir entry {0}'.format(file))
-    CHD_dir_full_name = destDir + file;
+    CHD_dir_full_name = destDir + file
     if os.path.isdir(CHD_dir_full_name):
       if __DEBUG_clean_CHDs_destDir: print('Directory {0}'.format(CHD_dir_full_name))
       directories_dic[file] = CHD_dir_full_name
@@ -556,8 +556,8 @@ def clean_CHDs_destDir(CHD_dic, destDir, __prog_option_dry_run):
   print_info('Deleted CHDs         ' + str(num_deleted_CHD))
 
 def clean_NFO_destDir(destDir, __prog_option_dry_run):
-  print_info('[Deleting redundant NFO files]');
-  num_deletedNFO_files = 0;
+  print_info('[Deleting redundant NFO files]')
+  num_deletedNFO_files = 0
   for file in os.listdir(destDir):
     if file.endswith(".nfo"):
       # Chech if there is a corresponding ROM for this NFO file
@@ -573,48 +573,48 @@ def clean_NFO_destDir(destDir, __prog_option_dry_run):
   print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
 
 def clean_ArtWork_destDir(filter_config, artwork_copy_dic, __prog_option_dry_run):
-  print_info('[Cleaning ArtWork]');
+  print_info('[Cleaning ArtWork]')
 
-  thumbsDestDir = filter_config.thumbsDestDir;
-  fanartDestDir = filter_config.fanartDestDir;
+  thumbsDestDir = filter_config.thumbsDestDir
+  fanartDestDir = filter_config.fanartDestDir
   
   # --- Check that directories exist
-  have_dir_or_abort(thumbsDestDir, 'thumbsDestDir');
-  have_dir_or_abort(fanartDestDir, 'fanartDestDir');
+  have_dir_or_abort(thumbsDestDir, 'thumbsDestDir')
+  have_dir_or_abort(fanartDestDir, 'fanartDestDir')
 
   # --- Delete unknown thumbs
-  thumbs_file_list = [];
+  thumbs_file_list = []
   for file in os.listdir(thumbsDestDir):
     if file.endswith(".png"):
-      thumbs_file_list.append(file);
+      thumbs_file_list.append(file)
 
-  num_cleaned_thumbs = 0;
+  num_cleaned_thumbs = 0
   for file in sorted(thumbs_file_list):
-    art_baseName, ext = os.path.splitext(file); # Remove extension
+    art_baseName, ext = os.path.splitext(file)  # Remove extension
     if art_baseName not in artwork_copy_dic:
-      num_cleaned_thumbs += 1;
+      num_cleaned_thumbs += 1
       thumb_file_path_dest = thumbsDestDir + file
-      delete_file(thumb_file_path_dest, __prog_option_dry_run);
-      print_info('<Deleted thumb > ' + file);
+      delete_file(thumb_file_path_dest, __prog_option_dry_run)
+      print_info('<Deleted thumb > ' + file)
 
   # --- Delete unknown fanart
-  fanart_file_list = [];
+  fanart_file_list = []
   for file in os.listdir(fanartDestDir):
     if file.endswith(".png"):
-      fanart_file_list.append(file);
+      fanart_file_list.append(file)
 
-  num_cleaned_fanart = 0;
+  num_cleaned_fanart = 0
   for file in sorted(fanart_file_list):
-    art_baseName, ext = os.path.splitext(file); # Remove extension
+    art_baseName, ext = os.path.splitext(file)  # Remove extension
     if art_baseName not in artwork_copy_dic:
       num_cleaned_fanart += 1
       fanart_file_path_dest = thumbsDestDir + file
-      delete_file(fanart_file_path_dest, __prog_option_dry_run);
-      print_info('<Deleted fanart> ' + file);
+      delete_file(fanart_file_path_dest, __prog_option_dry_run)
+      print_info('<Deleted fanart> ' + file)
 
   # Print eport
-  print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs');
-  print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart');
+  print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs')
+  print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart')
 
 # -----------------------------------------------------------------------------
 # XML functions
@@ -639,12 +639,12 @@ def XML_read_file_ElementTree(filename, infoString):
 def XML_read_file_cElementTree(filename, infoString):
   """Reads merged MAME XML database and returns a [c]ElementTree object"""
   print(infoString + " " + filename + "... ", end="")
-  sys.stdout.flush();
+  sys.stdout.flush()
   try:
     # -- Use ElementTree
     # tree = ET.parse(filename);
     # -- Use cElementTree. Much faster but extremely slow for the reduce command.
-    tree = cET.parse(filename);
+    tree = cET.parse(filename)
   except IOError:
     print('\n')
     print('\033[31m[ERROR]\033[0m cannot find file ' + filename)
@@ -652,7 +652,7 @@ def XML_read_file_cElementTree(filename, infoString):
   print('done')
   sys.stdout.flush()
 
-  return tree;
+  return tree
 
 # See http://norwied.wordpress.com/2013/08/27/307/
 def indent_ElementTree_XML(elem, level=0):
@@ -675,9 +675,9 @@ def indent_ElementTree_XML(elem, level=0):
 # -----------------------------------------------------------------------------
 # --- Global variables for parser ---
 def set_parser_search_list(search_list):
-  global parser_search_list;
+  global parser_search_list
   
-  parser_search_list = search_list;
+  parser_search_list = search_list
 
 # --- Token objects ---
 class literal_token:
@@ -688,9 +688,9 @@ class literal_token:
     return self
   # --- Actual implementation
   def exec_token(self):
-    global parser_search_list;
+    global parser_search_list
 
-    return self.value in parser_search_list;
+    return self.value in parser_search_list
 
 def advance(id = None):
   global token
@@ -715,42 +715,42 @@ class operator_close_par_token:
 class operator_not_token:
   lbp = 50
   def __init__(self):
-    self.id = "OP NOT";
+    self.id = "OP NOT"
   def nud(self):
     self.first = expression(50)
     return self
   # --- Actual implementation
   def exec_token(self):
-    return not self.first.exec_token();
+    return not self.first.exec_token()
 
 class operator_and_token:
   lbp = 10
   def __init__(self):
-    self.id = "OP AND";
+    self.id = "OP AND"
   def led(self, left):
     self.first = left
     self.second = expression(10)
     return self
   # --- Actual implementation
   def exec_token(self):
-    return self.first.exec_token() and self.second.exec_token();
+    return self.first.exec_token() and self.second.exec_token()
 
 class operator_or_token:
   lbp = 10
   def __init__(self):
-    self.id = "OP OR";
+    self.id = "OP OR"
   def led(self, left):
     self.first = left
     self.second = expression(10)
     return self
   # --- Actual implementation
   def exec_token(self):
-    return self.first.exec_token() or self.second.exec_token();
+    return self.first.exec_token() or self.second.exec_token()
 
 class end_token:
   lbp = 0
   def __init__(self):
-    self.id = "END TOKEN";
+    self.id = "END TOKEN"
 
 # ----------------------------------------------------------------------------
 # Tokenizer
