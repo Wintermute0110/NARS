@@ -1210,14 +1210,14 @@ def do_taglist(filterName):
     NARS.print_info('{:6d}'.format(key[1]) + '  ' + key[0])
 
 # ----------------------------------------------------------------------------
-def do_checkFilter(filterName):
+def do_check(filter_name):
   """Applies filter and prints filtered parent/clone list"""
 
   NARS.print_info('[Check-filter ROM]')
-  NARS.print_info('Filter name = ' + filterName)
+  NARS.print_info('Filter name = ' + filter_name)
 
   # --- Get configuration for the selected filter and check for errors ---
-  filter_config = get_Filter_from_Config(filterName)
+  filter_config = get_Filter_from_Config(filter_name)
 
   # --- Obtain main parent/clone list, either based on DAT or filelist ---
   if filter_config.NoIntro_XML is None:
@@ -1238,25 +1238,25 @@ def do_checkFilter(filterName):
   sourceDir = filter_config.sourceDir
   NARS.have_dir_or_abort(sourceDir, 'sourceDir')
   NARS.print_info("[List of scored parent/clone ROM sets]")
-  index_main = 0
   for index_main in range(len(romMainList_list)):
-    romObject = romMainList_list[index_main]
-    NARS.print_info("{ROM set} " + romObject.setName)
-    for index in range(len(romObject.filenames)):
+    rom_object = romMainList_list[index_main]
+    # NARS.print_info("{ROM set}  " + rom_object.setName)
+    NARS.print_info('{{{0}}}'.format(rom_object.setName))
+    for index in range(len(rom_object.filenames)):
       # --- Check if file exists (maybe it does not exist for No-Intro lists)
-      sourceFullFilename = sourceDir + romObject.filenames[index]
+      sourceFullFilename = sourceDir + rom_object.filenames[index]
       fullROMFilename = os.path.isfile(sourceFullFilename)
       haveFlag = 'Have'
       if not os.path.isfile(sourceFullFilename):
         haveFlag = 'Miss'
       excludeFlag = 'Inc'
-      if romObject.include[index] == 0:
+      if rom_object.include[index] == 0:
         excludeFlag = 'Exc'
 
       # --- Print
-      NARS.print_info('  ' + '{:2d} '.format(romObject.scores[index]) + \
+      NARS.print_info('{:3d} '.format(rom_object.scores[index]) + \
                       '[' + excludeFlag + ' ' + haveFlag + '] ' + \
-                      romObject.filenames[index])
+                      rom_object.filenames[index])
 
 # ----------------------------------------------------------------------------
 # Update ROMs in destDir
@@ -1541,7 +1541,7 @@ elif command == 'check-nointro':
 elif command == 'list-tags':
   do_taglist(args.filterName)
 elif command == 'check':
-  do_checkFilter(args.filterName)
+  do_check(args.filterName)
 elif command == 'copy':
   do_update(args.filterName)
 elif command == 'update':
