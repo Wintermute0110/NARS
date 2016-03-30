@@ -1254,16 +1254,16 @@ def do_checkFilter(filterName):
       # --- Check if file exists (maybe it does not exist for No-Intro lists)
       sourceFullFilename = sourceDir + romObject.filenames[index]
       fullROMFilename = os.path.isfile(sourceFullFilename)
-      haveFlag = 'H'
+      haveFlag = 'Have'
       if not os.path.isfile(sourceFullFilename):
-        haveFlag = 'M'
-      excludeFlag = 'I'
+        haveFlag = 'Miss'
+      excludeFlag = 'Inc'
       if romObject.include[index] == 0:
-        excludeFlag = 'E'
+        excludeFlag = 'Exc'
 
       # --- Print
       NARS.print_info('  ' + '{:2d} '.format(romObject.scores[index]) + \
-                      '[' + excludeFlag + haveFlag + '] ' + \
+                      '[' + excludeFlag + ' ' + haveFlag + '] ' + \
                       romObject.filenames[index])
 
 # ----------------------------------------------------------------------------
