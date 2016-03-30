@@ -615,6 +615,42 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
   print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs')
   print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart')
 
+def create_copy_list(romMain_list, filter_config):
+  """Creates the list of ROMs to be copied based on the ordered main ROM list"""
+
+  # --- Scan sourceDir to get the list of available ROMs
+  NARS.print_info('[Scanning sourceDir for ROMs to be copied]')
+  sourceDir = filter_config.sourceDir
+  rom_main_list = []
+  for file in os.listdir(sourceDir):
+    if file.endswith(".zip"):
+      rom_main_list.append(file)
+
+  # - From the parent/clone list, pick the first available ROM (and
+  #   not excluded) to be copied.
+  NARS.print_info('[Creating list of ROMs to be copied/updated]')
+  rom_copy_list = []
+  for mainROM_obj in romMain_list:
+    num_set_files = len(mainROM_obj.filenames)
+    for index in range(num_set_files):
+      filename = mainROM_obj.filenames[index]
+      includeFlag = mainROM_obj.include[index]
+      if filename in rom_main_list and includeFlag:
+        rom_copy_list.append(filename)
+        # Only pick first ROM of the list available
+        break
+
+  # --- Sort list alphabetically
+  rom_copy_list_sorted = sorted(rom_copy_list)
+
+  # --- Remove extension
+  rom_copy_list_sorted_basename = []
+  for s in rom_copy_list_sorted:
+    (name, extension) = os.path.splitext(s)
+    rom_copy_list_sorted_basename.append(name)
+
+  return rom_copy_list_sorted_basename
+
 # -----------------------------------------------------------------------------
 # Miscellaneous ROM functions
 # -----------------------------------------------------------------------------
@@ -739,8 +775,25 @@ def isTag(tags, tag_list):
 
   return result
 
-# Parses a No-Intro DAT and creates an object with the XML information
-# Then, it creates a ROM main dictionary
+# returns rom_Tag_dic
+#  key = ROM filename 'Super Mario (World) (Rev 1).zip'
+#  elements = list of tags ['World', 'Rev 1']
+def get_Tag_list(romMainList_list):
+  """Extracts tags from filenames and creates a dictionary with them"""
+
+  rom_Tag_dic = {}
+  for item in romMainList_list:
+    filenames_list = item.filenames
+    for filename in filenames_list:
+      rom_Tag_dic[filename] = extract_ROM_Tags_All(filename)
+
+  return rom_Tag_dic
+
+# -----------------------------------------------------------------------------
+# Main filtering functions
+# -----------------------------------------------------------------------------
+# Parses a No-Intro XML parent-clone DAT file. Then, it creates a ROM main
+# dictionary
 #  romMainList [list of ROMMain objects]
 # ROMMain object
 #  ROMMain.filenames [list] full game filename (with extension)
@@ -830,7 +883,7 @@ def get_NoIntro_Main_list(filter_config):
       for clone in romObj.clone_list:
         NARS.print_debug(" {Clone} '" + clone + "'")
 
-  # --- Create ROM main list
+  # --- Create ROM main list ---
   romMainList_list = []
   for key in rom_pclone_dict:
     romNoIntroObj = rom_pclone_dict[key]
@@ -891,20 +944,6 @@ def get_directory_Main_list(filter_config):
     romMainList_list.append(mainROM) 
 
   return romMainList_list
-
-# returns rom_Tag_dic
-#  key = ROM filename 'Super Mario (World) (Rev 1).zip'
-#  elements = list of tags ['World', 'Rev 1']
-def get_Tag_list(romMainList_list):
-  """Extracts tags from filenames and creates a dictionary with them"""
-
-  rom_Tag_dic = {}
-  for item in romMainList_list:
-    filenames_list = item.filenames
-    for filename in filenames_list:
-      rom_Tag_dic[filename] = extract_ROM_Tags_All(filename)
-   
-  return rom_Tag_dic
 
 def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
   """Score and filter the main ROM list"""
@@ -984,42 +1023,6 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
   romMain_list = romMain_list_sorted
 
   return romMain_list
-
-def create_copy_list(romMain_list, filter_config):
-  "Creates the list of ROMs to be copied based on the ordered main ROM list"
-
-  # --- Scan sourceDir to get the list of available ROMs
-  NARS.print_info('[Scanning sourceDir for ROMs to be copied]')
-  sourceDir = filter_config.sourceDir
-  rom_main_list = []
-  for file in os.listdir(sourceDir):
-    if file.endswith(".zip"):
-      rom_main_list.append(file)
-
-  # - From the parent/clone list, pick the first available ROM (and
-  #   not excluded) to be copied.
-  NARS.print_info('[Creating list of ROMs to be copied/updated]')
-  rom_copy_list = []
-  for mainROM_obj in romMain_list:
-    num_set_files = len(mainROM_obj.filenames)
-    for index in range(num_set_files):
-      filename = mainROM_obj.filenames[index]
-      includeFlag = mainROM_obj.include[index]
-      if filename in rom_main_list and includeFlag:
-        rom_copy_list.append(filename)
-        # Only pick first ROM of the list available
-        break
-  
-  # --- Sort list alphabetically
-  rom_copy_list_sorted = sorted(rom_copy_list)
-  
-  # --- Remove extension
-  rom_copy_list_sorted_basename = []
-  for s in rom_copy_list_sorted:
-    (name, extension) = os.path.splitext(s)
-    rom_copy_list_sorted_basename.append(name)
-
-  return rom_copy_list_sorted_basename
 
 # -----------------------------------------------------------------------------
 # Main body functions
