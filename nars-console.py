@@ -775,12 +775,12 @@ def isTag(tags, tag_list):
 
   return result
 
-# returns rom_Tag_dic
-#  key = ROM filename 'Super Mario (World) (Rev 1).zip'
-#  elements = list of tags ['World', 'Rev 1']
-def get_Tag_list(romMainList_list):
-  """Extracts tags from filenames and creates a dictionary with them"""
-
+# Extracts tags from filenames and creates a dictionary with them.
+#
+# Returns a dictionary rom_Tag_dic:
+# key   ROM filename 'Super Mario (World) (Rev 1).zip'
+# value list of tags ['World', 'Rev 1']
+def get_Tag_dic(romMainList_list):
   rom_Tag_dic = {}
   for item in romMainList_list:
     filenames_list = item.filenames
@@ -793,13 +793,15 @@ def get_Tag_list(romMainList_list):
 # Main filtering functions
 # -----------------------------------------------------------------------------
 # Parses a No-Intro XML parent-clone DAT file. Then, it creates a ROM main
-# dictionary
-#  romMainList [list of ROMMain objects]
-# ROMMain object
-#  ROMMain.filenames [list] full game filename (with extension)
+# dictionary. The first game in the list MainROM.filenames is the parent game
+# according to the DAT file, and the rest are the clones in no particular order.
 #
-# The first game in the list is the parent game according to the DAT,
-# and the rest are the clones in no particular order.
+# Returns:
+# romMainList = [MainROM, MainROM, MainROM, ...]
+#
+# MainROM object:
+#  MainROM.filenames  [list] full game filename (with extension)
+#
 def get_NoIntro_Main_list(filter_config):
   __debug_parse_NoIntro_XML_Config = 0
   
@@ -816,24 +818,24 @@ def get_NoIntro_Main_list(filter_config):
     if game_EL.tag == 'game':
       num_games += 1
 
-      # --- Game attributes
+      # --- Game attributes ---
       game_attrib = game_EL.attrib
       romName = game_attrib['name']
       romObject = NoIntro_ROM(romName)
       if __debug_parse_NoIntro_XML_Config:
-        print('Game = ' + romName)
+        print('Game     {0}'.format(romName))
 
       if 'cloneof' in game_attrib:
         num_clones += 1
         romObject.cloneof = game_attrib['cloneof']
         romObject.isclone = 1
         if __debug_parse_NoIntro_XML_Config:
-          print(' Clone of = ' + game_attrib['cloneof'])
+          print('Clone of {0}'.format(game_attrib['cloneof']))
       else:
         num_parents += 1
         romObject.isclone = 0
 
-      # Add new game to the list
+      # --- Add new game to the list ---
       rom_raw_dict[romName] = romObject
   del tree
   NARS.print_info('Total number of games {:5d}'.format(num_games))
@@ -847,9 +849,9 @@ def get_NoIntro_Main_list(filter_config):
   for key in rom_raw_dict:
     gameObj = rom_raw_dict[key]
     if not gameObj.isclone:
-      romObject = NoIntro_ROM(key)
-      romObject.hasClones = 0
-      rom_pclone_dict[key] = romObject
+      rom_object = NoIntro_ROM(key)
+      rom_object.hasClones = 0
+      rom_pclone_dict[key] = rom_object
 
   # Second pass: traverse the raw list for clones and assign clone ROMS to 
   # their parents
@@ -875,36 +877,36 @@ def get_NoIntro_Main_list(filter_config):
     else:
       num_parents += 1
 
-  # DEBUG: print parent-clone list
+  # DEBUG: print parent-clone dictionary
   for key in rom_pclone_dict:
     romObj = rom_pclone_dict[key]
-    NARS.print_debug("{Parent} '" + romObj.baseName + "'")
+    NARS.print_debug("Parent '" + romObj.baseName + "'")
     if romObj.hasClones:
       for clone in romObj.clone_list:
-        NARS.print_debug(" {Clone} '" + clone + "'")
+        NARS.print_debug(" Clone '" + clone + "'")
 
   # --- Create ROM main list ---
   romMainList_list = []
   for key in rom_pclone_dict:
     romNoIntroObj = rom_pclone_dict[key]
-    # - Create object and add first ROM (parent ROM)
+    # Create object and add first ROM (parent ROM)
     mainROM = MainROM()
     mainROM.filenames = []
     mainROM.filenames.append(romNoIntroObj.baseName + '.zip')   
-    # - If game has clones add them to the list of filenames
+    # If game has clones add them to the list of filenames
     if romNoIntroObj.hasClones:
       for clone in romNoIntroObj.clone_list:
         mainROM.filenames.append(clone + '.zip')  
-    # - Add MainROM to the list
+    # Add MainROM to the list
     romMainList_list.append(mainROM)
 
   return romMainList_list
 
 def get_directory_Main_list(filter_config):
-  "Reads a directory and creates a unique ROM parent/clone list"
+  """Reads a directory and creates a unique ROM parent/clone list"""
   __debug_sourceDir_ROM_scanner = 0
   
-  # --- Read all files in sourceDir
+  # --- Read all files in sourceDir ---
   NARS.print_info('[Reading ROMs in source dir]')
   sourceDir = filter_config.sourceDir
   romMainList_dict = {}
@@ -920,7 +922,7 @@ def get_directory_Main_list(filter_config):
         print("   baseName '" + romObject.baseName + "'")
   NARS.print_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs')
   
-  # --- Create a parent/clone list based on the baseName of the ROM
+  # --- Create a parent/clone list based on the baseName of the ROM ---
   pclone_ROM_dict = {}  # Key is ROM basename
   for key in romMainList_dict:
     baseName = romMainList_dict[key].baseName
@@ -934,7 +936,7 @@ def get_directory_Main_list(filter_config):
       filenames.append(fileName)
       pclone_ROM_dict[baseName] = filenames
   
-  # --- Create ROM main list
+  # --- Create ROM main list ---
   romMainList_list = []
   for key in pclone_ROM_dict:
     # - Create object and add first ROM (parent ROM)
@@ -945,8 +947,18 @@ def get_directory_Main_list(filter_config):
 
   return romMainList_list
 
+# Score and filter the main ROM list.
+#
+# Returns:
+# romMain_list = [MainROM, MainROM, MainROM, ...]
+#
+# MainROM.setName   [str]
+# MainROM.filenames [str list]
+# MainROM.scores    [int list]
+# MainROM.include   [int list]
+# MainROM.parent    [int list]
+#
 def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
-  """Score and filter the main ROM list"""
   NARS.print_info('[Filtering ROMs]')
   __debug_main_ROM_list = 0
 
@@ -982,6 +994,14 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
       include_list.append(includeThisROM)
     mainROM_obj.include = include_list
 
+  # --- Add parent/clone flag ---
+  # The parent ROM in the set is the first in the list, but would be good to know which
+  # is the parent ROM after reordering.
+  for mainROM_obj in romMain_list:
+    parent_list = [0] * len(mainROM_obj.filenames)
+    parent_list[0] = 1
+    mainROM_obj.parent = parent_list
+
   # --- DEBUG: print main ROM list with scores and include flags ---
   if __debug_main_ROM_list:
     print("[DEBUG main ROM list scored]")
@@ -989,40 +1009,86 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
       print(mainROM_obj.filenames)
       print(mainROM_obj.scores)
       print(mainROM_obj.include)
+      print(mainROM_obj.parent)
 
-  # Order the main List based on scores and include flags
+  # Order lists of the MainROM object based on scores and include flags.
   # Don't remove excluded ROMs because they may be useful to copy
   # artwork (for example, the use has artwork for an excluded ROM
   # belonging to the same set as the first ROM).
+  #
+  # Issue #2 If a parent and a clone receive the same score, then select
+  #          the parent ROM and not the clone.
   romMain_list_sorted = []
   romSetName_list = []
-  for mainROM_obj in romMain_list:
-    # --- Get a list with the indices of the sorted list
-    sorted_idx = [i[0] for i in sorted(enumerate(mainROM_obj.scores), key=lambda x:x[1])]
+  for ROM_obj in romMain_list:
+    # --- Get a list with the indices of the sorted list ---
+    sorted_idx = [i[0] for i in sorted(enumerate(ROM_obj.scores), key=lambda x:x[1])]
     sorted_idx.reverse()
 
-    # --- List comprehension ---
-    mainROM_sorted = MainROM()
-    mainROM_sorted.filenames = [mainROM_obj.filenames[i] for i in sorted_idx]
-    mainROM_sorted.scores = [mainROM_obj.scores[i] for i in sorted_idx]
-    mainROM_sorted.include = [mainROM_obj.include[i] for i in sorted_idx]
-    # Set name is the stripped name of the first ROM
+    # --- Add setName field ---
+    # The set name is the stripped name of the first ROM in the unsorted
     # This is compatible with both No-Intro and directory listings
-    setFileName = mainROM_sorted.filenames[0]
-    thisFileName, thisFileExtension = os.path.splitext(setFileName)
+    ParentROM_fileName = ROM_obj.filenames[0]
+    thisFileName, thisFileExtension = os.path.splitext(ParentROM_fileName)
     stripped_ROM_name = get_ROM_baseName(thisFileName)
-    mainROM_sorted.setName = stripped_ROM_name
-    romMain_list_sorted.append(mainROM_sorted)
+    ROM_obj.setName = stripped_ROM_name
+
+    # --- Reorder MainROM object lists ---
+    ROM_sorted = MainROM()
+    ROM_sorted.filenames = [ROM_obj.filenames[i] for i in sorted_idx]
+    ROM_sorted.scores    = [ROM_obj.scores[i] for i in sorted_idx]
+    ROM_sorted.include   = [ROM_obj.include[i] for i in sorted_idx]
+    ROM_sorted.parent    = [ROM_obj.parent[i] for i in sorted_idx]
+    ROM_sorted.setName   = ROM_obj.setName
+
+    # Issue #2
+    # Check if parent has maximum and same score as one or several clones.
+    # If so, put the parent first.
+    top_scored_ROM_list = []
+    maximum_score = ROM_sorted.scores[0]
+    for i in range(len(ROM_sorted.filenames)):
+      if ROM_sorted.scores[i] >= maximum_score:
+        top_scored_ROM_list.append(ROM_sorted.filenames[i])
+      else:
+        break
+    if ParentROM_fileName in top_scored_ROM_list and ParentROM_fileName != top_scored_ROM_list[0]:
+      # Swap first element with parent
+      parent_index = ROM_sorted.filenames.index(ParentROM_fileName)
+      ROM_sorted.filenames[parent_index], ROM_sorted.filenames[0] = ROM_sorted.filenames[0], ROM_sorted.filenames[parent_index]
+      ROM_sorted.scores[parent_index], ROM_sorted.scores[0]       = ROM_sorted.scores[0], ROM_sorted.scores[parent_index]
+      ROM_sorted.include[parent_index], ROM_sorted.include[0]     = ROM_sorted.include[0], ROM_sorted.include[parent_index]
+      ROM_sorted.parent[parent_index], ROM_sorted.parent[0]       = ROM_sorted.parent[0], ROM_sorted.parent[parent_index]
+
+  # --- Insert reordered MainROM into ordered list ---
+    romMain_list_sorted.append(ROM_sorted)
     romSetName_list.append(stripped_ROM_name)
   romMain_list = romMain_list_sorted
 
-  # --- Finally, sort the list by ROM set name for nice listings ---
+  # --- Finally, sort romMain_list list by ROMset name for nice listings ---
   sorted_idx = [i[0] for i in sorted(enumerate(romSetName_list), key=lambda x:x[1])]
   romMain_list_sorted = []
   romMain_list_sorted = [romMain_list[i] for i in sorted_idx]
   romMain_list = romMain_list_sorted
 
   return romMain_list
+
+def filter_ROMs(filter_config):
+  # --- Obtain main parent/clone list, either based on DAT file or sourceDir filelist ---
+  if filter_config.NoIntro_XML is None:
+    NARS.print_info('Using directory listing')
+    romMainList_list = get_directory_Main_list(filter_config)
+  else:
+    NARS.print_info('Using No-Intro parent/clone DAT')
+    romMainList_list = get_NoIntro_Main_list(filter_config)
+
+  # --- Get tag list for every rom ---
+  rom_Tag_dic = get_Tag_dic(romMainList_list)
+
+  # Calculate scores based on filters and reorder the main
+  # list with higher scores first. Also applies exclude/include filters.
+  romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config)
+
+  return romMainList_list
 
 # -----------------------------------------------------------------------------
 # Main body functions
@@ -1059,14 +1125,15 @@ def do_list_filters():
 
     # Test if all mandatory elements are there
 
-def do_list_nointro(filterName):
-  "List of NoIntro XML file"
+def do_list_nointro(filter_name):
+  """List of NoIntro XML file"""
+
   NARS.print_info('\033[1m[Listing No-Intro XML DAT]\033[0m')
-  NARS.print_info('Filter name: ' + filterName)
-  filter_config = get_Filter_from_Config(filterName)
+  NARS.print_info("Filter name '{:}'".format(filter_name))
+  filter_config = get_Filter_from_Config(filter_name)
   filename = filter_config.NoIntro_XML
-  if filename == None:
-    print('\033[31m[ERROR]\033[0m Filter "{0}", No-Intro DAT not configured!'.format(filterName))
+  if filename is None:
+    print('\033[31m[ERROR]\033[0m Filter "{0}", No-Intro DAT not configured!'.format(filter_name))
     sys.exit(10)
 
   # Read No-Intro XML Parent-Clone DAT
@@ -1107,20 +1174,25 @@ def do_list_nointro(filterName):
       if game_child.tag == 'release':
         if 'region' in game_child.attrib:
           region_str = game_child.attrib['region']
-    NARS.print_info('{{game}} {0:<{ljustNum}}  {1:<6}  {2}'.format(
-        game_EL.attrib['name'], game_kind, region_str, ljustNum=max_game_str_length))
+    # ~~~ Print ~~~
+    if game_kind == 'Parent':
+      NARS.print_info('\033[100m{:>6}  {:<{ljustNum}} {:}\033[0m'.format(
+        game_kind, game_EL.attrib['name'],  region_str, ljustNum=max_game_str_length))
+    else:
+      NARS.print_info('{:>6}  {:<{ljustNum}} {:}'.format(
+        game_kind, game_EL.attrib['name'], region_str, ljustNum=max_game_str_length))
 
   NARS.print_info('[Report]')
   NARS.print_info('Number of games   {:5d}'.format(num_games))
   NARS.print_info('Number of parents {:5d}'.format(num_parents))
   NARS.print_info('Number of clones  {:5d}'.format(num_clones))
 
-def do_check_nointro(filterName):
+def do_check_nointro(filter_name):
   """Checks ROMs in sourceDir against NoIntro XML file"""
 
   NARS.print_info('[Checking ROMs against No-Intro XML DAT]')
-  NARS.print_info('Filter name = ' + filterName)
-  filter_config = get_Filter_from_Config(filterName)
+  NARS.print_info("Filter name '{:}'".format(filter_name))
+  filter_config = get_Filter_from_Config(filter_name)
 
   # --- Get parameters and check for errors
   sourceDir = filter_config.sourceDir
@@ -1175,67 +1247,51 @@ def do_check_nointro(filterName):
   NARS.print_info('Missing ROMs       {:5d}'.format(missing_roms))
   NARS.print_info('Unknown ROMs       {:5d}'.format(unknown_roms))
 
-def do_taglist(filterName):
+def do_taglist(filter_name):
   """Makes a histograms of the tags of the ROMs in sourceDir"""
 
   NARS.print_info('[Listing tags]')
-  NARS.print_info('Filter name = ' + filterName)
-  filter_config = get_Filter_Config(filterName)
-  sourceDir = filter_config.sourceDir
-
-  # Check if dest directory exists
-  NARS.have_dir_or_abort(sourceDir, 'sourceDir')
+  NARS.print_info("Filter name '{:}'".format(filter_name))
+  filter_config = get_Filter_from_Config(filter_name)
+  source_dir = filter_config.sourceDir
+  NARS.have_dir_or_abort(source_dir, 'sourceDir')
+  NARS.print_info("Source directory '{:}'".format(source_dir))
 
   # Traverse directory, for every file extract properties, and add them to the
   # dictionary.
-  propertiesDic = {}
-  for file in os.listdir(sourceDir):
+  properties_dic = {}
+  for file in os.listdir(source_dir):
     if file.endswith(".zip"):
-      romProperties = extract_ROM_Tags_All(file)
+      rom_props = extract_ROM_Tags_All(file)
       if len(romProperties) == 0:
         print_error(file + 'Has no tags!')
         sys.exit(10)
       else:
-        for property in romProperties:
-          if property in propertiesDic:
-            propertiesDic[property] += 1
+        for property in rom_props:
+          if property in properties_dic:
+            properties_dic[property] += 1
           else:
-            propertiesDic[property] = 1
+            properties_dic[property] = 1
 
   # Works for Python 2
   # http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
   # sorted_propertiesDic = sorted(propertiesDic.iteritems(), key=operator.itemgetter(1))
   # This works on Python 3
-  sorted_propertiesDic = ((k, propertiesDic[k]) for k in sorted(propertiesDic, key=propertiesDic.get, reverse=False))
+  sorted_properties_dic = ((k, properties_dic[k]) for k in sorted(properties_dic, key=properties_dic.get, reverse=False))
     
   NARS.print_info('[Tag histogram]')
-  for key in sorted_propertiesDic:
+  for key in sorted_properties_dic:
     NARS.print_info('{:6d}'.format(key[1]) + '  ' + key[0])
 
-# ----------------------------------------------------------------------------
 def do_check(filter_name):
   """Applies filter and prints filtered parent/clone list"""
 
   NARS.print_info('[Check-filter ROM]')
-  NARS.print_info('Filter name = ' + filter_name)
-
-  # --- Get configuration for the selected filter and check for errors ---
+  NARS.print_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
 
-  # --- Obtain main parent/clone list, either based on DAT or filelist ---
-  if filter_config.NoIntro_XML is None:
-    NARS.print_info('Using directory listing')
-    romMainList_list = get_directory_Main_list(filter_config)
-  else:
-    NARS.print_info('Using No-Intro parent/clone DAT')
-    romMainList_list = get_NoIntro_Main_list(filter_config)
-
-  # --- Get tag list for every rom ---
-  rom_Tag_dic = get_Tag_list(romMainList_list)
-  
-  # Calculate scores based on filters and reorder the main
-  # list with higher scores first. Also applies exclude/include filters.
-  romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config)
+  # --- Filter ROMs ---
+  romMainList_list = filter_ROMs(filter_config)
 
   # --- Print list in alphabetical order ---
   sourceDir = filter_config.sourceDir
@@ -1244,59 +1300,41 @@ def do_check(filter_name):
   for index_main in range(len(romMainList_list)):
     rom_object = romMainList_list[index_main]
     # NARS.print_info("{ROM set}  " + rom_object.setName)
-    NARS.print_info('{{{0}}}'.format(rom_object.setName))
+    NARS.print_info('ROM set \033[100m\'{0}\'\033[0m'.format(rom_object.setName))
     for index in range(len(rom_object.filenames)):
-      # --- Check if file exists (maybe it does not exist for No-Intro lists)
+      # Check if file exists (maybe it does not exist for No-Intro lists)
       sourceFullFilename = sourceDir + rom_object.filenames[index]
       fullROMFilename = os.path.isfile(sourceFullFilename)
-      haveFlag = 'Have'
-      if not os.path.isfile(sourceFullFilename):
-        haveFlag = 'Miss'
-      excludeFlag = 'Inc'
-      if rom_object.include[index] == 0:
-        excludeFlag = 'Exc'
-
-      # --- Print
-      NARS.print_info('{:3d} '.format(rom_object.scores[index]) + \
-                      '[' + excludeFlag + ' ' + haveFlag + '] ' + \
+      haveFlag = 'HAVE'
+      if not os.path.isfile(sourceFullFilename): haveFlag = 'MISS'
+      excludeFlag = 'INC'
+      if rom_object.include[index] == 0: excludeFlag = 'EXC'
+      parentFlag = 'PAR'
+      if rom_object.parent[index] == 0: parentFlag = 'CLO'
+      # --- Print ---
+      NARS.print_info('{:3d} '.format(rom_object.scores[index]) +
+                      haveFlag + ' ' +  excludeFlag + ' ' + parentFlag + '  ' +
                       rom_object.filenames[index])
 
-# ----------------------------------------------------------------------------
-# Update ROMs in destDir
-def do_update(filterName):
-  "Applies filter and updates (copies) ROMs"
+def do_update(filter_name):
+  """Applies filter and updates (copies) ROMs"""
+
   NARS.print_info('[Copy/Update ROMs]')
-  NARS.print_info('Filter name: ' + filterName)
-
-  # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_from_Config(filterName)
+  NARS.print_info("Filter name '{:}'".format(filter_name))
+  filter_config = get_Filter_from_Config(filter_name)
   sourceDir = filter_config.sourceDir
-  destDir = filter_config.destDir
-
-  # --- Check for errors, missing paths, etc...
-  NARS.print_info('Source directory     : ' + sourceDir)
-  NARS.print_info('Destination directory: ' + destDir)
+  destDir   = filter_config.destDir
   NARS.have_dir_or_abort(sourceDir, 'sourceDir')
   NARS.have_dir_or_abort(destDir, 'destDir')
+  NARS.print_info("Source directory      '{:}'".format(sourceDir))
+  NARS.print_info("Destination directory '{:}'".format(destDir))
 
-  # --- Obtain main parent/clone list, either based on DAT or filelist
-  if filter_config.NoIntro_XML == None:
-    NARS.print_info('Using directory listing')
-    romMainList_list = get_directory_Main_list(filter_config)
-  else:
-    NARS.print_info('Using No-Intro parent/clone DAT')
-    romMainList_list = get_NoIntro_Main_list(filter_config)
+  # --- Filter ROMs ---
+  romMainList_list = filter_ROMs(filter_config)
 
-  # --- Get tag list for every ROM
-  rom_Tag_dic = get_Tag_list(romMainList_list)
-  
-  # --- Calculate scores based on filters and reorder the main
-  #     list with higher scores first. Also applies exclude/include filters.
-  romMainList_list = get_Scores_and_Filter(romMainList_list, rom_Tag_dic, filter_config)
-
-  # --- Make a list of files to be copied, depending on ROMS present in
-  #     sourceDir. Takes into account the ROM scores and the
-  #     exclude/include filters.
+  # Make a list of files to be copied, depending on ROMS present in
+  # sourceDir. Takes into account the ROM scores and the
+  # exclude/include filters.
   rom_copy_list = create_copy_list(romMainList_list, filter_config)
 
   # --- Copy/Update ROMs into destDir
@@ -1313,32 +1351,36 @@ def do_update(filterName):
   if __prog_option_clean_NFO:
     delete_redundant_NFO(destDir)
 
-# ----------------------------------------------------------------------------
-def do_checkArtwork(filterName):
-  "Checks for missing artwork and prints a report"
+def do_checkArtwork(filter_name):
+  """Checks for missing artwork and prints a report"""
 
   NARS.print_info('[Check-ArtWork]')
-  NARS.print_info('Filter name = ' + filterName)
+  NARS.print_info("Filter name '{:}'".format(filter_name))
 
-  # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_from_Config(filterName)
+  # --- Get configuration for the selected filter and check for errors ---
+  filter_config = get_Filter_from_Config(filter_name)
+  source_dir = filter_config.sourceDir
   destDir = filter_config.destDir
   thumbsSourceDir = filter_config.thumbsSourceDir
   fanartSourceDir = filter_config.fanartSourceDir
-
-  # --- Check for errors, missing paths, etc...
+  NARS.have_dir_or_abort(source_dir, 'sourceDir')
   NARS.have_dir_or_abort(destDir, 'destDir')
   NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir')
   NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir')
+  NARS.print_info("Source directory        '{:}'".format(sourceDir))
+  NARS.print_info("Destination directory   '{:}'".format(destDir))
+  NARS.print_info("Thumbs Source directory '{:}'".format(thumbsSourceDir))
+  NARS.print_info("Fanart Source directory '{:}'".format(fanartSourceDir))
 
-  # --- Create a list of ROMs in destDir
+  # --- Create a list of ROMs in destDir ---
+  # TODO this should be a function into NARS module
   roms_destDir_list = []
   for file in os.listdir(destDir):
     if file.endswith(".zip"):
       thisFileName, thisFileExtension = os.path.splitext(file)
       roms_destDir_list.append(thisFileName)
 
-  # --- Obtain main parent/clone list, either based on DAT or filelist
+  # --- Obtain main parent/clone list, either based on DAT or filelist ---
   if filter_config.NoIntro_XML == None:
     NARS.print_info('Using directory listing')
     romMainList_list = get_directory_Main_list(filter_config)
@@ -1346,10 +1388,10 @@ def do_checkArtwork(filterName):
     NARS.print_info('Using No-Intro parent/clone DAT')
     romMainList_list = get_NoIntro_Main_list(filter_config)
 
-  # --- Replace missing artwork for alternative artwork in the parent/clone set
+  # --- Replace missing artwork for alternative artwork in the parent/clone set ---
   artwork_copy_dic = optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config)
 
-  # --- Print list in alphabetical order
+  # --- Print list in alphabetical order ---
   NARS.print_info('[Artwork report]')
   num_original = 0
   num_replaced = 0
@@ -1392,32 +1434,41 @@ def do_checkArtwork(filterName):
         num_have_fanart += 1
         print(' Have F     ' + art_baseName + '.png')
 
-  NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)))
-  NARS.print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)))
-  NARS.print_info('Number of original ArtWork = ' + str(num_original))
-  NARS.print_info('Number of replaced ArtWork = ' + str(num_replaced))
-  NARS.print_info('Number of have Thumbs    = ' + str(num_have_thumbs))
-  NARS.print_info('Number of missing Thumbs = ' + str(num_missing_thumbs))
-  NARS.print_info('Number of have Fanart    = ' + str(num_have_fanart))
-  NARS.print_info('Number of missing Fanart = ' + str(num_missing_fanart))
+  NARS.print_info('Number of ROMs in destDir  {:05d}'.format(len(roms_destDir_list)))
+  NARS.print_info('Number of ArtWork found    {:05d}'.format(len(artwork_copy_dic)))
+  NARS.print_info('Number of original ArtWork {:05d}'.format(num_original))
+  NARS.print_info('Number of replaced ArtWork {:05d}'.format(num_replaced))
+  NARS.print_info('Number of have Thumbs      {:05d}'.format(num_have_thumbs))
+  NARS.print_info('Number of missing Thumbs   {:05d}'.format(num_missing_thumbs))
+  NARS.print_info('Number of have Fanart      {:05d}'.format(num_have_fanart))
+  NARS.print_info('Number of missing Fanart   {:05d}'.format(num_missing_fanart))
 
-# ----------------------------------------------------------------------------
-def do_update_artwork(filterName):
-  "Reads ROM destDir and copies Artwork"
+def do_update_artwork(filter_name):
+  """Reads ROM destDir and copies Artwork"""
 
   NARS.print_info('[Updating/copying ArtWork]')
-  NARS.print_info('Filter name = ' + filterName)
+  NARS.print_info("Filter name '{:}'".format(filter_name))
 
   # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_Config(filterName)
-  destDir = filter_config.destDir
-  thumbsSourceDir = filter_config.thumbsSourceDir
-  fanartSourceDir = filter_config.fanartSourceDir
-
-  # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir, 'destDir')
-  NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir')
-  NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir')
+  filter_config = get_Filter_from_Config(filter_name)
+  source_dir = filter_config.sourceDir
+  dest_dir = filter_config.destDir
+  thumbs_source_dir = filter_config.thumbsSourceDir
+  fanart_source_dir = filter_config.fanartSourceDir
+  thumbs_dest_dir = filter_config.thumbsDestDir
+  fanart_dest_dir = filter_config.fanartDestDir
+  NARS.have_dir_or_abort(source_dir, 'source_dir')
+  NARS.have_dir_or_abort(dest_dir, 'dest_dir')
+  NARS.have_dir_or_abort(thumbs_source_dir, 'thumbs_source_dir')
+  NARS.have_dir_or_abort(fanart_source_dir, 'fanart_source_dir')
+  NARS.have_dir_or_abort(thumbs_dest_dir, 'thumbs_dest_dir')
+  NARS.have_dir_or_abort(fanart_dest_dir, 'fanart_dest_dir')
+  NARS.print_info("Source directory             '{:}'".format(source_dir))
+  NARS.print_info("Destination directory        '{:}'".format(dest_dir))
+  NARS.print_info("Thumbs Source directory      '{:}'".format(thumbs_source_dir))
+  NARS.print_info("Fanart Source directory      '{:}'".format(fanart_source_dir))
+  NARS.print_info("Thumbs Destination directory '{:}'".format(thumbs_dest_dir))
+  NARS.print_info("Fanart Destination directory '{:}'".format(fanart_dest_dir))
 
   # --- Create a list of ROMs in destDir
   roms_destDir_list = []
