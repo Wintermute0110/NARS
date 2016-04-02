@@ -1138,24 +1138,20 @@ def do_list_nointro(filter_name):
 
   # Read No-Intro XML Parent-Clone DAT
   tree = NARS.XML_read_file_ElementTree(filename, "Parsing No-Intro XML DAT file ")
-
-  # Child elements (NoIntro pclone XML)
-  # Print game list as they appear in DAT file
-  num_games = 0
-  num_parents = 0
-  num_clones = 0
   root = tree.getroot()
 
   # ~~~ First pass to compute maximum string lengths and statistics ~~~
+  num_games = 0
+  num_parents = 0
+  num_clones = 0
   max_game_str_length = 0
   for game_EL in root:
     if game_EL.tag != 'game':
       continue
+    num_games += 1
     # --- Game attributes ---
-    if 'cloneof' in game_EL.attrib:
-      num_parents += 1
-    else:
-      num_clones += 1
+    if 'cloneof' in game_EL.attrib:  num_clones += 1
+    else:                            num_parents += 1
     if len(game_EL.attrib['name']) > max_game_str_length:
       max_game_str_length = len(game_EL.attrib['name'])
 
@@ -1186,6 +1182,9 @@ def do_list_nointro(filter_name):
   NARS.print_info('Number of games   {:5d}'.format(num_games))
   NARS.print_info('Number of parents {:5d}'.format(num_parents))
   NARS.print_info('Number of clones  {:5d}'.format(num_clones))
+  if num_games != num_parents + num_clones:
+    NARS.print_error('[ERROR] num_games != num_parents + num_clones')
+    sys.exit(10)
 
 def do_check_nointro(filter_name):
   """Checks ROMs in sourceDir against NoIntro XML file"""
