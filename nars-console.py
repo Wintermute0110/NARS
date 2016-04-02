@@ -1226,25 +1226,25 @@ def do_check_nointro(filter_name):
     if file.endswith(".zip"):
       if file in nointro_roms:
         have_roms += 1
-        NARS.print_vverb('<Have ROM  > ' + file)
+        NARS.print_verb('\033[32m{   Have ROM}\033[0m  ' + file)
       else:
         unknown_roms += 1
-        NARS.print_verb('<Unknown ROM> ' + file)
+        NARS.print_info('\033[33m{Unknown ROM}\033[0m  ' + file)
 
   # Check how many ROMs we have in the DAT not in sourceDir
   missing_roms = 0
   for game in sorted(nointro_roms):
     filename = sourceDir + game
     if not os.path.isfile(filename):
-      NARS.print_verb('{Missing ROM} ' + game)
+      NARS.print_info('\033[31m{Missing ROM}\033[0m  ' + game)
       missing_roms += 1
 
   NARS.print_info('[Report]')
-  NARS.print_info('Files in sourceDir {:5d}'.format(len(file_list)))
-  NARS.print_info('Games in DAT       {:5d}'.format(num_games))
-  NARS.print_info('Have ROMs          {:5d}'.format(have_roms))
-  NARS.print_info('Missing ROMs       {:5d}'.format(missing_roms))
-  NARS.print_info('Unknown ROMs       {:5d}'.format(unknown_roms))
+  NARS.print_info('Files in sourceDir  {:5d}'.format(len(file_list)))
+  NARS.print_info('Games in DAT        {:5d}'.format(num_games))
+  NARS.print_info('Have ROMs           {:5d}'.format(have_roms))
+  NARS.print_info('Missing ROMs        {:5d}'.format(missing_roms))
+  NARS.print_info('Unknown ROMs        {:5d}'.format(unknown_roms))
 
 def do_taglist(filter_name):
   """Makes a histograms of the tags of the ROMs in sourceDir"""
