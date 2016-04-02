@@ -982,18 +982,34 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
     for filename in mainROM_obj.filenames:
       tags = rom_Tag_dic[filename]
       # NOTE includeTag_list/excludeTag_list may be None (user didn't configure them)
-      isTag_include = 1  # By default include ROMs
-      isTag_exclude = 0  # By default not exclude ROMs
-      if includeTag_list is not None:
-        isTag_include = isTag(tags, includeTag_list)
-      if excludeTag_list is not None:
-        isTag_exclude = isTag(tags, excludeTag_list)
+      isTag_include = None
+      isTag_exclude = None
+      if includeTag_list is not None:  isTag_include = isTag(tags, includeTag_list)
+      if excludeTag_list is not None:  isTag_exclude = isTag(tags, excludeTag_list)
+      # Filtering cases,
+      #  A) <includeTags>     empty | <excludeTags>     empty
+      #  B) <includeTags>     empty | <excludeTags> NON empty
+      #  C) <includeTags> NON empty | <excludeTags>     empty
+      #  D) <includeTags> NON empty | <excludeTags> NON empty
+      #
+      #  A) Include all ROMs
+      #  B) Exclude ROM with excludeTags only
+      #  C) Include all ROMs
+      #  D) Exclude ROM if not includeTags and excludeTags
+      #     Include ROM if includeTags regardless of excludeTags
       includeThisROM = 1
-      if isTag_exclude and not isTag_include:
+      if   isTag_include is     None and isTag_exclude is     None:
+        pass
+      elif isTag_include is     None and isTag_exclude is not None and isTag_exclude:
         includeThisROM = 0
+      elif isTag_include is not None and isTag_exclude is     None:
+        pass
+      elif isTag_include is not None and isTag_exclude is not None:
+        if not isTag_include and isTag_exclude:
+          includeThisROM = 0
       include_list.append(includeThisROM)
     mainROM_obj.include = include_list
-
+  # By default not exclude ROMs
   # --- Add parent/clone flag ---
   # The parent ROM in the set is the first in the list, but would be good to know which
   # is the parent ROM after reordering.
