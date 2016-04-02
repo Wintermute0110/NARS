@@ -305,9 +305,19 @@ def update_ROM_list(rom_list, sourceDir, destDir):
       if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:5.2f}% '.format(percentage))
       num_updated_roms += 1
+      NARS.print_info('<Miss   > ' + romFileName)
+    elif ret == 2:
+      if NARS.log_level >= NARS.Log.verb:
+        sys.stdout.write('{:5.2f}% '.format(percentage))
+      num_updated_roms += 1
       NARS.print_verb('<Updated> ' + romFileName)
+    elif ret == -1:
+      if NARS.log_level >= NARS.Log.verb:
+        sys.stdout.write('{:5.2f}% '.format(percentage))
+      num_updated_roms += 1
+      NARS.print_info('<ERROR  > ' + romFileName)
     else:
-      NARS.print_error('Wrong value returned by update_ROM_file()')
+      NARS.print_error('[ERROR] update_ROM_list: Wrong value returned by NARS.update_file()')
       sys.exit(10)
     sys.stdout.flush()
 
@@ -319,7 +329,7 @@ def update_ROM_list(rom_list, sourceDir, destDir):
   NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms))
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
-  print_info('[Cleaning ROMs in ROMsDest]')
+  NARS.print_info('[Cleaning ROMs in ROMsDest]')
 
   # --- Delete ROMs present in destDir not present in the filtered list
   rom_main_list = []
@@ -335,10 +345,10 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
       delete_ROM_file(file, destDir)
       print_info('<Deleted> ' + file)
 
-  print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
+  NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
 
 def delete_redundant_NFO(destDir):
-  print_info('[Deleting redundant NFO files]')
+  NARS.print_info('[Deleting redundant NFO files]')
   num_deletedNFO_files = 0
   for file in os.listdir(destDir):
     if file.endswith(".nfo"):
@@ -350,7 +360,7 @@ def delete_redundant_NFO(destDir):
         num_deletedNFO_files += 1
         print_info('<Deleted NFO> ' + file)
 
-  print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
+  NARS.print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
   NARS.print_info('[Copying ArtWork]')
@@ -574,14 +584,14 @@ def optimize_ArtWork_list(rom_copy_list, romMainList_list, filter_config):
   return artwork_copy_dic
 
 def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
-  print_info('[Cleaning ArtWork]')
+  NARS.print_info('[Cleaning ArtWork]')
 
   thumbsDestDir = filter_config.thumbsDestDir
   fanartDestDir = filter_config.fanartDestDir
   
   # --- Check that directories exist
-  haveDir_or_abort(thumbsDestDir)
-  haveDir_or_abort(thumbsDestDir)
+  NARS.have_dir_or_abort(thumbsDestDir, 'thumbsDestDir')
+  NARS.have_dir_or_abort(fanartDestDir, 'fanartDestDir')
 
   # --- Delete unknown thumbs
   thumbs_file_list = []
@@ -612,8 +622,8 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
       print_info(' <Deleted fanart> ' + file)
 
   # --- Report
-  print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs')
-  print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart')
+  NARS.print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs')
+  NARS.print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart')
 
 def create_copy_list(romMain_list, filter_config):
   """Creates the list of ROMs to be copied based on the ordered main ROM list"""
@@ -1278,7 +1288,7 @@ def do_taglist(filter_name):
   for file in os.listdir(source_dir):
     if file.endswith(".zip"):
       rom_props = extract_ROM_Tags_All(file)
-      if len(romProperties) == 0:
+      if len(rom_props) == 0:
         print_error(file + 'Has no tags!')
         sys.exit(10)
       else:
@@ -1416,7 +1426,7 @@ def do_checkArtwork(filter_name):
   NARS.have_dir_or_abort(destDir, 'destDir')
   NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir')
   NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir')
-  NARS.print_info("Source directory        '{:}'".format(sourceDir))
+  NARS.print_info("Source directory        '{:}'".format(source_dir))
   NARS.print_info("Destination directory   '{:}'".format(destDir))
   NARS.print_info("Thumbs Source directory '{:}'".format(thumbsSourceDir))
   NARS.print_info("Fanart Source directory '{:}'".format(fanartSourceDir))
@@ -1519,9 +1529,9 @@ def do_update_artwork(filter_name):
   NARS.print_info("Thumbs Destination directory '{:}'".format(thumbs_dest_dir))
   NARS.print_info("Fanart Destination directory '{:}'".format(fanart_dest_dir))
 
-  # --- Create a list of ROMs in destDir
+  # --- Create a list of ROMs in dest_dir
   roms_destDir_list = []
-  for file in os.listdir(destDir):
+  for file in os.listdir(dest_dir):
     if file.endswith(".zip"):
       thisFileName, thisFileExtension = os.path.splitext(file)
       roms_destDir_list.append(thisFileName)
