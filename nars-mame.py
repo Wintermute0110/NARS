@@ -46,12 +46,12 @@ __prog_option_sync = 0
 # --- Config file options global class (like a C struct) ---
 class ConfigFile:
   def __init__(self):
-    self.MAME_XML = ''
+    self.MAME_XML       = ''
     self.MAME_XML_redux = ''
-    self.Catver = ''
+    self.Catver         = ''
     self.MergedInfo_XML = ''
-    self.MachineSwap = {}
-    self.filter_dic = {}
+    self.MachineSwap    = {}
+    self.filter_dic     = {}
 
 class ConfigFileFilter:
   def __init__(self):
@@ -73,6 +73,7 @@ class ConfigFileFilter:
     self.excludeFilter     = None
     self.driverFilter      = None
     self.categoriesFilter  = None
+    self.displayTypeFilter = None
     self.orientationFilter = None
     self.controlsFilter    = None
     self.buttons_exp       = None
@@ -170,9 +171,13 @@ def parse_File_Config():
           if filter_child.text is not None:
             NARS.print_debug(' Categories = ' + filter_child.text)
             filter_class.categoriesFilter = filter_child.text
-        elif filter_child.tag == 'Orientation':
+        elif filter_child.tag == 'DisplayType':
           if filter_child.text is not None:
-            NARS.print_debug(' Orientation = ' + filter_child.text)
+            NARS.print_debug(' DisplayType = ' + filter_child.text)
+            filter_class.displayTypeFilter = filter_child.text
+        elif filter_child.tag == 'DisplayOrientation':
+          if filter_child.text is not None:
+            NARS.print_debug(' DisplayOrientation = ' + filter_child.text)
             filter_class.orientationFilter = filter_child.text
         elif filter_child.tag == 'Controls':
           if filter_child.text is not None:
@@ -288,13 +293,14 @@ class Machine:
     self.hasCoinSlot = False       # bool
     self.control_type_list = []    # str list
     # Custom <NARS> attributes
-    self.hasROMs = True            # bool
+    self.hasROMs          = True   # bool
     self.hasSoftwareLists = False  # bool
-    self.orientation = None        # str
+    self.displayType      = None   # str
+    self.orientation      = None   # str
     # Custom <NARS> tags
-    self.BIOS_depends_list = []    # str list
+    self.BIOS_depends_list   = []  # str list
     self.device_depends_list = []  # str list
-    self.CHD_depends_list = []     # str list
+    self.CHD_depends_list    = []  # str list
 
 # Parses machine swaps in configuration filter, like <MachineSwap>tmnt --> tmnt2po</MachineSwap>
 # Returns a tuple with the first machine (original name) and the second machine (swapped).
@@ -783,6 +789,40 @@ def filter_do_Categories_tag(mame_xml_dic, filter_config):
 
   return machines_filtered_dic
 
+__debug_apply_MAME_filters_displayType = 0
+def filter_do_displayType_tag(mame_xml_dic, filter_config):
+  NARS.print_info('<Display type filter>')
+
+  if filter_config.displayTypeFilter is not None:
+    displayType_filter_expression = filter_config.displayTypeFilter
+    machines_filtered_dic = {}
+    filtered_out_games = 0
+    NARS.print_info('Filter expression "' + displayType_filter_expression + '"')
+    for key in sorted(mame_xml_dic):
+      romObject = mame_xml_dic[key]
+      displayType_list = [romObject.displayType]
+      NARS.set_parser_search_list(displayType_list)
+      boolean_result = NARS.parse_exec(displayType_filter_expression)
+      if not boolean_result:
+        filtered_out_games += 1
+        NARS.print_vverb('FILTERED ' + key.ljust(8) + ' display type ' + ', '.join(displayType_list))
+      else:
+        machines_filtered_dic[key] = mame_xml_dic[key]
+        NARS.print_debug('Included ' + key.ljust(8) + ' display type ' + ', '.join(displayType_list))
+      if __debug_apply_MAME_filters_displayType:
+        print('[DEBUG] Machine {0}'.format(romObject.name))
+        print('[DEBUG] DisplayType list = ', sorted(displayType_list))
+        print('[DEBUG] Filter = "' + displayType_filter_expression + '"')
+        print('[DEBUG] boolean_result = ' + str(boolean_result))
+    NARS.print_info(' '.ljust(mainFilter_str_length) + \
+                    'Removed  {:5d} | '.format(filtered_out_games) + \
+                    'Remaining  {:5d}'.format(len(machines_filtered_dic)))
+  else:
+    NARS.print_info('User wants all categories')
+    return mame_xml_dic
+
+  return machines_filtered_dic
+
 __debug_apply_MAME_filters_Orientation_tag = 0
 def filter_do_Orientation_tag(mame_xml_dic, filter_config):
   NARS.print_info('<Orientation filter>')
@@ -816,7 +856,7 @@ def filter_do_Orientation_tag(mame_xml_dic, filter_config):
                     'Removed  {:5d} | '.format(filtered_out_games) + \
                     'Remaining  {:5d}'.format(len(machines_filtered_dic)))
   else:
-    NARS.print_info('User wants all categories')
+    NARS.print_info('User wants all display orientations')
     return mame_xml_dic
 
   return machines_filtered_dic
@@ -1017,82 +1057,83 @@ def filter_do_substitute_machines(mame_xml_dic):
 # Add ROMs (devices and BIOS) needed for other ROM to work.
 # Traverse the list of filtered games, and check if they have dependencies. If
 # so, add the dependencies to the filtered list.
-def filter_resolve_device_and_BIOS_dependencies(mame_xml_dic):
+def filter_resolve_device_and_BIOS_dependencies(mame_filtered_dic, mame_dic):
   NARS.print_info('<Adding ROM dependencies (BIOS and devices with ROMs)>')
   # NOTE: dictionaries cannot change size during iteration. Create auxiliary list.
   dependencies_ROM_list = {}
-  for key in sorted(mame_xml_dic):
-    romObject = mame_xml_dic[key]
+  for key in sorted(mame_filtered_dic):
+    romObject = mame_filtered_dic[key]
     # --- BIOS dependencies ---
     if len(romObject.BIOS_depends_list):
       for BIOS_depend in romObject.BIOS_depends_list:
-        if BIOS_depend not in mame_xml_dic:
-          NARS.print_error('[ERROR] ROM name not found in mame_xml_dic')
+        if BIOS_depend not in mame_dic:
+          NARS.print_error('[ERROR] Machine "{0}"'.format(romObject.name))
+          NARS.print_error('[ERROR] BIOS dependency "{0}" not found in mame_dic'.format(BIOS_depend))
           sys.exit(10)
         # Get ROM object from main, unfiltered dictionary
-        BIOS_romObj = mame_xml_dic[BIOS_depend]
+        BIOS_romObj = mame_dic[BIOS_depend]
         # Only add dependency if not already in filtered list
         if BIOS_depend not in dependencies_ROM_list:
           dependencies_ROM_list[BIOS_depend] = BIOS_romObj
           NARS.print_info('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
                           BIOS_depend.ljust(11) + ' - Adding  to list')
         else:
-          NARS.print_verb('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
+          NARS.print_vverb('Game ' + key.ljust(8) + ' depends on BIOS   ' + \
                            BIOS_depend.ljust(11) + ' - Already on list')
 
     # --- Device dependencies ---
     if len(romObject.device_depends_list):
       for device_depend in romObject.device_depends_list:
-        if device_depend not in mame_xml_dic:
-          NARS.print_error('[ERROR] ROM name not found in mame_xml_dic')
+        if device_depend not in mame_dic:
+          NARS.print_error('[ERROR] Machine "{0}"'.format(romObject.name))
+          NARS.print_error('[ERROR] Device dependency "{0}" not found in mame_dic'.format(device_depend))
           sys.exit(10)
-        # Get ROM object from main, unfiltered dictionary
-        device_romObj = mame_xml_dic[device_depend]
-        # Only add dependency if not already in filtered list
+        device_romObj = mame_dic[device_depend]
         if device_depend not in dependencies_ROM_list:
           dependencies_ROM_list[device_depend] = device_romObj
           NARS.print_info('Game ' + key.ljust(8) + ' depends on device ' + \
                           device_depend.ljust(11) + ' - Adding  to list')
         else:
-          NARS.print_verb('Game ' + key.ljust(8) + ' depends on device ' + \
-                          device_depend.ljust(11) + ' - Already on list')
+          NARS.print_vverb('Game ' + key.ljust(8) + ' depends on device ' + \
+                           device_depend.ljust(11) + ' - Already on list')
 
   for key in dependencies_ROM_list:
     romObject = dependencies_ROM_list[key]
-    mame_xml_dic[key] = romObject
+    mame_filtered_dic[key] = romObject
   
-  return mame_xml_dic
+  return mame_filtered_dic
 
 # Main filtering function. Apply filters to main parent/clone dictionary.
-def filter_MAME_machines(mame_xml_dic, filter_config):
+def filter_MAME_machines(mame_dic, filter_config):
   NARS.print_info('[Applying MAME filters]')
   NARS.print_info('NOTE: -vv if you want to see filters in action')
   
   # ~~~~~ Main filter: Include and Exclude ~~~~~~
   NARS.print_info('<Default filter>')
-  mame_xml_dic = filter_do_Default(mame_xml_dic)
+  mame_filtered_dic = filter_do_Default(mame_dic)
   NARS.print_info('<Include filter>')
-  mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 1)
+  mame_filtered_dic = filter_main_filter(mame_filtered_dic, filter_config, 1)
   NARS.print_info('<Exclude filter>')
-  mame_xml_dic = filter_main_filter(mame_xml_dic, filter_config, 0)
+  mame_filtered_dic = filter_main_filter(mame_filtered_dic, filter_config, 0)
 
   # ~~~~~ Secondary filters ~~~~~~  
-  mame_xml_dic = filter_do_Driver_tag(mame_xml_dic, filter_config)
-  mame_xml_dic = filter_do_Categories_tag(mame_xml_dic, filter_config)
-  mame_xml_dic = filter_do_Orientation_tag(mame_xml_dic, filter_config)
-  mame_xml_dic = filter_do_Controls_tag(mame_xml_dic, filter_config)
-  mame_xml_dic = filter_do_Buttons_tag(mame_xml_dic, filter_config)
-  mame_xml_dic = filter_do_Players_tag(mame_xml_dic, filter_config)
-  mame_xml_dic = filter_do_Years_tag(mame_xml_dic, filter_config)
+  mame_filtered_dic = filter_do_Driver_tag     (mame_filtered_dic, filter_config)
+  mame_filtered_dic = filter_do_Categories_tag (mame_filtered_dic, filter_config)
+  mame_filtered_dic = filter_do_displayType_tag(mame_filtered_dic, filter_config)
+  mame_filtered_dic = filter_do_Orientation_tag(mame_filtered_dic, filter_config)
+  mame_filtered_dic = filter_do_Controls_tag   (mame_filtered_dic, filter_config)
+  mame_filtered_dic = filter_do_Buttons_tag    (mame_filtered_dic, filter_config)
+  mame_filtered_dic = filter_do_Players_tag    (mame_filtered_dic, filter_config)
+  mame_filtered_dic = filter_do_Years_tag      (mame_filtered_dic, filter_config)
 
   # ~~~~~ Global ROM substitution ~~~~~
   
   # ~~~~~ Local ROM substitution ~~~~~
 
   # ~~~~~ ROM dependencies ~~~~~
-  mame_xml_dic = filter_resolve_device_and_BIOS_dependencies(mame_xml_dic)
+  mame_filtered_dic = filter_resolve_device_and_BIOS_dependencies(mame_filtered_dic, mame_dic)
 
-  return mame_xml_dic
+  return mame_filtered_dic
 
 # -----------------------------------------------------------------------------
 # Parse Catver.ini and MAME reduced XML file
@@ -1286,6 +1327,12 @@ def parse_MAME_merged_XML():
             machineObj.hasSoftwareLists = True
         else:
           print('[ERROR] Not found <NARS hasSoftwareLists=... > (Machine {0})\n'.format(machineObj.name))
+          sys.exit(10)
+
+        if 'displayType' in nars_attrib:
+          machineObj.displayType = nars_attrib['displayType']
+        else:
+          print('[ERROR] Not found <NARS displayType=... > (Machine {0})\n'.format(machineObj.name))
           sys.exit(10)
 
         if 'orientation' in nars_attrib:
@@ -1588,6 +1635,7 @@ def do_reduce_XML():
   machine_with_CHD_list = []          # machines that have CHDs
   machine_with_ROM_list = []          # machines that have ROMs
   machine_with_SoftList_list = []     # machines that have one or more software lists
+  machine_displayType_dic = {}        # key = machine_name : value = "Raster|Vector|LCD|Unknown"
   machine_orientation_dic = {}        # key = machine_name : value = "Vertical|Horizontal"
 
   # NOTE All the MAME XML checks must be done here, and not when the reduced XML is loaded.
@@ -1674,8 +1722,31 @@ def do_reduce_XML():
           manufacturer_output = ET.SubElement(machine_output, 'manufacturer')
           manufacturer_output.text = machine_child.text
 
-        # Check machine orientation
+        # ~~~ Check machine display information ~~~
         if machine_child.tag == 'display':
+          # Display type
+          # <!ATTLIST display type (raster|vector|lcd|unknown) #REQUIRED>
+          if 'type' in machine_child.attrib:
+            type_attrib = machine_child.attrib['type']
+            if type_attrib == 'raster':
+              machine_displayType_dic[machine_name] = 'Raster'
+            elif type_attrib == 'vector':
+              machine_displayType_dic[machine_name] = 'Vector'
+            elif type_attrib == 'lcd':
+              machine_displayType_dic[machine_name] = 'LCD'
+            elif type_attrib == 'unknown':
+              machine_displayType_dic[machine_name] = 'Unknown'
+            else:
+              print(machine_child.attrib)
+              print('Machine "{0}" Unknown type = {1}\n'.format(machine_name, machine_child.attrib['type']))
+              sys.exit(10)
+          else:
+            print(machine_child.attrib)
+            print('Machine "{0}" <display> has no "type" attribute\n'.format(machine_name))
+            sys.exit(10)
+          
+          # Check machine orientation
+          # <!ATTLIST display rotate (0|90|180|270) #REQUIRED>
           if 'rotate' in machine_child.attrib:
             rotate_attrib = machine_child.attrib['rotate']
             if rotate_attrib == '0':
@@ -1858,8 +1929,8 @@ def do_reduce_XML():
       # Create tag <NARS>
       NARS_element = ET.SubElement(machine_EL, 'NARS')
       
-      # <NARS hasROMs="yes|no" hasSoftwareLists="yes|no" orientation="Horizontal|Vertical">
-      # 'hasROM is mandatory'
+      # <NARS hasROMs="yes|no" hasSoftwareLists="yes|no" displayType="Raster|Vector|LCD|Unknown" 
+      #       orientation="Horizontal|Vertical">
       if has_ROMs or has_CHDs:
         NARS_element.attrib['hasROMs'] = "yes"
       else:
@@ -1868,8 +1939,14 @@ def do_reduce_XML():
         NARS_element.attrib['hasSoftwareLists'] = "yes"
       else:
         NARS_element.attrib['hasSoftwareLists'] = "no"
-      # mechanical machines do not have <display> tag
-      # Set it to Unknown
+
+      # mechanical/device machines do not have <display> tag. Set orientation to Unknown
+      if machine_name in machine_displayType_dic:
+        NARS_element.attrib['displayType'] = machine_displayType_dic[machine_name]  
+      else:
+        NARS_element.attrib['displayType'] = 'Unknown'
+
+      # mechanical/device machines do not have <display> tag. Set orientation to Unknown
       if machine_name in machine_orientation_dic:
         NARS_element.attrib['orientation'] = machine_orientation_dic[machine_name]  
       else:
@@ -2518,7 +2595,7 @@ def do_list_filters():
       sys.exit(10)
 
 # ----------------------------------------------------------------------------
-def do_checkFilter(filterName):
+def do_check(filterName):
   """Applies filter and copies ROMs into destination directory"""
 
   NARS.print_info('[Checking filter]')
@@ -2531,16 +2608,16 @@ def do_checkFilter(filterName):
   NARS.have_dir_or_abort(filter_config.destDir, 'ROMsDest')
 
   # --- Get MAME parent/clone dictionary --------------------------------------
-  mame_xml_dic = parse_MAME_merged_XML()
+  mame_dic = parse_MAME_merged_XML()
 
   # --- Create main ROM list in sourceDir -------------------------------------
   rom_main_list = get_ROM_main_list(filter_config.sourceDir)
 
   # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
+  mame_filtered_dic = filter_MAME_machines(mame_dic, filter_config)
 
   # --- Print list in alphabetical order ---
-  NARS.print_info('[Filtered game list]')
+  NARS.print_info('[Filtered machine list]')
   missing_roms = 0
   have_roms = 0
   missing_CHD = have_CHD = 0
@@ -2553,41 +2630,36 @@ def do_checkFilter(filterName):
     sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
     if not os.path.isfile(sourceFullFilename):
       missing_roms += 1
-      NARS.print_info("<Game> " + romObject.name.ljust(12) + \
-                      ' - ' + 'Missing ROM'.ljust(11) + \
-                      ' - ROM ' + romObject.name + '.zip' + \
-                      ' (' + romObject.description + ')')
+      flag_str = 'Missing ROM'
     else:
       have_roms += 1
-      NARS.print_debug("<Game> " + romObject.name.ljust(12) + \
-                       ' - ' + 'Have ROM'.ljust(11) + \
-                       ' - ROM ' + romObject.name + '.zip')
+      flag_str = 'Have ROM'
+    fileName = romObject.name + '.zip'
+    NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                    fileName.rjust(25) + '  ' + romObject.description)
 
     # --- Check if CHD exists ---
-    if len(romObject.CHD_depends_list) > 0:
-      for CHD_file in romObject.CHD_depends_list:
-        num_CHD += 1
-        CHDFullFilename = filter_config.destDir_CHD + '/' + \
-                          romObject.name + '/' + CHD_file + '.chd'
-        if not os.path.isfile(CHDFullFilename):
-          missing_CHD += 1
-          haveFlag = 'Missing CHD'
-          NARS.print_info("<Game> " + romObject.name.ljust(12) + \
-                          ' - ' + 'Missing CHD'.ljust(11) + \
-                          ' - CHD ' + romObject.name + '/' + CHD_file + '.chd')
-        else:
-          have_CHD += 1
-          NARS.print_debug("<Game> " + romObject.name.ljust(12) + \
-                           ' - ' + 'Have CHD'.ljust(11) + \
-                           ' - CHD ' + romObject.name + '/' + CHD_file + '.chd')
+    for CHD_file in romObject.CHD_depends_list:
+      num_CHD += 1
+      CHD_FullFilename = filter_config.sourceDir_CHD + '/' +  romObject.name + '/' + CHD_file + '.chd'
+      CHD_Filename = romObject.name + '/' + CHD_file + '.chd'
+      if not os.path.isfile(CHD_FullFilename):
+        missing_CHD += 1
+        flag_str = 'Missing CHD'
+      else:
+        have_CHD += 1
+        flag_str = 'Have CHD'
+      NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                      CHD_Filename.rjust(25) + '  ' + romObject.description)
 
   NARS.print_info('[Report]')
-  NARS.print_info('Filtered ROMs ' + str(len(mame_filtered_dic)))
-  NARS.print_info('Have ROMs     ' + str(have_roms))
-  NARS.print_info('Missing ROMs  ' + str(missing_roms))
-  NARS.print_info('Total CHDs    ' + str(num_CHD))
-  NARS.print_info('Have CHDs     ' + str(have_CHD))
-  NARS.print_info('Missing CHDs  ' + str(missing_CHD))
+  NARS.print_info('ROMs          {0:6d}'.format(len(mame_dic)))
+  NARS.print_info('Filtered ROMs {0:6d}'.format(len(mame_filtered_dic)))
+  NARS.print_info('Have ROMs     {0:6d}'.format(have_roms))
+  NARS.print_info('Missing ROMs  {0:6d}'.format(missing_roms))
+  NARS.print_info('Total CHDs    {0:6d}'.format(num_CHD))
+  NARS.print_info('Have CHDs     {0:6d}'.format(have_CHD))
+  NARS.print_info('Missing CHDs  {0:6d}'.format(missing_CHD))
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
@@ -2931,7 +3003,7 @@ elif command == 'list-years':
 elif command == 'list':
   do_list_filters()
 elif command == 'check':
-  do_checkFilter(args.filterName)
+  do_check(args.filterName)
 elif command == 'copy':
   do_update(args.filterName)
 elif command == 'update':
