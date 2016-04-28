@@ -269,34 +269,34 @@ def get_Filter_from_Config(filterName):
 class Machine:
   def __init__(self):
     # XML Machine attributes
-    self.name = None
-    self.cloneof = None
-    self.isClone = False
-    self.isParent = True
-    self.isDevice = False
-    self.isRunnable = True
+    self.name         = None
+    self.cloneof      = None
+    self.isClone      = False
+    self.isParent     = True
+    self.isDevice     = False
+    self.isRunnable   = True
     self.isMechanical = False
-    self.isBIOS = False
-    self.sampleof = None
-    self.hasSamples = False
-    self.sourcefile = None
+    self.isBIOS       = False
+    self.sampleof     = None
+    self.hasSamples   = False
+    self.sourcefile   = None
     # XML Machine tags
-    self.description = None        # str
-    self.year = None               # str
-    self.manufacturer = None       # str
-    self.driver_status = None      # str
-    self.isWorking = True          # bool
-    self.category = None           # str
-    self.buttons = 0               # int
-    self.players = 0               # int
-    self.coins = 0                 # int
-    self.hasCoinSlot = False       # bool
-    self.control_type_list = []    # str list
+    self.description       = None   # str
+    self.year              = None   # str
+    self.manufacturer      = None   # str
+    self.driver_status     = None   # str
+    self.isWorking         = True   # bool
+    self.category          = None   # str
+    self.buttons           = 0      # int
+    self.players           = 0      # int
+    self.coins             = 0      # int
+    self.hasCoinSlot       = False  # bool
+    self.control_type_list = []     # str list
     # Custom <NARS> attributes
-    self.hasROMs          = True   # bool
-    self.hasSoftwareLists = False  # bool
-    self.displayType      = None   # str
-    self.orientation      = None   # str
+    self.hasROMs           = True   # bool
+    self.hasSoftwareLists  = False  # bool
+    self.displayType       = None   # str
+    self.orientation       = None   # str
     # Custom <NARS> tags
     self.BIOS_depends_list   = []  # str list
     self.device_depends_list = []  # str list
@@ -2562,6 +2562,55 @@ def do_list_years():
   for k, v in sorted_histo:
     NARS.print_info('{:5d}'.format(v) + '  ' + k)
 
+#
+# Prints all information about a particular machine.
+#
+def do_query(machineName):
+  NARS.print_info('[Query MAME reduced XML]')
+  NARS.print_info('Machine = ' + machineName)
+
+  # --- Get MAME parent/clone dictionary --------------------------------------
+  mame_dic = parse_MAME_merged_XML()
+
+  # ~~~ Print information ~~~
+  NARS.print_info('[Machine information]')
+  if machineName in mame_dic:
+    machine = mame_dic[machineName]
+    NARS.print_info('Name                 {0}'.format(machine.name))
+    NARS.print_info('Clone of             {0}'.format(machine.cloneof))
+    NARS.print_info('isClone              {0}'.format(machine.isClone))
+    NARS.print_info('isParent             {0}'.format(machine.isParent))
+    NARS.print_info('isDevice             {0}'.format(machine.isDevice))
+    NARS.print_info('isRunnable           {0}'.format(machine.isRunnable))
+    NARS.print_info('isMechanical         {0}'.format(machine.isMechanical))
+    NARS.print_info('isBIOS               {0}'.format(machine.isBIOS))
+    NARS.print_info('Sample of            {0}'.format(machine.sampleof))
+    NARS.print_info('hasSamples           {0}'.format(machine.hasSamples))
+    NARS.print_info('sourcefile           {0}'.format(machine.sourcefile))
+    NARS.print_info('---')
+    NARS.print_info('Description          {0}'.format(machine.description))
+    NARS.print_info('year                 {0}'.format(machine.year))
+    NARS.print_info('manufacturer         {0}'.format(machine.manufacturer))
+    NARS.print_info('driver_status        {0}'.format(machine.driver_status))
+    NARS.print_info('isWorking            {0}'.format(machine.isWorking))
+    NARS.print_info('category             {0}'.format(machine.category))
+    NARS.print_info('buttons              {0}'.format(machine.buttons))
+    NARS.print_info('players              {0}'.format(machine.players))
+    NARS.print_info('coins                {0}'.format(machine.coins))
+    NARS.print_info('hasCoinSlot          {0}'.format(machine.hasCoinSlot))
+    NARS.print_info('control_type_list    {0}'.format(machine.control_type_list))
+    NARS.print_info('---')
+    NARS.print_info('hasROMs              {0}'.format(machine.hasROMs))
+    NARS.print_info('hasSoftwareLists     {0}'.format(machine.hasSoftwareLists))
+    NARS.print_info('displayType          {0}'.format(machine.displayType))
+    NARS.print_info('orientation          {0}'.format(machine.orientation))
+    NARS.print_info('BIOS_depends_list    {0}'.format(machine.BIOS_depends_list))
+    NARS.print_info('device_depends_list  {0}'.format(machine.device_depends_list))
+    NARS.print_info('CHD_depends_list     {0}'.format(machine.CHD_depends_list))
+  else:
+    print('Machine \'{0}\' not found'.format(machineName))
+    sys.exit(10)
+
 # ----------------------------------------------------------------------------
 def do_list_filters():
   """List of configuration file"""
@@ -2601,7 +2650,7 @@ def do_check(filterName):
   NARS.print_info('[Checking filter]')
   NARS.print_info('Filter name = ' + filterName)
 
-  # --- Get configuration for the selected filter and check for errors
+  # --- Get configuration for the selected filter and check for errors ---
   filter_config = get_Filter_from_Config(filterName)
   NARS.have_dir_or_abort(filter_config.sourceDir, 'ROMsSource')
   NARS.have_dir_or_abort(filter_config.sourceDir_CHD, 'CHDsSource')
@@ -2896,6 +2945,7 @@ def do_printHelp():
 \033[31mlist-drivers\033[0m              Reads merged XML database and prints a histogram of the drivers.
 \033[31mlist-controls\033[0m             Reads merged XML database and prints a histogram of the game controls.
 \033[31mlist-years\033[0m                Reads merged XML database and prints a histogram of the game release year.
+\033[31mquery <machine>\033[0m           Prints information about a machine.
 \033[31mlist\033[0m                      List filters defined in configuration file.
 \033[31mdiff <filterA> <filterB>\033[0m  Compares filter A and filter B and print differences.
 \033[31mcheck <filter>\033[0m            Applies filter and checks you source directory for Have and Missing ROMs.
@@ -2939,7 +2989,7 @@ parser.add_argument('--cleanCHD', help="clean unknown CHDs", action="store_true"
 parser.add_argument('command',
     help="usage, reduce-XML, merge, list-merged, \
           list-categories, list-drivers, list-controls, list-years,\
-          list, check, copy, update \
+          query, list, check, copy, update \
           copy-chd, update-chd \
           check-artwork, copy-artwork, update-artwork", nargs = 1)
 parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
@@ -2975,7 +3025,8 @@ if command == 'usage':
   sys.exit(0)
 
 # --- Check arguments that require a filterName ---
-if command == 'check' or command == 'copy' or command == 'update' or \
+if command == 'query' or \
+   command == 'check' or command == 'copy' or command == 'update' or \
    command == 'copy-chd' or command == 'update-chd' or \
    command == 'check-artwork' or command == 'copy-artwork' or command == 'update-artwork':
   if args.filterName is None:
@@ -3000,6 +3051,8 @@ elif command == 'list-controls':
   do_list_controls()
 elif command == 'list-years':
   do_list_years()
+elif command == 'query':
+  do_query(args.filterName)
 elif command == 'list':
   do_list_filters()
 elif command == 'check':
