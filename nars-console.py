@@ -52,17 +52,18 @@ class ConfigFileFilter:
     # file OR no text was written ('', or blanks (spaces, tabs)).
     self.name            = None  # str
     self.shortname       = None  # str
-    self.sourceDir       = None
-    self.destDir         = None
-    self.NoIntro_XML     = None
-    self.fanartSourceDir = None
-    self.fanartDestDir   = None
-    self.thumbsSourceDir = None
-    self.thumbsDestDir   = None
-    self.filterUpTags    = None
-    self.filterDownTags  = None
-    self.includeTags     = None
-    self.excludeTags     = None
+    self.sourceDir       = None  # str
+    self.destDir         = None  # str
+    self.NoIntro_XML     = None  # str
+    self.option_NoBIOS   = False # bool
+    self.fanartSourceDir = None  # str
+    self.fanartDestDir   = None  # str
+    self.thumbsSourceDir = None  # str
+    self.thumbsDestDir   = None  # str
+    self.filterUpTags    = None  # str list
+    self.filterDownTags  = None  # str list
+    self.includeTags     = None  # str list
+    self.excludeTags     = None  # str list
 
 # Parses configuration file using ElementTree
 # Returns a ConfigFile object
@@ -99,39 +100,35 @@ def parse_File_Config():
         # ~~~ Directories ~~~
         if filter_child.tag == 'ROMsSource':
           if filter_child.text is None: continue
-          string = NARS.strip_string(filter_child.text)
-          filter_class.sourceDir = NARS.sanitize_dir_name(string)
+          filter_class.sourceDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
           NARS.print_debug('ROMsSource'.ljust(parse_rjust) + filter_class.sourceDir)
         elif filter_child.tag == 'ROMsDest':
           if filter_child.text is None: continue
-          string = NARS.strip_string(filter_child.text)
-          filter_class.destDir = NARS.sanitize_dir_name(string) 
+          filter_class.destDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text)) 
           NARS.print_debug('ROMsDest'.ljust(parse_rjust) + filter_class.destDir)          
         elif filter_child.tag == 'FanartSource':
           if filter_child.text is None: continue
-          string = NARS.strip_string(filter_child.text)
-          filter_class.fanartSourceDir = NARS.sanitize_dir_name(string)
+          filter_class.fanartSourceDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
           NARS.print_debug('FanartSource'.ljust(parse_rjust) + filter_class.fanartSourceDir)
         elif filter_child.tag == 'FanartDest':
           if filter_child.text is None: continue
-          string = NARS.strip_string(filter_child.text)
-          filter_class.fanartDestDir = NARS.sanitize_dir_name(string)
+          filter_class.fanartDestDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
           NARS.print_debug('FanartDest'.ljust(parse_rjust) + filter_class.fanartDestDir)
         elif filter_child.tag == 'ThumbsSource':
           if filter_child.text is None: continue
-          string = NARS.strip_string(filter_child.text)
-          filter_class.thumbsSourceDir = NARS.sanitize_dir_name(string)
+          filter_class.thumbsSourceDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
           NARS.print_debug('ThumbsSource'.ljust(parse_rjust) + filter_class.thumbsSourceDir)
         elif filter_child.tag == 'ThumbsDest':
           if filter_child.text is None: continue
-          string = NARS.strip_string(filter_child.text)
-          filter_class.thumbsDestDir = NARS.sanitize_dir_name(string)
+          filter_class.thumbsDestDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
           NARS.print_debug('ThumbsDest'.ljust(parse_rjust) + filter_class.thumbsDestDir)
+
         # ~~~ Files ~~~
         elif filter_child.tag == 'NoIntroDat':
           if filter_child.text is None: continue
           filter_class.NoIntro_XML = NARS.strip_string(filter_child.text)
           NARS.print_debug('NoIntroDat'.ljust(parse_rjust) + filter_class.NoIntro_XML)
+
         # ~~~ Comma separated strings ~~~
         elif filter_child.tag == 'filterUpTags':
           # If string is None then continue
@@ -168,8 +165,11 @@ def parse_File_Config():
             str_list[index] = NARS.strip_string(item)
           filter_class.excludeTags = str_list
           NARS.print_debug('excludeTags'.ljust(parse_rjust) + ', '.join(str_list))
+          
+
         else:
-          print('[ERROR] Unrecognised tag {0} in configuration file'.format(filter_child.tag))
+          print('[ERROR] On <collection> \'{0}\' in configuration file'.format(filter_class.name))
+          print('[ERROR] Unrecognised tag <{0}>'.format(filter_child.tag))
           sys.exit(10)
 
       # --- Aggregate filter to configuration main variable ---
