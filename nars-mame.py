@@ -2677,15 +2677,17 @@ def do_check(filterName):
 
     # --- Check if ROM file exists ---
     sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
+    fileName = romObject.name + '.zip'
     if not os.path.isfile(sourceFullFilename):
       missing_roms += 1
       flag_str = 'Missing ROM'
+      NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                      fileName.rjust(25) + '  ' + romObject.description)
     else:
       have_roms += 1
       flag_str = 'Have ROM'
-    fileName = romObject.name + '.zip'
-    NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
-                    fileName.rjust(25) + '  ' + romObject.description)
+      NARS.print_verb("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                      fileName.rjust(25) + '  ' + romObject.description)
 
     # --- Check if CHD exists ---
     for CHD_file in romObject.CHD_depends_list:
@@ -2695,11 +2697,13 @@ def do_check(filterName):
       if not os.path.isfile(CHD_FullFilename):
         missing_CHD += 1
         flag_str = 'Missing CHD'
+        NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                        CHD_Filename.rjust(25) + '  ' + romObject.description)
       else:
         have_CHD += 1
         flag_str = 'Have CHD'
-      NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
-                      CHD_Filename.rjust(25) + '  ' + romObject.description)
+        NARS.print_verb("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                        CHD_Filename.rjust(25) + '  ' + romObject.description)
 
   NARS.print_info('[Report]')
   NARS.print_info('ROMs          {0:6d}'.format(len(mame_dic)))
