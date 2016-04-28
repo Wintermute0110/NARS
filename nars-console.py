@@ -1336,9 +1336,11 @@ def do_taglist(filter_name):
   for key in sorted_properties_dic:
     NARS.print_info('{:6d}'.format(key[1]) + '  ' + key[0])
 
+#
+# Applies filter and prints filtered parent/clone list, ROMs you have, etc., in a
+# nice format.
+#
 def do_check(filter_name):
-  """Applies filter and prints filtered parent/clone list"""
-
   NARS.print_info('[Check-filter ROM]')
   NARS.print_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
@@ -1346,29 +1348,31 @@ def do_check(filter_name):
   # --- Filter ROMs ---
   romMainList_list = filter_ROMs(filter_config)
 
+  # --- Get maximum width of ROM set names for nice printing ---
+  max_ROMSetName_width = 1
+  for index_main in range(len(romMainList_list)):
+    if len(romMainList_list[index_main].setName) > max_ROMSetName_width:
+      max_ROMSetName_width = len(romMainList_list[index_main].setName)
+
   # --- Print list in alphabetical order ---
-  num_sets = 0
+  num_parents = 0
+  num_clones = 0
+  num_roms = 0
   num_have_roms = 0
   num_miss_roms = 0
   num_include_roms = 0
   num_exclude_roms = 0
-  num_parents = 0
-  num_clones = 0
   NARS.have_dir_or_abort(filter_config.sourceDir, 'sourceDir')
   NARS.print_info("[List of scored parent/clone ROM sets]")
   for index_main in range(len(romMainList_list)):
     rom_object = romMainList_list[index_main]
-    num_sets += 1
-    NARS.print_info('{0:>23} \033[100m{1}\033[0m'.format(' ', rom_object.setName))
     for index in range(len(rom_object.filenames)):
       # Check if file exists (maybe it does not exist for No-Intro lists)
       sourceFullFilename = filter_config.sourceDir + rom_object.filenames[index]
       fullROMFilename = os.path.isfile(sourceFullFilename)
-
-      if index == 0:
-        copyFlag = '\033[32mCOPY\033[0m'
-      else:
-        copyFlag = '    '
+      num_roms += 1
+      if index == 0: copyFlag = '\033[32mCOPY\033[0m'
+      else:          copyFlag = '    '
 
       if not os.path.isfile(sourceFullFilename):
         haveFlag = '\033[31mMISS\033[0m'
@@ -1391,17 +1395,32 @@ def do_check(filter_name):
         parentFlag = '\033[35mPAR\033[0m'
         num_parents += 1
       # --- Print ---
+      # ~ Compact way ~
+#      if index == 0:
+#        NARS.print_info('\033[100m{0}\033[0m'.format(rom_object.setName.ljust(max_ROMSetName_width)) +
+#                        ' {:3d} '.format(rom_object.scores[index]) +
+#                        haveFlag + ' ' +  excludeFlag + ' ' + parentFlag + ' ' + copyFlag + '  ' +
+#                        rom_object.filenames[index])
+#      else:
+#        NARS.print_info(' '.rjust(max_ROMSetName_width) +
+#                        ' {:3d} '.format(rom_object.scores[index]) +
+#                        haveFlag + ' ' +  excludeFlag + ' ' + parentFlag + ' ' + copyFlag + '  ' +
+#                        rom_object.filenames[index])
+      # ~ Wide way ~
+      if index == 0:
+        NARS.print_info('\033[100m{0}\033[0m'.format(rom_object.setName))
       NARS.print_info(' {:3d} '.format(rom_object.scores[index]) +
                       haveFlag + ' ' +  excludeFlag + ' ' + parentFlag + ' ' + copyFlag + '  ' +
                       rom_object.filenames[index])
+
   NARS.print_info('[Report]')
-  NARS.print_info('ROM sets  {:5d}'.format(num_sets))
+  NARS.print_info('Parents   {:5d}'.format(num_parents))
+  NARS.print_info('Clones    {:5d}'.format(num_clones))
+  NARS.print_info('ROMs      {:5d}'.format(num_roms))
   NARS.print_info('Have      {:5d}'.format(num_have_roms))
   NARS.print_info('Miss      {:5d}'.format(num_miss_roms))
   NARS.print_info('Include   {:5d}'.format(num_include_roms))
   NARS.print_info('Exclude   {:5d}'.format(num_exclude_roms))
-  NARS.print_info('Parents   {:5d}'.format(num_parents))
-  NARS.print_info('Clones    {:5d}'.format(num_clones))
 
 def do_update(filter_name):
   """Applies filter and updates (copies) ROMs"""
