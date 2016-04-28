@@ -206,7 +206,8 @@ def parse_File_Config():
           filter_class.MachineSwap[name_A] = name_B
           NARS.print_debug(' MachineSwap    = ' + name_A + " --> " + name_B)
         else:
-          NARS.print_error('[ERROR] Inside <MAMEFilter> unrecognised tag <' + filter_child.tag + '>')
+          NARS.print_error('[ERROR] Inside <MAMEFilter> named \'{0}\''.format(filter_class.name))
+          NARS.print_error('[ERROR] Unrecognised tag <{0}>'.format(filter_child.tag))
           sys.exit(10)
       # --- Check for errors in this filter ---
       if not sourceDirFound:
