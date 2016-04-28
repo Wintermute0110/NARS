@@ -129,6 +129,26 @@ def parse_File_Config():
           filter_class.NoIntro_XML = NARS.strip_string(filter_child.text)
           NARS.print_debug('NoIntroDat'.ljust(parse_rjust) + filter_class.NoIntro_XML)
 
+        # ~~~ Options ~~~
+        elif filter_child.tag == 'Options':
+          if filter_child.text is None: continue
+          # Trim comma-separated string, then trim each element after splitting
+          str = NARS.strip_string(filter_child.text)
+          str_list = str.split(",")
+          for index, item in enumerate(str_list):
+            str_list[index] = NARS.strip_string(item)
+          NARS.print_debug('Options'.ljust(parse_rjust) + ', '.join(str_list))
+
+          # Parse each option individually
+          for index, item in enumerate(str_list):
+            if str_list[index] == 'NoBIOS':
+              filter_class.option_NoBIOS = True
+            else:
+              print('[ERROR] On <collection> \'{0}\' in configuration file'.format(filter_class.name))
+              print('[ERROR] On tag <{0}>'.format(filter_child.tag))
+              print('[ERROR] Unrecognised option \'{0}\''.format(str_list[index]))
+              sys.exit(10)
+
         # ~~~ Comma separated strings ~~~
         elif filter_child.tag == 'filterUpTags':
           # If string is None then continue
