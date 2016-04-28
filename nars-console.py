@@ -361,9 +361,10 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
   for file in sorted(rom_main_list):
     basename, ext = os.path.splitext(file) # Remove extension
     if basename not in rom_copy_dic:
+      fileName = destDir + file
+      NARS.delete_file(fileName, __prog_option_dry_run)
       num_cleaned_roms += 1
-      delete_ROM_file(file, destDir)
-      print_info('<Deleted> ' + file)
+      NARS.print_info('<Deleted> ' + file)
 
   NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
 
@@ -376,9 +377,10 @@ def delete_redundant_NFO(destDir):
       thisFileName, thisFileExtension = os.path.splitext(file)
       romFileName_temp = thisFileName + '.zip'
       if not exists_ROM_file(romFileName_temp, destDir):
-        delete_ROM_file(file, destDir)
+        fileName = destDir + file
+        NARS.delete_file(fileName, __prog_option_dry_run)
         num_deletedNFO_files += 1
-        print_info('<Deleted NFO> ' + file)
+        NARS.print_info('<Deleted NFO> ' + file)
 
   NARS.print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
 
@@ -645,35 +647,41 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
   NARS.print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs')
   NARS.print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart')
 
+#
+# Creates the list of ROMs to be copied based on the ordered main ROM list
+#
 def create_copy_list(romMain_list, filter_config):
-  """Creates the list of ROMs to be copied based on the ordered main ROM list"""
-
-  # --- Scan sourceDir to get the list of available ROMs
+  # --- Scan sourceDir to get the list of available ROMs ---
   NARS.print_info('[Scanning sourceDir for ROMs to be copied]')
   sourceDir = filter_config.sourceDir
-  rom_main_list = []
+  sourceDir_rom_list = []
   for file in os.listdir(sourceDir):
     if file.endswith(".zip"):
-      rom_main_list.append(file)
+      sourceDir_rom_list.append(file)
 
-  # - From the parent/clone list, pick the first available ROM (and
-  #   not excluded) to be copied.
+  # For each parent/clone list, pick the first available ROM in sourceDir
+  # (if not excluded) to be copied.
   NARS.print_info('[Creating list of ROMs to be copied/updated]')
   rom_copy_list = []
   for mainROM_obj in romMain_list:
-    num_set_files = len(mainROM_obj.filenames)
-    for index in range(num_set_files):
-      filename = mainROM_obj.filenames[index]
+    num_pclone_set_files = len(mainROM_obj.filenames)
+    for index in range(num_pclone_set_files):
+      filename    = mainROM_obj.filenames[index]
       includeFlag = mainROM_obj.include[index]
-      if filename in rom_main_list and includeFlag:
+      if filename in sourceDir_rom_list and includeFlag:
+        # If option NoBIOS is ON and the ROM name starts with '[BIOS]' then skip it
+        if filter_config.option_NoBIOS and re.search('^\[BIOS\]', filename):
+          NARS.print_debug('NoBIOS is ON. Skipping ROM \'{0}\''.format(filename))
+          continue
+
+        # Only pick one ROM of the pclone list
         rom_copy_list.append(filename)
-        # Only pick first ROM of the list available
         break
 
-  # --- Sort list alphabetically
+  # --- Sort list alphabetically ---
   rom_copy_list_sorted = sorted(rom_copy_list)
 
-  # --- Remove extension
+  # --- Remove extension of ROM files ---
   rom_copy_list_sorted_basename = []
   for s in rom_copy_list_sorted:
     (name, extension) = os.path.splitext(s)
