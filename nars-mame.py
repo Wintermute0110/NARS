@@ -713,6 +713,8 @@ def filter_main_filter(machines_dic, filter_config, filterControl):
      machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'isWorking', 'Working')
     elif filter_str ==  'ROMs':
      machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasROMs', 'ROMs')
+    elif filter_str ==  'CHDs':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasCHDs', 'CHDs')
     elif filter_str ==  'CoinSlot':
      machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasCoinSlot', 'CoinSlot')
     elif filter_str ==  'SoftwareLists':
@@ -722,7 +724,7 @@ def filter_main_filter(machines_dic, filter_config, filterControl):
         print('[ERROR] Unrecognised <Include> keyword "{0}"'.format(filter_str))
       else:
         print('[ERROR] Unrecognised <Exclude> keyword "{0}"'.format(filter_str))
-      print('[ERROR] Must be: Parents, Clones, Mechanical, BIOS, Samples, Working, ROMs, CoinSlot, SoftwareLists')
+      print('[ERROR] Must be: Parents, Clones, Mechanical, BIOS, Samples, Working, ROMs, CHDs, CoinSlot, SoftwareLists')
       sys.exit(10)
 
   return machines_dic
