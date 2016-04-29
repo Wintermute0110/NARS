@@ -619,35 +619,43 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic, __prog_option_dry_run
 # -----------------------------------------------------------------------------
 # XML functions
 # -----------------------------------------------------------------------------
+#
+# Reads merged MAME XML file. Returns a ElementTree object.
+# Aborts if errors found.
+#
 def XML_read_file_ElementTree(filename, infoString):
-  """Reads an XML file using Element Tree. Aborst if errors found"""
-  print(infoString + " " + filename + "... ", end="")
+  print(infoString + " '" + filename + "' ... ", end="")
   sys.stdout.flush()
+  # Check if file exists
+  if not os.path.isfile(filename):
+    print('\n\033[31m[ERROR]\033[0m File \'{0}\' not found'.format(filename))
+    sys.exit(10)
   try:
     tree = ET.parse(filename)
   except IOError:
-    print('\n')
-    print('\033[31m[ERROR]\033[0m Cannot find file "{0}"'.format(filename))
+    print('\n\033[31m[ERROR]\033[0m Cannot find file \'{0}\''.format(filename))
     sys.exit(10)
   print('done')
   sys.stdout.flush()
 
   return tree
 
-# Reads merged MAME XML file.
-# Returns an ElementTree OR cElementTree object.
+#
+# Reads merged MAME XML file. Returns a cElementTree object.
+# Aborts if errors found.
+#
 def XML_read_file_cElementTree(filename, infoString):
-  """Reads merged MAME XML database and returns a [c]ElementTree object"""
-  print(infoString + " " + filename + "... ", end="")
+  print(infoString + " '" + filename + "' ... ", end="")
   sys.stdout.flush()
+  # Check if file exists
+  if not os.path.isfile(filename):
+    print('\n\033[31m[ERROR]\033[0m File \'{0}\' not found'.format(filename))
+    sys.exit(10)
   try:
-    # -- Use ElementTree
-    # tree = ET.parse(filename);
-    # -- Use cElementTree. Much faster but extremely slow for the reduce command.
+    # Use cElementTree. Much faster but extremely slow for the reduce command.
     tree = cET.parse(filename)
   except IOError:
-    print('\n')
-    print('\033[31m[ERROR]\033[0m cannot find file ' + filename)
+    print('\n\033[31m[ERROR]\033[0m cannot find file \'{0}\''.format(filename))
     sys.exit(10)
   print('done')
   sys.stdout.flush()

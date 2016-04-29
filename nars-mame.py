@@ -48,8 +48,9 @@ class ConfigFile:
   def __init__(self):
     self.MAME_XML       = ''
     self.MAME_XML_redux = ''
-    self.Catver         = ''
     self.MergedInfo_XML = ''
+    self.Catver         = ''
+    self.Genre          = ''
     self.MachineSwap    = {}
     self.filter_dic     = {}
 
@@ -103,12 +104,15 @@ def parse_File_Config():
     elif root_child.tag == 'MAME_XML_redux':
       configFile.MAME_XML_redux = root_child.text
       NARS.print_debug('MAME_XML_redux = ' + root_child.text)
-    elif root_child.tag == 'Catver':
-      configFile.Catver = root_child.text
-      NARS.print_debug('Catver         = ' + root_child.text)
     elif root_child.tag == 'Merged_XML':
       configFile.MergedInfo_XML = root_child.text
       NARS.print_debug('Merged_XML     = ' + root_child.text)
+    elif root_child.tag == 'Catver':
+      configFile.Catver = root_child.text
+      NARS.print_debug('Catver         = ' + root_child.text)
+    elif root_child.tag == 'Genre':
+      configFile.Genre = root_child.text
+      NARS.print_debug('Genre          = ' + root_child.text)
     elif root_child.tag == 'MachineSwap':
       (name_A, name_B) = parse_tag_MachineSwap(root_child.text)
       configFile.MachineSwap[name_A] = name_B
@@ -224,8 +228,16 @@ def parse_File_Config():
       # --- Add filter class to configuration dictionary of filters ---
       configFile.filter_dic[filter_class.name] = filter_class
   
-  # === Check for configuration errors ===
-  
+  # ~~~ Check for configuration errors ~~~
+  if configFile.MAME_XML is None:
+    NARS.print_error('[ERROR] <MAME_XML> tag not found or empty.')
+    sys.exit(10)
+  if configFile.MAME_XML_redux is None:
+    NARS.print_error('[ERROR] <MAME_XML_redux> tag not found or empty.')
+    sys.exit(10)
+  if configFile.MergedInfo_XML is None:
+    NARS.print_error('[ERROR] <MergedInfo_XML> tag not found or empty.')
+    sys.exit(10)
 
   return configFile
 
@@ -242,61 +254,38 @@ def get_Filter_from_Config(filterName):
 # Misc functions
 # -----------------------------------------------------------------------------
 # A class to store the MAME machine information.
-# Machine.name            string  machine name (<machine name="">)
-# Machine.cloneof         string  clone name (<machine cloneof="">)
-# Machine.isclone         bool
-# Machine.isdevice        bool
-# Machine.runnable        bool
-# Machine.sampleof        string 
-# Machine.hasSamples      bool
-# Machine.isMechanical    bool
-# Machine.isBIOS          bool
-# Machine.sourcefile      string
-# Machine.driver_status   string
-# Machine.category        string
-# Machine.buttons         string
-# Machine.players         string
-# Machine.coins           string
-# Machine.hascoins        bool
-# Machine.hasROMs         bool
-# Machine.control_type    string_list
-# Machine.BIOS_depends    string_list
-# Machine.device_depends  string_list
-# Machine.CHD_depends     string_list
-# Machine.description     string
-# Machine.year            string
-# Machine.manufacturer    string
 class Machine:
   def __init__(self):
     # XML Machine attributes
-    self.name         = None
-    self.cloneof      = None
-    self.isClone      = False
-    self.isParent     = True
-    self.isDevice     = False
-    self.isRunnable   = True
-    self.isMechanical = False
-    self.isBIOS       = False
-    self.sampleof     = None
-    self.hasSamples   = False
-    self.sourcefile   = None
+    self.name                = None   # str  machine name (<machine name="">)
+    self.cloneof             = None   # str  clone name (<machine cloneof="">)
+    self.sampleof            = None   # str
+    self.sourcefile          = None   # str
+    self.isClone             = False  # bool
+    self.isParent            = True   # bool
+    self.isDevice            = False  # bool
+    self.isRunnable          = True   # bool
+    self.isMechanical        = False  # bool
+    self.isBIOS              = False  # bool
+    self.hasSamples          = False  # bool
     # XML Machine tags
-    self.description       = None   # str
-    self.year              = None   # str
-    self.manufacturer      = None   # str
-    self.driver_status     = None   # str
-    self.isWorking         = True   # bool
-    self.category          = None   # str
-    self.buttons           = 0      # int
-    self.players           = 0      # int
-    self.coins             = 0      # int
-    self.hasCoinSlot       = False  # bool
-    self.control_type_list = []     # str list
+    self.description         = None   # str
+    self.year                = None   # str
+    self.manufacturer        = None   # str
+    self.driver_status       = None   # str
+    self.isWorking           = True   # bool
+    self.category            = None   # str
+    self.buttons             = 0      # int
+    self.players             = 0      # int
+    self.coins               = 0      # int
+    self.hasCoinSlot         = False  # bool
+    self.control_type_list   = []     # str list
     # Custom <NARS> attributes
-    self.hasROMs           = True   # bool
-    self.hasSoftwareLists  = False  # bool
-    self.displayType       = None   # str
-    self.orientation       = None   # str
+    self.hasROMs             = True   # bool
+    self.hasCHDs             = False  # bool
+    self.hasSoftwareLists    = False  # bool
+    self.displayType         = None   # str
+    self.orientation         = None   # str
     # Custom <NARS> tags
     self.BIOS_depends_list   = []  # str list
     self.device_depends_list = []  # str list
@@ -442,10 +431,8 @@ def fix_category_name(main_category, category):
   # Ex: 'Aaa Bbb Ccc' -> 'Aaa_Bbb_Ccc'
   # Lots of MESS categories in AntoPISA extended catver.ini are like that.
   tokens = tokzr_WORD(main_category)
-#  print(repr(tokens) + ' ' + str(len(tokens)))
   if len(tokens) > 1:
     s = '_'
-#    print(s.join(tokens))
     final_category = s.join(tokens)
 
   # If there is *Mature* in any category or subcategory, then
@@ -453,14 +440,41 @@ def fix_category_name(main_category, category):
   if category.find('*Mature*') >= 0 or category.find('* Mature *') >= 0:
     final_category = 'Mature'
 
-  # Regular expression to catch ilegal characters in categories
+  # Regular expression to catch illegal characters in categories
   # that may make the categories filter parser to fail.
   result = re.search('[^\w_]+', final_category)
   if result is not None:
-    NARS.print_error('Ilegal character found in category "' + final_category + '"')
+    NARS.print_error('Illegal character found in category "' + final_category + '"')
     sys.exit(10)
 
   return final_category
+
+def fix_genre_name(genre):
+  # Rename some genres
+  final_genre = genre
+  if genre == 'Ball & Paddle':
+    final_genre = 'Ball_and_Paddle'
+  elif genre == 'Multi-Cart Board':
+    final_genre = 'Multi_Cart_Board'
+  elif genre == 'Misc.':
+    final_genre = 'Misc'
+
+  # If there are several words, all of them starting with upper case and
+  # separated by spaces, substitute the spaces by underscores to join them
+  # Ex: 'Aaa Bbb Ccc' -> 'Aaa_Bbb_Ccc'
+  tokens = tokzr_WORD(genre)
+  if len(tokens) > 1:
+    s = '_'
+    final_genre = s.join(tokens)
+
+  # Regular expression to catch illegal characters in categories
+  # that may make the categories filter parser to fail.
+  result = re.search('[^\w_]+', final_genre)
+  if result is not None:
+    NARS.print_error('Illegal character found in genre \'{0}\''.format(final_genre))
+    sys.exit(10)
+
+  return final_genre
 
 # rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
 def create_copy_list(mame_filtered_dic, rom_main_list):
@@ -699,6 +713,8 @@ def filter_main_filter(machines_dic, filter_config, filterControl):
      machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'isWorking', 'Working')
     elif filter_str ==  'ROMs':
      machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasROMs', 'ROMs')
+    elif filter_str ==  'CHDs':
+     machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasCHDs', 'CHDs')
     elif filter_str ==  'CoinSlot':
      machines_dic = filter_do_IncludeExclude(machines_dic, filterControl, 'hasCoinSlot', 'CoinSlot')
     elif filter_str ==  'SoftwareLists':
@@ -708,7 +724,7 @@ def filter_main_filter(machines_dic, filter_config, filterControl):
         print('[ERROR] Unrecognised <Include> keyword "{0}"'.format(filter_str))
       else:
         print('[ERROR] Unrecognised <Exclude> keyword "{0}"'.format(filter_str))
-      print('[ERROR] Must be: Parents, Clones, Mechanical, BIOS, Samples, Working, ROMs, CoinSlot, SoftwareLists')
+      print('[ERROR] Must be: Parents, Clones, Mechanical, BIOS, Samples, Working, ROMs, CHDs, CoinSlot, SoftwareLists')
       sys.exit(10)
 
   return machines_dic
@@ -1183,13 +1199,14 @@ def parse_catver_ini():
 
   return final_categories_dic
 
+#
+# Parses a MAME merged XML and creates a dictionary of MachineObjects
 # Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
 # do_update_artwork()), but not in the do_list_*() functions.
 #
 # Returns dictionary machine_dict with key the Machine name and value a Machine object.
+#
 def parse_MAME_merged_XML():
-  """Parses a MAME merged XML and creates a parent/clone list"""
-
   filename = configuration.MergedInfo_XML
   NARS.print_info('[Parsing MAME merged XML]')
   tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
@@ -1315,16 +1332,21 @@ def parse_MAME_merged_XML():
         nars_attrib = child_game.attrib
         # hasROMs defaults to True
         if 'hasROMs' in nars_attrib:
-          if nars_attrib['hasROMs'] == 'no':
-            machineObj.hasROMs = False
+          if nars_attrib['hasROMs'] == 'no': machineObj.hasROMs = False
         else:
           print('[ERROR] Not found <NARS hasROMs=... > (Machine {0})\n'.format(machineObj.name))
           sys.exit(10)
 
+        # hasCHDs defaults to False
+        if 'hasCHDs' in nars_attrib:
+          if nars_attrib['hasCHDs'] == 'yes': machineObj.hasCHDs = True
+        else:
+          print('[ERROR] Not found <NARS hasCHDs=... > (Machine {0})\n'.format(machineObj.name))
+          sys.exit(10)
+
         # hasSoftwareLists defaults to False
         if 'hasSoftwareLists' in nars_attrib:
-          if nars_attrib['hasSoftwareLists'] == 'yes':
-            machineObj.hasSoftwareLists = True
+          if nars_attrib['hasSoftwareLists'] == 'yes': machineObj.hasSoftwareLists = True
         else:
           print('[ERROR] Not found <NARS hasSoftwareLists=... > (Machine {0})\n'.format(machineObj.name))
           sys.exit(10)
@@ -1931,14 +1953,12 @@ def do_reduce_XML():
       
       # <NARS hasROMs="yes|no" hasSoftwareLists="yes|no" displayType="Raster|Vector|LCD|Unknown" 
       #       orientation="Horizontal|Vertical">
-      if has_ROMs or has_CHDs:
-        NARS_element.attrib['hasROMs'] = "yes"
-      else:
-        NARS_element.attrib['hasROMs'] = "no"
-      if hasSoftwareLists:
-        NARS_element.attrib['hasSoftwareLists'] = "yes"
-      else:
-        NARS_element.attrib['hasSoftwareLists'] = "no"
+      if has_ROMs:         NARS_element.attrib['hasROMs'] = "yes"
+      else:                NARS_element.attrib['hasROMs'] = "no"
+      if has_CHDs:         NARS_element.attrib['hasCHDs'] = "yes"
+      else:                NARS_element.attrib['hasCHDs'] = "no"
+      if hasSoftwareLists: NARS_element.attrib['hasSoftwareLists'] = "yes"
+      else:                NARS_element.attrib['hasSoftwareLists'] = "no"
 
       # mechanical/device machines do not have <display> tag. Set orientation to Unknown
       if machine_name in machine_displayType_dic:
@@ -2200,24 +2220,29 @@ def do_list_merged():
   NARS.print_info('Number of devices       {0:6d}'.format(num_devices))
   NARS.print_info('Non-runnable machines   {0:6d}'.format(num_norunnable))
 
+#
+# Parses catver.ini and prints the histogram of the categories (number of games
+# on each category).
+# This function uses its own parser for catver.ini and could be used for debugging
+# purposes.
+#
 def do_list_categories():
-  """Parses Catver.ini and prints the categories and how many games for each"""
-
   __debug_do_list_categories = 0
-  NARS.print_info('[Listing categories from Catver.ini]')
+  NARS.print_info('[Listing categories from catver.ini]')
 
-  # --- Create a histogram with the available categories based only in Catver.ini
+  # --- Create a histogram with the available categories based only in catver.ini ---
   cat_filename = configuration.Catver
   NARS.print_info('Parsing ' + cat_filename)
   categories_dic = {}
   main_categories_dic = {}
   final_categories_dic = {}
-  f = open(cat_filename, 'r')
   # 0 -> Looking for '[Category]' tag
   # 1 -> Reading categories
   # 2 -> Categories finished. STOP
-  read_status = 0
   NARS.print_info('[Making categories histogram]')
+  read_status = 0
+  num_machines = 0
+  f = open(cat_filename, 'r')
   for cat_line in f:
     stripped_line = cat_line.strip()
     if __debug_do_list_categories:
@@ -2240,7 +2265,7 @@ def do_list_categories():
           categories_dic[category] += 1
         else:
           categories_dic[category] = 1
-        # --- Sub-categories  
+        # --- Sub-categories ---
         sub_categories = category.split("/")
         if __debug_do_list_categories:
           print(sub_categories)
@@ -2259,10 +2284,11 @@ def do_list_categories():
           final_categories_dic[final_category] += 1
         else:
           final_categories_dic[final_category] = 1
+        num_machines += 1
     elif read_status == 2:
       break
     else:
-      print_error('Unknown read_status FSM value')
+      NARS.print_error('Unknown read_status FSM value')
       sys.exit(10)
   f.close()
 
@@ -2297,7 +2323,90 @@ def do_list_categories():
     NARS.print_info('{:6d}'.format(v) + '  ' + k)
     num_categories += 1
   NARS.print_info('[Report]')
-  NARS.print_info('Number of categories  ' + str(num_categories))
+  NARS.print_info('Categories {:6d}'.format(num_categories))
+  NARS.print_info('Machines   {:6d}'.format(num_machines))
+
+#
+# Parses genre.ini and prints a histogram of the genres (how many games on each genre).
+# This function uses its own parser and can be used for debugging purposes.
+#
+def do_list_genres():
+  __debug_do_list_genres = 0
+  NARS.print_info('[Listing categories from genre.ini]')
+
+
+  # --- Create a histogram with the available categories based only in catver.ini ---
+  genre_filename = configuration.Genre
+  NARS.print_info('Parsing ' + genre_filename)
+  # { key = 'Genre name' : value = [machine1, machine2, ...], ... }
+  categories_dic = {}
+  # { key = 'Genre name' : value = int number_of_machines, ... }
+  categories_histo_dic = {}
+
+  # Lines starting with ';' are considered comments and ignored
+  # 0 -> Skipping lines at the beginning of the file
+  # 1 -> Looking for genre name '[Name]' line
+  # 2 -> Reading games in that genre. If line is '' go to 1.
+  NARS.print_info('[Making categories histogram]')
+  read_status = 0
+  num_machines = 0
+  f = open(genre_filename, 'r')
+  for cat_line in f:
+    stripped_line = cat_line.strip()
+    if __debug_do_list_genres:
+      print('Stripped line \'{0}\''.format(stripped_line))
+    # Skip comments in genre.ini
+    if len(stripped_line) > 0 and stripped_line[0] == ';':
+      if __debug_do_list_genres:
+        print('COMMENT  line \'{0}\''.format(stripped_line))
+      continue
+    # Parse finite state machine
+    if read_status == 0:
+      if stripped_line == '[ROOT_FOLDER]':
+        if __debug_do_list_genres:
+          print('Found [ROOT_FOLDER]')
+        read_status = 1
+    elif read_status == 1:
+      # Look for lines of the form '[NAME]'. If found, create a new category
+      searchObj = re.search('\[(.*)\]', stripped_line)
+      if searchObj:
+        # Create new category and inser an empty list as value
+        categoryName = fix_genre_name(searchObj.group(1))
+        categories_dic[categoryName] = []
+        categories_histo_dic[categoryName] = 0
+        read_status = 2
+        if __debug_do_list_genres:
+          print('New category \'{0}\''.format(categoryName))
+      else:
+        if __debug_do_list_genres:
+          print('No genre found')
+    elif read_status == 2:
+      if stripped_line == '':
+        read_status = 1
+        if __debug_do_list_genres:
+          print('Blank line. Searching for new genre.')
+      else:
+        categories_dic[categoryName].append(stripped_line)
+        categories_histo_dic[categoryName] += 1
+        num_machines += 1
+        if __debug_do_list_genres:
+          print('Adding machine \'{0}\' to genre \'{1}\''.format(stripped_line, categoryName))
+    else:
+      NARS.print_error('Unknown read_status FSM value')
+      sys.exit(10)
+  f.close()
+
+  # ~~~ Print genre histogram ~~~
+  sorted_histo = ((k, categories_histo_dic[k]) for k in
+                  sorted(categories_histo_dic, key=categories_histo_dic.get, reverse=False))
+  NARS.print_info('[Genres histogram]')
+  num_genres = 0
+  for k, v in sorted_histo:
+    NARS.print_info('{:6d}'.format(v) + '  ' + k)
+    num_genres += 1
+  NARS.print_info('[Report]')
+  NARS.print_info('Genres   {:6d}'.format(num_genres))
+  NARS.print_info('Machines {:6d}'.format(num_machines))
 
 __debug_do_list_drivers = 0
 def do_list_drivers():    
@@ -2578,15 +2687,15 @@ def do_query(machineName):
     machine = mame_dic[machineName]
     NARS.print_info('Name                 {0}'.format(machine.name))
     NARS.print_info('Clone of             {0}'.format(machine.cloneof))
+    NARS.print_info('Sample of            {0}'.format(machine.sampleof))
+    NARS.print_info('sourcefile           {0}'.format(machine.sourcefile))
     NARS.print_info('isClone              {0}'.format(machine.isClone))
     NARS.print_info('isParent             {0}'.format(machine.isParent))
     NARS.print_info('isDevice             {0}'.format(machine.isDevice))
     NARS.print_info('isRunnable           {0}'.format(machine.isRunnable))
     NARS.print_info('isMechanical         {0}'.format(machine.isMechanical))
     NARS.print_info('isBIOS               {0}'.format(machine.isBIOS))
-    NARS.print_info('Sample of            {0}'.format(machine.sampleof))
     NARS.print_info('hasSamples           {0}'.format(machine.hasSamples))
-    NARS.print_info('sourcefile           {0}'.format(machine.sourcefile))
     NARS.print_info('---')
     NARS.print_info('Description          {0}'.format(machine.description))
     NARS.print_info('year                 {0}'.format(machine.year))
@@ -2601,6 +2710,7 @@ def do_query(machineName):
     NARS.print_info('control_type_list    {0}'.format(machine.control_type_list))
     NARS.print_info('---')
     NARS.print_info('hasROMs              {0}'.format(machine.hasROMs))
+    NARS.print_info('hasCHDs              {0}'.format(machine.hasCHDs))
     NARS.print_info('hasSoftwareLists     {0}'.format(machine.hasSoftwareLists))
     NARS.print_info('displayType          {0}'.format(machine.displayType))
     NARS.print_info('orientation          {0}'.format(machine.orientation))
@@ -2625,28 +2735,105 @@ def do_list_filters():
       NARS.print_info('MAME_XML        ' + root_child.text)
     elif root_child.tag == 'MAME_XML_redux':
       NARS.print_info('MAME_XML_redux  ' + root_child.text)
-    elif root_child.tag == 'Catver':
-      NARS.print_info('Catver          ' + root_child.text)
     elif root_child.tag == 'Merged_XML':
       NARS.print_info('Merged_XML      ' + root_child.text)
+    elif root_child.tag == 'Catver':
+      NARS.print_info('Catver          ' + root_child.text)
+    elif root_child.tag == 'Genre':
+      NARS.print_info('Genre           ' + root_child.text)
     elif root_child.tag == 'MachineSwap':
       NARS.print_info('MachineSwap     ' + root_child.text)
     elif root_child.tag == 'MAMEFilter':
       NARS.print_info('<MAME filter>')
-      NARS.print_info('Name        ' + root_child.attrib['name'])
+      NARS.print_info('Name            ' + root_child.attrib['name'])
       for root_child_node in root_child:
         if root_child_node.tag == 'ROMsSource':
-          NARS.print_info('ROMsSource  ' + root_child_node.text)
+          NARS.print_info('ROMsSource      ' + root_child_node.text)
         elif root_child_node.tag == 'ROMsDest':
-          NARS.print_info('ROMsDest    ' + root_child_node.text)
+          NARS.print_info('ROMsDest        ' + root_child_node.text)
     else:
       print('Tag with wrong name ' + root_child.tag)
       sys.exit(10)
 
+#
+# Compares two filters and prints differences between them
+#
+def do_diff(filterNameA, filterNameB):
+  NARS.print_info('[Differencing filters]')
+  NARS.print_info('Filter A = {0} | Filter B = {1}'.format(filterNameA, filterNameB))
+
+  # ~~~ Get MAME merged XML ~~~
+  mame_dic = parse_MAME_merged_XML()
+
+  # ~~~ Get list of machines for filter A ~~~
+  filter_config_A = get_Filter_from_Config(filterNameA)
+  mame_filtered_dic_A = filter_MAME_machines(mame_dic, filter_config_A)
+
+  # ~~~ Get list of machines for filter B ~~~
+  filter_config_B = get_Filter_from_Config(filterNameB)
+  mame_filtered_dic_B = filter_MAME_machines(mame_dic, filter_config_B)
+
+  # ~~~ Print diff ~~~
+  # + Needs Python 3.5
+  # merged_filtered_dic = {**mame_filtered_dic_A, **mame_filtered_dic_B}
+  # + Classical way of merging dictionaries
+  merged_filtered_dic = mame_filtered_dic_A.copy()
+  merged_filtered_dic.update(mame_filtered_dic_B)
+  merged_filtered_set = set(merged_filtered_dic.keys())
+  NARS.print_info('[Filter comparison]')
+  # Calculate maximum lengths of strings
+  machine_size = 0
+  desc_size = 0
+  for machine in merged_filtered_set:
+    if len(machine) > machine_size:
+      machine_size = len(machine)
+    if machine in mame_filtered_dic_A and len(mame_filtered_dic_A[machine].description) > desc_size:
+      desc_size = len(mame_filtered_dic_A[machine].description)
+    if machine in mame_filtered_dic_B and len(mame_filtered_dic_B[machine].description) > desc_size:
+      desc_size = len(mame_filtered_dic_B[machine].description)
+
+  num_machines_A = 0
+  num_machines_B = 0
+  print('\033[104m{0}\033[0m \033[104m{1}\033[0m'.format(
+      filterNameA.ljust(machine_size + desc_size + 3),
+      filterNameB.ljust(machine_size + desc_size + 3)))
+  for machine in sorted(merged_filtered_set):
+    # machine A can be only in dic_A, only in dic_B, or both
+    # What about the cases on machines in machineB?
+    machine_is_in_A = machine in mame_filtered_dic_A
+    machine_is_in_B = machine in mame_filtered_dic_B
+    if machine_is_in_A and machine_is_in_B:
+      num_machines_A += 1
+      num_machines_B += 1
+      print('{0}  {1} | {2}  {3}'.format(machine.rjust(machine_size),
+                                         mame_filtered_dic_A[machine].description.ljust(desc_size),
+                                         machine.rjust(machine_size),
+                                         mame_filtered_dic_B[machine].description.ljust(desc_size)))
+    elif machine_is_in_A and not machine_is_in_B:
+      num_machines_A += 1
+      print('\033[100m{0}  {1}\033[0m |'.format(
+          machine.rjust(machine_size),
+          mame_filtered_dic_A[machine].description.ljust(desc_size)))
+    elif not machine_is_in_A and machine_is_in_B:
+      num_machines_B += 1
+      print('{0}  {1} | \033[100m{2}  {3}\033[0m'.format(
+          ' '.rjust(machine_size), ' '.rjust(desc_size),
+          machine.rjust(machine_size), mame_filtered_dic_B[machine].description.ljust(desc_size)))
+    elif not machine_is_in_A and not machine_is_in_B:
+      print('Logical error in do_diff()')
+      sys.exit(10)
+  print('\033[104m{0}\033[0m \033[104m{1}\033[0m'.format(
+    filterNameA.ljust(machine_size + desc_size + 3),
+    filterNameB.ljust(machine_size + desc_size + 3)))
+
+  NARS.print_info('[Report]')
+  NARS.print_info('Machines left   {0:6d}'.format(num_machines_A))
+  NARS.print_info('Machines right  {0:6d}'.format(num_machines_B))
+
+# ----------------------------------------------------------------------------
+# Applies filter and copies ROMs into destination directory
 # ----------------------------------------------------------------------------
 def do_check(filterName):
-  """Applies filter and copies ROMs into destination directory"""
-
   NARS.print_info('[Checking filter]')
   NARS.print_info('Filter name = ' + filterName)
 
@@ -2659,36 +2846,35 @@ def do_check(filterName):
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_dic = parse_MAME_merged_XML()
 
-  # --- Create main ROM list in sourceDir -------------------------------------
-  rom_main_list = get_ROM_main_list(filter_config.sourceDir)
-
   # --- Apply filter and create list of files to be copied --------------------
   mame_filtered_dic = filter_MAME_machines(mame_dic, filter_config)
 
+  # --- Create main ROM list in sourceDir -------------------------------------
+  # rom_main_list = get_ROM_main_list(filter_config.sourceDir)
+
   # --- Print list in alphabetical order ---
   NARS.print_info('[Filtered machine list]')
-  missing_roms = 0
-  have_roms = 0
-  missing_CHD = have_CHD = 0
-  have_CHD = 0
-  num_CHD = 0
+  num_roms = missing_roms = have_roms = 0
+  num_CHD = missing_CHD = have_CHD = 0
   for key_main in sorted(mame_filtered_dic):
     romObject = mame_filtered_dic[key_main]
 
     # --- Check if ROM file exists ---
-    sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
-    fileName = romObject.name + '.zip'
-    if not os.path.isfile(sourceFullFilename):
-      missing_roms += 1
-      flag_str = 'Missing ROM'
-      NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
-                      fileName.rjust(25) + '  ' + romObject.description)
-    else:
-      have_roms += 1
-      flag_str = 'Have ROM'
-      NARS.print_verb("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
-                      fileName.rjust(25) + '  ' + romObject.description)
-
+    # If machine has no ROMs then skip checking
+    if romObject.hasROMs:
+      num_roms += 1
+      sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
+      fileName = romObject.name + '.zip'
+      if not os.path.isfile(sourceFullFilename):
+        missing_roms += 1
+        flag_str = 'Missing ROM'
+        NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                        fileName.rjust(25) + '  ' + romObject.description)
+      else:
+        have_roms += 1
+        flag_str = 'Have ROM'
+        NARS.print_verb("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                        fileName.rjust(25) + '  ' + romObject.description)
     # --- Check if CHD exists ---
     for CHD_file in romObject.CHD_depends_list:
       num_CHD += 1
@@ -2706,13 +2892,14 @@ def do_check(filterName):
                         CHD_Filename.rjust(25) + '  ' + romObject.description)
 
   NARS.print_info('[Report]')
-  NARS.print_info('ROMs          {0:6d}'.format(len(mame_dic)))
-  NARS.print_info('Filtered ROMs {0:6d}'.format(len(mame_filtered_dic)))
-  NARS.print_info('Have ROMs     {0:6d}'.format(have_roms))
-  NARS.print_info('Missing ROMs  {0:6d}'.format(missing_roms))
-  NARS.print_info('Total CHDs    {0:6d}'.format(num_CHD))
-  NARS.print_info('Have CHDs     {0:6d}'.format(have_CHD))
-  NARS.print_info('Missing CHDs  {0:6d}'.format(missing_CHD))
+  NARS.print_info('Machines          {0:6d}'.format(len(mame_dic)))
+  NARS.print_info('Filtered machines {0:6d}'.format(len(mame_filtered_dic)))
+  NARS.print_info('Total ROMs        {0:6d}'.format(num_roms))
+  NARS.print_info('Have ROMs         {0:6d}'.format(have_roms))
+  NARS.print_info('Missing ROMs      {0:6d}'.format(missing_roms))
+  NARS.print_info('Total CHDs        {0:6d}'.format(num_CHD))
+  NARS.print_info('Have CHDs         {0:6d}'.format(have_CHD))
+  NARS.print_info('Missing CHDs      {0:6d}'.format(missing_CHD))
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
@@ -2945,7 +3132,8 @@ def do_printHelp():
 \033[31mreduce-XML\033[0m                Takes MAME XML as input and writes an stripped XML.
 \033[31mmerge-XML\033[0m                 Takes MAME XML (reduced) info file and Catver.ini a mergued XML.
 \033[31mlist-merged\033[0m               List every ROM set system in the merged MAME XML.
-\033[31mlist-categories\033[0m           Reads Catver.ini and makes a histogram of the categories.
+\033[31mlist-categories\033[0m           Reads catver.ini and makes a histogram of the categories.
+\033[31mlist-genres\033[0m               Reads genre.ini and makes a histogram of the genres.
 \033[31mlist-drivers\033[0m              Reads merged XML database and prints a histogram of the drivers.
 \033[31mlist-controls\033[0m             Reads merged XML database and prints a histogram of the game controls.
 \033[31mlist-years\033[0m                Reads merged XML database and prints a histogram of the game release year.
@@ -2992,11 +3180,14 @@ parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="stor
 parser.add_argument('--cleanCHD', help="clean unknown CHDs", action="store_true")
 parser.add_argument('command',
     help="usage, reduce-XML, merge, list-merged, \
-          list-categories, list-drivers, list-controls, list-years,\
-          query, list, check, copy, update \
+          list-categories, list-genres, \
+          list-drivers, list-controls, list-years,\
+          query, list, diff, \
+          check, copy, update \
           copy-chd, update-chd \
           check-artwork, copy-artwork, update-artwork", nargs = 1)
-parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
+parser.add_argument("filterNameA", help="MAME ROM filter name", nargs = '?')
+parser.add_argument("filterNameB", help="MAME ROM secondary filter", nargs = '?')
 args = parser.parse_args()
 
 # --- Optional arguments ---
@@ -3028,16 +3219,21 @@ if command == 'usage':
   do_printHelp()
   sys.exit(0)
 
-# --- Check arguments that require a filterName ---
+# ~~~ Check arguments that require a filterName ~~~
+if command == 'diff':
+  if args.filterNameA is None or args.filterNameB is None:
+    print('\033[31m[ERROR]\033[0m Command "{0}" requires two filter names'.format(command))
+    sys.exit(10)
+
 if command == 'query' or \
    command == 'check' or command == 'copy' or command == 'update' or \
    command == 'copy-chd' or command == 'update-chd' or \
    command == 'check-artwork' or command == 'copy-artwork' or command == 'update-artwork':
-  if args.filterName is None:
+  if args.filterNameA is None:
     print('\033[31m[ERROR]\033[0m Command "{0}" requires a filter name'.format(command))
     sys.exit(10)
 
-# --- Read configuration file ---
+# ~~~ Read configuration file ~~~
 configuration = parse_File_Config()
 
 # --- Positional arguments that don't require a filterName ---
@@ -3049,6 +3245,8 @@ elif command == 'list-merged':
   do_list_merged()
 elif command == 'list-categories':
   do_list_categories()
+elif command == 'list-genres':
+  do_list_genres()
 elif command == 'list-drivers':
   do_list_drivers()
 elif command == 'list-controls':
@@ -3056,28 +3254,30 @@ elif command == 'list-controls':
 elif command == 'list-years':
   do_list_years()
 elif command == 'query':
-  do_query(args.filterName)
+  do_query(args.filterNameA)
 elif command == 'list':
   do_list_filters()
+elif command == 'diff':
+  do_diff(args.filterNameA, args.filterNameB)
 elif command == 'check':
-  do_check(args.filterName)
+  do_check(args.filterNameA)
 elif command == 'copy':
-  do_update(args.filterName)
+  do_update(args.filterNameA)
 elif command == 'update':
   __prog_option_sync = 1
-  do_update(args.filterName)
+  do_update(args.filterNameA)
 elif command == 'copy-chd':
-  do_update_CHD(args.filterName)
+  do_update_CHD(args.filterNameA)
 elif command == 'update-chd':
   __prog_option_sync = 1
-  do_update_CHD(args.filterName)
+  do_update_CHD(args.filterNameA)
 elif command == 'check-artwork':
-  do_check_Artwork(args.filterName)
+  do_check_Artwork(args.filterNameA)
 elif command == 'copy-artwork':
-  do_update_Artwork(args.filterName)
+  do_update_Artwork(args.filterNameA)
 elif command == 'update-artwork':
   __prog_option_sync = 1
-  do_update_Artwork(args.filterName)
+  do_update_Artwork(args.filterNameA)
 else:
   print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
   sys.exit(1)
