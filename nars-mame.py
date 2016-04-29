@@ -454,10 +454,8 @@ def fix_category_name(main_category, category):
   # Ex: 'Aaa Bbb Ccc' -> 'Aaa_Bbb_Ccc'
   # Lots of MESS categories in AntoPISA extended catver.ini are like that.
   tokens = tokzr_WORD(main_category)
-#  print(repr(tokens) + ' ' + str(len(tokens)))
   if len(tokens) > 1:
     s = '_'
-#    print(s.join(tokens))
     final_category = s.join(tokens)
 
   # If there is *Mature* in any category or subcategory, then
@@ -465,14 +463,41 @@ def fix_category_name(main_category, category):
   if category.find('*Mature*') >= 0 or category.find('* Mature *') >= 0:
     final_category = 'Mature'
 
-  # Regular expression to catch ilegal characters in categories
+  # Regular expression to catch illegal characters in categories
   # that may make the categories filter parser to fail.
   result = re.search('[^\w_]+', final_category)
   if result is not None:
-    NARS.print_error('Ilegal character found in category "' + final_category + '"')
+    NARS.print_error('Illegal character found in category "' + final_category + '"')
     sys.exit(10)
 
   return final_category
+
+def fix_genre_name(genre):
+  # Rename some genres
+  final_genre = genre
+  if genre == 'Ball & Paddle':
+    final_genre = 'Ball_and_Paddle'
+  elif genre == 'Multi-Cart Board':
+    final_genre = 'Multi_Cart_Board'
+  elif genre == 'Misc.':
+    final_genre = 'Misc'
+
+  # If there are several words, all of them starting with upper case and
+  # separated by spaces, substitute the spaces by underscores to join them
+  # Ex: 'Aaa Bbb Ccc' -> 'Aaa_Bbb_Ccc'
+  tokens = tokzr_WORD(genre)
+  if len(tokens) > 1:
+    s = '_'
+    final_genre = s.join(tokens)
+
+  # Regular expression to catch illegal characters in categories
+  # that may make the categories filter parser to fail.
+  result = re.search('[^\w_]+', final_genre)
+  if result is not None:
+    NARS.print_error('Illegal character found in genre \'{0}\''.format(final_genre))
+    sys.exit(10)
+
+  return final_genre
 
 # rom_copy_dic = create_copy_list(mame_filtered_dic, rom_main_list);
 def create_copy_list(mame_filtered_dic, rom_main_list):
@@ -2220,20 +2245,21 @@ def do_list_merged():
 #
 def do_list_categories():
   __debug_do_list_categories = 0
-  NARS.print_info('[Listing categories from Catver.ini]')
+  NARS.print_info('[Listing categories from catver.ini]')
 
-  # --- Create a histogram with the available categories based only in Catver.ini
+  # --- Create a histogram with the available categories based only in catver.ini ---
   cat_filename = configuration.Catver
   NARS.print_info('Parsing ' + cat_filename)
   categories_dic = {}
   main_categories_dic = {}
   final_categories_dic = {}
-  f = open(cat_filename, 'r')
   # 0 -> Looking for '[Category]' tag
   # 1 -> Reading categories
   # 2 -> Categories finished. STOP
-  read_status = 0
   NARS.print_info('[Making categories histogram]')
+  read_status = 0
+  num_machines = 0
+  f = open(cat_filename, 'r')
   for cat_line in f:
     stripped_line = cat_line.strip()
     if __debug_do_list_categories:
@@ -2256,7 +2282,7 @@ def do_list_categories():
           categories_dic[category] += 1
         else:
           categories_dic[category] = 1
-        # --- Sub-categories  
+        # --- Sub-categories ---
         sub_categories = category.split("/")
         if __debug_do_list_categories:
           print(sub_categories)
@@ -2275,10 +2301,11 @@ def do_list_categories():
           final_categories_dic[final_category] += 1
         else:
           final_categories_dic[final_category] = 1
+        num_machines += 1
     elif read_status == 2:
       break
     else:
-      print_error('Unknown read_status FSM value')
+      NARS.print_error('Unknown read_status FSM value')
       sys.exit(10)
   f.close()
 
@@ -2313,14 +2340,90 @@ def do_list_categories():
     NARS.print_info('{:6d}'.format(v) + '  ' + k)
     num_categories += 1
   NARS.print_info('[Report]')
-  NARS.print_info('Number of categories  ' + str(num_categories))
+  NARS.print_info('Categories {:6d}'.format(num_categories))
+  NARS.print_info('Machines   {:6d}'.format(num_machines))
 
 #
 # Parses genre.ini and prints a histogram of the genres (how many games on each genre).
 # This function uses its own parser and can be used for debugging purposes.
 #
 def do_list_genres():
-  pass
+  __debug_do_list_genres = 0
+  NARS.print_info('[Listing categories from genre.ini]')
+
+
+  # --- Create a histogram with the available categories based only in catver.ini ---
+  genre_filename = configuration.Genre
+  NARS.print_info('Parsing ' + genre_filename)
+  # { key = 'Genre name' : value = [machine1, machine2, ...], ... }
+  categories_dic = {}
+  # { key = 'Genre name' : value = int number_of_machines, ... }
+  categories_histo_dic = {}
+
+  # Lines starting with ';' are considered comments and ignored
+  # 0 -> Skipping lines at the beginning of the file
+  # 1 -> Looking for genre name '[Name]' line
+  # 2 -> Reading games in that genre. If line is '' go to 1.
+  NARS.print_info('[Making categories histogram]')
+  read_status = 0
+  num_machines = 0
+  f = open(genre_filename, 'r')
+  for cat_line in f:
+    stripped_line = cat_line.strip()
+    if __debug_do_list_genres:
+      print('Stripped line \'{0}\''.format(stripped_line))
+    # Skip comments in genre.ini
+    if len(stripped_line) > 0 and stripped_line[0] == ';':
+      if __debug_do_list_genres:
+        print('COMMENT  line \'{0}\''.format(stripped_line))
+      continue
+    # Parse finite state machine
+    if read_status == 0:
+      if stripped_line == '[ROOT_FOLDER]':
+        if __debug_do_list_genres:
+          print('Found [ROOT_FOLDER]')
+        read_status = 1
+    elif read_status == 1:
+      # Look for lines of the form '[NAME]'. If found, create a new category
+      searchObj = re.search('\[(.*)\]', stripped_line)
+      if searchObj:
+        # Create new category and inser an empty list as value
+        categoryName = fix_genre_name(searchObj.group(1))
+        categories_dic[categoryName] = []
+        categories_histo_dic[categoryName] = 0
+        read_status = 2
+        if __debug_do_list_genres:
+          print('New category \'{0}\''.format(categoryName))
+      else:
+        if __debug_do_list_genres:
+          print('No genre found')
+    elif read_status == 2:
+      if stripped_line == '':
+        read_status = 1
+        if __debug_do_list_genres:
+          print('Blank line. Searching for new genre.')
+      else:
+        categories_dic[categoryName].append(stripped_line)
+        categories_histo_dic[categoryName] += 1
+        num_machines += 1
+        if __debug_do_list_genres:
+          print('Adding machine \'{0}\' to genre \'{1}\''.format(stripped_line, categoryName))
+    else:
+      NARS.print_error('Unknown read_status FSM value')
+      sys.exit(10)
+  f.close()
+
+  # ~~~ Print genre histogram ~~~
+  sorted_histo = ((k, categories_histo_dic[k]) for k in
+                  sorted(categories_histo_dic, key=categories_histo_dic.get, reverse=False))
+  NARS.print_info('[Genres histogram]')
+  num_genres = 0
+  for k, v in sorted_histo:
+    NARS.print_info('{:6d}'.format(v) + '  ' + k)
+    num_genres += 1
+  NARS.print_info('[Report]')
+  NARS.print_info('Genres   {:6d}'.format(num_genres))
+  NARS.print_info('Machines {:6d}'.format(num_machines))
 
 __debug_do_list_drivers = 0
 def do_list_drivers():    
