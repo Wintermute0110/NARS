@@ -2854,25 +2854,25 @@ def do_check(filterName):
 
   # --- Print list in alphabetical order ---
   NARS.print_info('[Filtered machine list]')
-  missing_roms = 0
-  have_roms = 0
-  missing_CHD = have_CHD = 0
-  have_CHD = 0
-  num_CHD = 0
+  num_roms = missing_roms = have_roms = 0
+  num_CHD = missing_CHD = have_CHD = 0
   for key_main in sorted(mame_filtered_dic):
     romObject = mame_filtered_dic[key_main]
 
     # --- Check if ROM file exists ---
-    sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
-    if not os.path.isfile(sourceFullFilename):
-      missing_roms += 1
-      flag_str = 'Missing ROM'
-    else:
-      have_roms += 1
-      flag_str = 'Have ROM'
-    fileName = romObject.name + '.zip'
-    NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
-                    fileName.rjust(25) + '  ' + romObject.description)
+    # If machine has no ROMs then skip checking
+    if romObject.hasROMs:
+      num_roms += 1
+      sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
+      if not os.path.isfile(sourceFullFilename):
+        missing_roms += 1
+        flag_str = 'Missing ROM'
+      else:
+        have_roms += 1
+        flag_str = 'Have ROM'
+      fileName = romObject.name + '.zip'
+      NARS.print_info("<Machine> " + romObject.name.ljust(12) + flag_str.rjust(12) + '  ' +
+                      fileName.rjust(25) + '  ' + romObject.description)
 
     # --- Check if CHD exists ---
     for CHD_file in romObject.CHD_depends_list:
@@ -2889,13 +2889,14 @@ def do_check(filterName):
                       CHD_Filename.rjust(25) + '  ' + romObject.description)
 
   NARS.print_info('[Report]')
-  NARS.print_info('ROMs          {0:6d}'.format(len(mame_dic)))
-  NARS.print_info('Filtered ROMs {0:6d}'.format(len(mame_filtered_dic)))
-  NARS.print_info('Have ROMs     {0:6d}'.format(have_roms))
-  NARS.print_info('Missing ROMs  {0:6d}'.format(missing_roms))
-  NARS.print_info('Total CHDs    {0:6d}'.format(num_CHD))
-  NARS.print_info('Have CHDs     {0:6d}'.format(have_CHD))
-  NARS.print_info('Missing CHDs  {0:6d}'.format(missing_CHD))
+  NARS.print_info('Machines          {0:6d}'.format(len(mame_dic)))
+  NARS.print_info('Filtered machines {0:6d}'.format(len(mame_filtered_dic)))
+  NARS.print_info('Total ROMs        {0:6d}'.format(num_roms))
+  NARS.print_info('Have ROMs         {0:6d}'.format(have_roms))
+  NARS.print_info('Missing ROMs      {0:6d}'.format(missing_roms))
+  NARS.print_info('Total CHDs        {0:6d}'.format(num_CHD))
+  NARS.print_info('Have CHDs         {0:6d}'.format(have_CHD))
+  NARS.print_info('Missing CHDs      {0:6d}'.format(missing_CHD))
 
 # ----------------------------------------------------------------------------
 # Copy ROMs in destDir
