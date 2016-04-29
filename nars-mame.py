@@ -2212,9 +2212,13 @@ def do_list_merged():
   NARS.print_info('Number of devices       {0:6d}'.format(num_devices))
   NARS.print_info('Non-runnable machines   {0:6d}'.format(num_norunnable))
 
+#
+# Parses catver.ini and prints the histogram of the categories (number of games
+# on each category).
+# This function uses its own parser for catver.ini and could be used for debugging
+# purposes.
+#
 def do_list_categories():
-  """Parses Catver.ini and prints the categories and how many games for each"""
-
   __debug_do_list_categories = 0
   NARS.print_info('[Listing categories from Catver.ini]')
 
@@ -2310,6 +2314,13 @@ def do_list_categories():
     num_categories += 1
   NARS.print_info('[Report]')
   NARS.print_info('Number of categories  ' + str(num_categories))
+
+#
+# Parses genre.ini and prints a histogram of the genres (how many games on each genre).
+# This function uses its own parser and can be used for debugging purposes.
+#
+def do_list_genres():
+  pass
 
 __debug_do_list_drivers = 0
 def do_list_drivers():    
@@ -2655,10 +2666,16 @@ def do_list_filters():
       print('Tag with wrong name ' + root_child.tag)
       sys.exit(10)
 
+#
+# Compares two filters and prints differences between them
+#
+def do_diff(filterNameA, filterNameB):
+  pass
+
+# ----------------------------------------------------------------------------
+# Applies filter and copies ROMs into destination directory
 # ----------------------------------------------------------------------------
 def do_check(filterName):
-  """Applies filter and copies ROMs into destination directory"""
-
   NARS.print_info('[Checking filter]')
   NARS.print_info('Filter name = ' + filterName)
 
@@ -2953,7 +2970,8 @@ def do_printHelp():
 \033[31mreduce-XML\033[0m                Takes MAME XML as input and writes an stripped XML.
 \033[31mmerge-XML\033[0m                 Takes MAME XML (reduced) info file and Catver.ini a mergued XML.
 \033[31mlist-merged\033[0m               List every ROM set system in the merged MAME XML.
-\033[31mlist-categories\033[0m           Reads Catver.ini and makes a histogram of the categories.
+\033[31mlist-categories\033[0m           Reads catver.ini and makes a histogram of the categories.
+\033[31mlist-genres\033[0m               Reads genre.ini and makes a histogram of the genres.
 \033[31mlist-drivers\033[0m              Reads merged XML database and prints a histogram of the drivers.
 \033[31mlist-controls\033[0m             Reads merged XML database and prints a histogram of the game controls.
 \033[31mlist-years\033[0m                Reads merged XML database and prints a histogram of the game release year.
@@ -3000,11 +3018,14 @@ parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="stor
 parser.add_argument('--cleanCHD', help="clean unknown CHDs", action="store_true")
 parser.add_argument('command',
     help="usage, reduce-XML, merge, list-merged, \
-          list-categories, list-drivers, list-controls, list-years,\
-          query, list, check, copy, update \
+          list-categories, list-genres, \
+          list-drivers, list-controls, list-years,\
+          query, list, diff, \
+          check, copy, update \
           copy-chd, update-chd \
           check-artwork, copy-artwork, update-artwork", nargs = 1)
-parser.add_argument("filterName", help="MAME ROM filter name", nargs = '?')
+parser.add_argument("filterNameA", help="MAME ROM filter name", nargs = '?')
+parser.add_argument("filterNameB", help="MAME ROM secondary filter", nargs = '?')
 args = parser.parse_args()
 
 # --- Optional arguments ---
@@ -3036,16 +3057,21 @@ if command == 'usage':
   do_printHelp()
   sys.exit(0)
 
-# --- Check arguments that require a filterName ---
+# ~~~ Check arguments that require a filterName ~~~
+if command == 'diff':
+  if args.filterNameA is None or args.filterNameB is None:
+    print('\033[31m[ERROR]\033[0m Command "{0}" requires two filter names'.format(command))
+    sys.exit(10)
+
 if command == 'query' or \
    command == 'check' or command == 'copy' or command == 'update' or \
    command == 'copy-chd' or command == 'update-chd' or \
    command == 'check-artwork' or command == 'copy-artwork' or command == 'update-artwork':
-  if args.filterName is None:
+  if args.filterNameA is None:
     print('\033[31m[ERROR]\033[0m Command "{0}" requires a filter name'.format(command))
     sys.exit(10)
 
-# --- Read configuration file ---
+# ~~~ Read configuration file ~~~
 configuration = parse_File_Config()
 
 # --- Positional arguments that don't require a filterName ---
@@ -3057,6 +3083,8 @@ elif command == 'list-merged':
   do_list_merged()
 elif command == 'list-categories':
   do_list_categories()
+elif command == 'list-genres':
+  do_list_genres()
 elif command == 'list-drivers':
   do_list_drivers()
 elif command == 'list-controls':
@@ -3067,6 +3095,8 @@ elif command == 'query':
   do_query(args.filterName)
 elif command == 'list':
   do_list_filters()
+elif command == 'diff':
+  do_diff(args.filterNameA, args.filterNameB)
 elif command == 'check':
   do_check(args.filterName)
 elif command == 'copy':
