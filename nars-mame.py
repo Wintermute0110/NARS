@@ -254,61 +254,38 @@ def get_Filter_from_Config(filterName):
 # Misc functions
 # -----------------------------------------------------------------------------
 # A class to store the MAME machine information.
-# Machine.name            string  machine name (<machine name="">)
-# Machine.cloneof         string  clone name (<machine cloneof="">)
-# Machine.isclone         bool
-# Machine.isdevice        bool
-# Machine.runnable        bool
-# Machine.sampleof        string 
-# Machine.hasSamples      bool
-# Machine.isMechanical    bool
-# Machine.isBIOS          bool
-# Machine.sourcefile      string
-# Machine.driver_status   string
-# Machine.category        string
-# Machine.buttons         string
-# Machine.players         string
-# Machine.coins           string
-# Machine.hascoins        bool
-# Machine.hasROMs         bool
-# Machine.control_type    string_list
-# Machine.BIOS_depends    string_list
-# Machine.device_depends  string_list
-# Machine.CHD_depends     string_list
-# Machine.description     string
-# Machine.year            string
-# Machine.manufacturer    string
 class Machine:
   def __init__(self):
     # XML Machine attributes
-    self.name         = None
-    self.cloneof      = None
-    self.isClone      = False
-    self.isParent     = True
-    self.isDevice     = False
-    self.isRunnable   = True
-    self.isMechanical = False
-    self.isBIOS       = False
-    self.sampleof     = None
-    self.hasSamples   = False
-    self.sourcefile   = None
+    self.name                = None   # str  machine name (<machine name="">)
+    self.cloneof             = None   # str  clone name (<machine cloneof="">)
+    self.sampleof            = None   # str
+    self.sourcefile          = None   # str
+    self.isClone             = False  # bool
+    self.isParent            = True   # bool
+    self.isDevice            = False  # bool
+    self.isRunnable          = True   # bool
+    self.isMechanical        = False  # bool
+    self.isBIOS              = False  # bool
+    self.hasSamples          = False  # bool
     # XML Machine tags
-    self.description       = None   # str
-    self.year              = None   # str
-    self.manufacturer      = None   # str
-    self.driver_status     = None   # str
-    self.isWorking         = True   # bool
-    self.category          = None   # str
-    self.buttons           = 0      # int
-    self.players           = 0      # int
-    self.coins             = 0      # int
-    self.hasCoinSlot       = False  # bool
-    self.control_type_list = []     # str list
+    self.description         = None   # str
+    self.year                = None   # str
+    self.manufacturer        = None   # str
+    self.driver_status       = None   # str
+    self.isWorking           = True   # bool
+    self.category            = None   # str
+    self.buttons             = 0      # int
+    self.players             = 0      # int
+    self.coins               = 0      # int
+    self.hasCoinSlot         = False  # bool
+    self.control_type_list   = []     # str list
     # Custom <NARS> attributes
-    self.hasROMs           = True   # bool
-    self.hasSoftwareLists  = False  # bool
-    self.displayType       = None   # str
-    self.orientation       = None   # str
+    self.hasROMs             = True   # bool
+    self.hasCHDs             = False  # bool
+    self.hasSoftwareLists    = False  # bool
+    self.displayType         = None   # str
+    self.orientation         = None   # str
     # Custom <NARS> tags
     self.BIOS_depends_list   = []  # str list
     self.device_depends_list = []  # str list
@@ -1220,13 +1197,14 @@ def parse_catver_ini():
 
   return final_categories_dic
 
+#
+# Parses a MAME merged XML and creates a dictionary of MachineObjects
 # Used in the filtering functions (do_checkFilter, do_update(), do_checkArtwork(),
 # do_update_artwork()), but not in the do_list_*() functions.
 #
 # Returns dictionary machine_dict with key the Machine name and value a Machine object.
+#
 def parse_MAME_merged_XML():
-  """Parses a MAME merged XML and creates a parent/clone list"""
-
   filename = configuration.MergedInfo_XML
   NARS.print_info('[Parsing MAME merged XML]')
   tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
@@ -1352,16 +1330,21 @@ def parse_MAME_merged_XML():
         nars_attrib = child_game.attrib
         # hasROMs defaults to True
         if 'hasROMs' in nars_attrib:
-          if nars_attrib['hasROMs'] == 'no':
-            machineObj.hasROMs = False
+          if nars_attrib['hasROMs'] == 'no': machineObj.hasROMs = False
         else:
           print('[ERROR] Not found <NARS hasROMs=... > (Machine {0})\n'.format(machineObj.name))
           sys.exit(10)
 
+        # hasCHDs defaults to False
+        if 'hasCHDs' in nars_attrib:
+          if nars_attrib['hasCHDs'] == 'yes': machineObj.hasCHDs = True
+        else:
+          print('[ERROR] Not found <NARS hasCHDs=... > (Machine {0})\n'.format(machineObj.name))
+          sys.exit(10)
+
         # hasSoftwareLists defaults to False
         if 'hasSoftwareLists' in nars_attrib:
-          if nars_attrib['hasSoftwareLists'] == 'yes':
-            machineObj.hasSoftwareLists = True
+          if nars_attrib['hasSoftwareLists'] == 'yes': machineObj.hasSoftwareLists = True
         else:
           print('[ERROR] Not found <NARS hasSoftwareLists=... > (Machine {0})\n'.format(machineObj.name))
           sys.exit(10)
@@ -1968,14 +1951,12 @@ def do_reduce_XML():
       
       # <NARS hasROMs="yes|no" hasSoftwareLists="yes|no" displayType="Raster|Vector|LCD|Unknown" 
       #       orientation="Horizontal|Vertical">
-      if has_ROMs or has_CHDs:
-        NARS_element.attrib['hasROMs'] = "yes"
-      else:
-        NARS_element.attrib['hasROMs'] = "no"
-      if hasSoftwareLists:
-        NARS_element.attrib['hasSoftwareLists'] = "yes"
-      else:
-        NARS_element.attrib['hasSoftwareLists'] = "no"
+      if has_ROMs:         NARS_element.attrib['hasROMs'] = "yes"
+      else:                NARS_element.attrib['hasROMs'] = "no"
+      if has_CHDs:         NARS_element.attrib['hasCHDs'] = "yes"
+      else:                NARS_element.attrib['hasCHDs'] = "no"
+      if hasSoftwareLists: NARS_element.attrib['hasSoftwareLists'] = "yes"
+      else:                NARS_element.attrib['hasSoftwareLists'] = "no"
 
       # mechanical/device machines do not have <display> tag. Set orientation to Unknown
       if machine_name in machine_displayType_dic:
@@ -2704,15 +2685,15 @@ def do_query(machineName):
     machine = mame_dic[machineName]
     NARS.print_info('Name                 {0}'.format(machine.name))
     NARS.print_info('Clone of             {0}'.format(machine.cloneof))
+    NARS.print_info('Sample of            {0}'.format(machine.sampleof))
+    NARS.print_info('sourcefile           {0}'.format(machine.sourcefile))
     NARS.print_info('isClone              {0}'.format(machine.isClone))
     NARS.print_info('isParent             {0}'.format(machine.isParent))
     NARS.print_info('isDevice             {0}'.format(machine.isDevice))
     NARS.print_info('isRunnable           {0}'.format(machine.isRunnable))
     NARS.print_info('isMechanical         {0}'.format(machine.isMechanical))
     NARS.print_info('isBIOS               {0}'.format(machine.isBIOS))
-    NARS.print_info('Sample of            {0}'.format(machine.sampleof))
     NARS.print_info('hasSamples           {0}'.format(machine.hasSamples))
-    NARS.print_info('sourcefile           {0}'.format(machine.sourcefile))
     NARS.print_info('---')
     NARS.print_info('Description          {0}'.format(machine.description))
     NARS.print_info('year                 {0}'.format(machine.year))
@@ -2727,6 +2708,7 @@ def do_query(machineName):
     NARS.print_info('control_type_list    {0}'.format(machine.control_type_list))
     NARS.print_info('---')
     NARS.print_info('hasROMs              {0}'.format(machine.hasROMs))
+    NARS.print_info('hasCHDs              {0}'.format(machine.hasCHDs))
     NARS.print_info('hasSoftwareLists     {0}'.format(machine.hasSoftwareLists))
     NARS.print_info('displayType          {0}'.format(machine.displayType))
     NARS.print_info('orientation          {0}'.format(machine.orientation))
