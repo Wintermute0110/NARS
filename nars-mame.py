@@ -48,8 +48,9 @@ class ConfigFile:
   def __init__(self):
     self.MAME_XML       = ''
     self.MAME_XML_redux = ''
-    self.Catver         = ''
     self.MergedInfo_XML = ''
+    self.Catver         = ''
+    self.Genre          = ''
     self.MachineSwap    = {}
     self.filter_dic     = {}
 
@@ -103,12 +104,15 @@ def parse_File_Config():
     elif root_child.tag == 'MAME_XML_redux':
       configFile.MAME_XML_redux = root_child.text
       NARS.print_debug('MAME_XML_redux = ' + root_child.text)
-    elif root_child.tag == 'Catver':
-      configFile.Catver = root_child.text
-      NARS.print_debug('Catver         = ' + root_child.text)
     elif root_child.tag == 'Merged_XML':
       configFile.MergedInfo_XML = root_child.text
       NARS.print_debug('Merged_XML     = ' + root_child.text)
+    elif root_child.tag == 'Catver':
+      configFile.Catver = root_child.text
+      NARS.print_debug('Catver         = ' + root_child.text)
+    elif root_child.tag == 'Genre':
+      configFile.Genre = root_child.text
+      NARS.print_debug('Genre          = ' + root_child.text)
     elif root_child.tag == 'MachineSwap':
       (name_A, name_B) = parse_tag_MachineSwap(root_child.text)
       configFile.MachineSwap[name_A] = name_B
@@ -224,8 +228,16 @@ def parse_File_Config():
       # --- Add filter class to configuration dictionary of filters ---
       configFile.filter_dic[filter_class.name] = filter_class
   
-  # === Check for configuration errors ===
-  
+  # ~~~ Check for configuration errors ~~~
+  if configFile.MAME_XML is None:
+    NARS.print_error('[ERROR] <MAME_XML> tag not found or empty.')
+    sys.exit(10)
+  if configFile.MAME_XML_redux is None:
+    NARS.print_error('[ERROR] <MAME_XML_redux> tag not found or empty.')
+    sys.exit(10)
+  if configFile.MergedInfo_XML is None:
+    NARS.print_error('[ERROR] <MergedInfo_XML> tag not found or empty.')
+    sys.exit(10)
 
   return configFile
 
