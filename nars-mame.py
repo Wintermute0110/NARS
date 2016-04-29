@@ -2751,20 +2751,22 @@ def do_list_filters():
       NARS.print_info('MAME_XML        ' + root_child.text)
     elif root_child.tag == 'MAME_XML_redux':
       NARS.print_info('MAME_XML_redux  ' + root_child.text)
-    elif root_child.tag == 'Catver':
-      NARS.print_info('Catver          ' + root_child.text)
     elif root_child.tag == 'Merged_XML':
       NARS.print_info('Merged_XML      ' + root_child.text)
+    elif root_child.tag == 'Catver':
+      NARS.print_info('Catver          ' + root_child.text)
+    elif root_child.tag == 'Genre':
+      NARS.print_info('Genre           ' + root_child.text)
     elif root_child.tag == 'MachineSwap':
       NARS.print_info('MachineSwap     ' + root_child.text)
     elif root_child.tag == 'MAMEFilter':
       NARS.print_info('<MAME filter>')
-      NARS.print_info('Name        ' + root_child.attrib['name'])
+      NARS.print_info('Name            ' + root_child.attrib['name'])
       for root_child_node in root_child:
         if root_child_node.tag == 'ROMsSource':
-          NARS.print_info('ROMsSource  ' + root_child_node.text)
+          NARS.print_info('ROMsSource      ' + root_child_node.text)
         elif root_child_node.tag == 'ROMsDest':
-          NARS.print_info('ROMsDest    ' + root_child_node.text)
+          NARS.print_info('ROMsDest        ' + root_child_node.text)
     else:
       print('Tag with wrong name ' + root_child.tag)
       sys.exit(10)
@@ -2773,7 +2775,76 @@ def do_list_filters():
 # Compares two filters and prints differences between them
 #
 def do_diff(filterNameA, filterNameB):
-  pass
+  NARS.print_info('[Differencing filters]')
+  NARS.print_info('Filter A = {0} | Filter B = {1}'.format(filterNameA, filterNameB))
+
+  # ~~~ Get MAME merged XML ~~~
+  mame_dic = parse_MAME_merged_XML()
+
+  # ~~~ Get list of machines for filter A ~~~
+  filter_config_A = get_Filter_from_Config(filterNameA)
+  mame_filtered_dic_A = filter_MAME_machines(mame_dic, filter_config_A)
+
+  # ~~~ Get list of machines for filter B ~~~
+  filter_config_B = get_Filter_from_Config(filterNameB)
+  mame_filtered_dic_B = filter_MAME_machines(mame_dic, filter_config_B)
+
+  # ~~~ Print diff ~~~
+  # + Needs Python 3.5
+  # merged_filtered_dic = {**mame_filtered_dic_A, **mame_filtered_dic_B}
+  # + Classical way of merging dictionaries
+  merged_filtered_dic = mame_filtered_dic_A.copy()
+  merged_filtered_dic.update(mame_filtered_dic_B)
+  merged_filtered_set = set(merged_filtered_dic.keys())
+  NARS.print_info('[Filter comparison]')
+  # Calculate maximum lengths of strings
+  machine_size = 0
+  desc_size = 0
+  for machine in merged_filtered_set:
+    if len(machine) > machine_size:
+      machine_size = len(machine)
+    if machine in mame_filtered_dic_A and len(mame_filtered_dic_A[machine].description) > desc_size:
+      desc_size = len(mame_filtered_dic_A[machine].description)
+    if machine in mame_filtered_dic_B and len(mame_filtered_dic_B[machine].description) > desc_size:
+      desc_size = len(mame_filtered_dic_B[machine].description)
+
+  num_machines_A = 0
+  num_machines_B = 0
+  print('\033[104m{0}\033[0m \033[104m{1}\033[0m'.format(
+      filterNameA.ljust(machine_size + desc_size + 3),
+      filterNameB.ljust(machine_size + desc_size + 3)))
+  for machine in sorted(merged_filtered_set):
+    # machine A can be only in dic_A, only in dic_B, or both
+    # What about the cases on machines in machineB?
+    machine_is_in_A = machine in mame_filtered_dic_A
+    machine_is_in_B = machine in mame_filtered_dic_B
+    if machine_is_in_A and machine_is_in_B:
+      num_machines_A += 1
+      num_machines_B += 1
+      print('{0}  {1} | {2}  {3}'.format(machine.rjust(machine_size),
+                                         mame_filtered_dic_A[machine].description.ljust(desc_size),
+                                         machine.rjust(machine_size),
+                                         mame_filtered_dic_B[machine].description.ljust(desc_size)))
+    elif machine_is_in_A and not machine_is_in_B:
+      num_machines_A += 1
+      print('\033[100m{0}  {1}\033[0m |'.format(
+          machine.rjust(machine_size),
+          mame_filtered_dic_A[machine].description.ljust(desc_size)))
+    elif not machine_is_in_A and machine_is_in_B:
+      num_machines_B += 1
+      print('{0}  {1} | \033[100m{2}  {3}\033[0m'.format(
+          ' '.rjust(machine_size), ' '.rjust(desc_size),
+          machine.rjust(machine_size), mame_filtered_dic_B[machine].description.ljust(desc_size)))
+    elif not machine_is_in_A and not machine_is_in_B:
+      print('Logical error in do_diff()')
+      sys.exit(10)
+  print('\033[104m{0}\033[0m \033[104m{1}\033[0m'.format(
+    filterNameA.ljust(machine_size + desc_size + 3),
+    filterNameB.ljust(machine_size + desc_size + 3)))
+
+  NARS.print_info('[Report]')
+  NARS.print_info('Machines left   {0:6d}'.format(num_machines_A))
+  NARS.print_info('Machines right  {0:6d}'.format(num_machines_B))
 
 # ----------------------------------------------------------------------------
 # Applies filter and copies ROMs into destination directory
@@ -2791,11 +2862,11 @@ def do_check(filterName):
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_dic = parse_MAME_merged_XML()
 
-  # --- Create main ROM list in sourceDir -------------------------------------
-  rom_main_list = get_ROM_main_list(filter_config.sourceDir)
-
   # --- Apply filter and create list of files to be copied --------------------
   mame_filtered_dic = filter_MAME_machines(mame_dic, filter_config)
+
+  # --- Create main ROM list in sourceDir -------------------------------------
+  # rom_main_list = get_ROM_main_list(filter_config.sourceDir)
 
   # --- Print list in alphabetical order ---
   NARS.print_info('[Filtered machine list]')
@@ -3195,30 +3266,30 @@ elif command == 'list-controls':
 elif command == 'list-years':
   do_list_years()
 elif command == 'query':
-  do_query(args.filterName)
+  do_query(args.filterNameA)
 elif command == 'list':
   do_list_filters()
 elif command == 'diff':
   do_diff(args.filterNameA, args.filterNameB)
 elif command == 'check':
-  do_check(args.filterName)
+  do_check(args.filterNameA)
 elif command == 'copy':
-  do_update(args.filterName)
+  do_update(args.filterNameA)
 elif command == 'update':
   __prog_option_sync = 1
-  do_update(args.filterName)
+  do_update(args.filterNameA)
 elif command == 'copy-chd':
-  do_update_CHD(args.filterName)
+  do_update_CHD(args.filterNameA)
 elif command == 'update-chd':
   __prog_option_sync = 1
-  do_update_CHD(args.filterName)
+  do_update_CHD(args.filterNameA)
 elif command == 'check-artwork':
-  do_check_Artwork(args.filterName)
+  do_check_Artwork(args.filterNameA)
 elif command == 'copy-artwork':
-  do_update_Artwork(args.filterName)
+  do_update_Artwork(args.filterNameA)
 elif command == 'update-artwork':
   __prog_option_sync = 1
-  do_update_Artwork(args.filterName)
+  do_update_Artwork(args.filterNameA)
 else:
   print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
   sys.exit(1)
