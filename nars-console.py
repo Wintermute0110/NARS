@@ -698,7 +698,10 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
 #
 def create_copy_list(romMain_list, filter_config):
   # --- Scan sourceDir to get the list of available ROMs ---
-  NARS.print_info('[Scanning sourceDir for ROMs to be copied]')
+  NARS.print_info('[Scanning sourceDir for ROMs to be copied/updated]')
+  if filter_config.option_NoBIOS: NARS.print_info('Option NoBIOS is ON')
+  else:                           NARS.print_info('Option NoBIOS is OFF')
+
   sourceDir = filter_config.sourceDir
   sourceDir_rom_list = []
   for file in os.listdir(sourceDir):
@@ -707,7 +710,6 @@ def create_copy_list(romMain_list, filter_config):
 
   # For each parent/clone list, pick the first available ROM in sourceDir
   # (if not excluded) to be copied.
-  NARS.print_info('[Creating list of ROMs to be copied/updated]')
   rom_copy_list = []
   for mainROM_obj in romMain_list:
     num_pclone_set_files = len(mainROM_obj.filenames)
