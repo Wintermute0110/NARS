@@ -582,9 +582,9 @@ def optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config):
   # - For every ROM to be copied (filtered) check if ArtWork exists. If not,
   #   try artwork of other ROMs in the parent/clone set.
   artwork_copy_dic = {}
-  for rom_copy_item in roms_destDir_list:
+  for rom_copy_item in sorted(roms_destDir_list):
     artworkBaseName = rom_copy_item
-    ROMFullName     = rom_copy_item + '.zip'
+    ROMFullName = rom_copy_item + '.zip'
     artwork_copy_dic[rom_copy_item] = { 'thumb': None, 'fanart' : None}
     if __debug_optimize_ArtWork: 
       print('{{Testing ROM}} {0}'.format(ROMFullName))
@@ -594,6 +594,7 @@ def optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config):
     thumbPath = thumbsSourceDir + artworkBaseName + '.png'
     if __debug_optimize_ArtWork: print('Testing original    thumb  {0}'.format(thumbPath))
     if os.path.isfile(thumbPath):
+      if __debug_optimize_ArtWork: print('Found   original    thumb  {0}'.format(thumbPath))
       artwork_copy_dic[rom_copy_item]['thumb'] = rom_copy_item
     else:
       # If not found walk through the pclone list
@@ -619,9 +620,10 @@ def optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config):
 
     # --- Check Fanart ---
     # First check if we have the original artwork
-    thumbPath = thumbsSourceDir + artworkBaseName + '.png'
+    thumbPath = fanartSourceDir + artworkBaseName + '.png'
     if __debug_optimize_ArtWork: print('Testing original    fanart {0}'.format(thumbPath))
     if os.path.isfile(thumbPath):
+      if __debug_optimize_ArtWork: print('Found   original    fanart {0}'.format(thumbPath))
       artwork_copy_dic[rom_copy_item]['fanart'] = rom_copy_item
     else:
       # If not found walk through the pclone list
@@ -638,7 +640,7 @@ def optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config):
       # Check if artwork exists for every from of this set
       for pclone_rom_full_name in pclone_list:
         pclone_rom_base_name, ext = os.path.splitext(pclone_rom_full_name)
-        thumbPath = thumbsSourceDir + pclone_rom_base_name + '.png'
+        thumbPath = fanartSourceDir + pclone_rom_base_name + '.png'
         if __debug_optimize_ArtWork: print('Testing substituted fanart {0}'.format(thumbPath))
         if os.path.isfile(thumbPath):
           if __debug_optimize_ArtWork: print('Found   substituted fanart {0}'.format(thumbPath))
@@ -1553,40 +1555,40 @@ def do_checkArtwork(filter_name):
 
     # --- Check thumb ---
     if artwork_dic['thumb'] is None:
-      thumb_flag = '\033[31mMISS\033[0m          THUMB'
+      thumb_flag = '\033[31mMISS\033[0m          THUMB '
       artwork_name = ''
       num_missing_thumbs += 1
     else:
       artwork_name = artwork_dic['thumb'] + '.png'
       if artwork_dic['thumb'] == rom_base_name:
-        thumb_flag = '\033[32mHAVE ORIGINAL\033[0m THUMB'
+        thumb_flag = '\033[32mHAVE ORIGINAL\033[0m THUMB '
         num_original_thumbs += 1
       else:
-        thumb_flag = '\033[32mHAVE\033[0m SUBST    THUMB'
+        thumb_flag = '\033[32mHAVE\033[0m SUBST    THUMB '
         num_subst_thumbs += 1
     NARS.print_info('{0}  {1}'.format(thumb_flag, artwork_name))
 
     # --- Check fanart ---
-    if artwork_dic['thumb'] is None:
-      thumb_flag = '\033[31mMISS\033[0m          THUMB'
+    if artwork_dic['fanart'] is None:
+      thumb_flag = '\033[31mMISS\033[0m          FANART'
       artwork_name = ''
       num_missing_fanart += 1
     else:
-      artwork_name = artwork_dic['thumb'] + '.png'
-      if artwork_dic['thumb'] == rom_base_name:
-        thumb_flag = '\033[32mHAVE ORIGINAL\033[0m THUMB'
+      artwork_name = artwork_dic['fanart'] + '.png'
+      if artwork_dic['fanart'] == rom_base_name:
+        thumb_flag = '\033[32mHAVE ORIGINAL\033[0m FANART'
         num_original_fanart += 1
       else:
-        thumb_flag = '\033[32mHAVE\033[0m SUBST    THUMB'
+        thumb_flag = '\033[32mHAVE\033[0m SUBST    FANART'
         num_subst_fanart += 1
     NARS.print_info('{0}  {1}'.format(thumb_flag, artwork_name))
-  
+
   NARS.print_info('[Report]')
   NARS.print_info('ROMs in destDir  {:5d}'.format(len(roms_destDir_list)))
   NARS.print_info('Have    Thumbs   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_thumbs + num_subst_thumbs,
                                                                                 num_original_thumbs, num_subst_thumbs))
   NARS.print_info('Missing Thumbs   {:5d}'.format(num_missing_thumbs))
-  NARS.print_info('Have    Thumbs   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_fanart + num_subst_fanart,
+  NARS.print_info('Have    Fanart   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_fanart + num_subst_fanart,
                                                                                 num_original_fanart, num_subst_fanart))
   NARS.print_info('Missing Fanart   {:5d}'.format(num_missing_fanart))
 
