@@ -491,17 +491,17 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
         # On default verbosity level only report copied files
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_copied_thumbs += 1
-        NARS.print_info('<Copied  Thumb > ' + art_baseName)
+        NARS.print_info('<Copied  Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
       elif ret == 1:
         # Also report missing artwork
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_missing_thumbs += 1
-        NARS.print_info('<Missing Thumb > ' + art_baseName)
+        NARS.print_info('<Missing Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
       elif ret == 2:
         if NARS.log_level >= NARS.Log.verb:
           sys.stdout.write('{:5.2f}% '.format(percentage))
         num_updated_thumbs += 1
-        NARS.print_verb('<Updated Thumb > ' + art_baseName)
+        NARS.print_verb('<Updated Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
       else:
         print_error('Wrong value returned by copy_ArtWork_file()')
         sys.exit(10)
@@ -514,17 +514,17 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
         # Also report missing artwork
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_copied_fanart += 1
-        NARS.print_info('<Copied  Fanart> ' + art_baseName)
+        NARS.print_info('<Copied  Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
       elif ret == 1:
         # Also report missing artwork
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_missing_fanart += 1
-        NARS.print_info('<Missing Fanart> ' + art_baseName)
+        NARS.print_info('<Missing Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
       elif ret == 2:
         if NARS.log_level >= NARS.Log.verb:
           sys.stdout.write('{:5.2f}% '.format(percentage))
         num_updated_fanart += 1
-        NARS.print_verb('<Updated Fanart> ' + art_baseName)
+        NARS.print_verb('<Updated Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
       else:
         print_error('Wrong value returned by copy_ArtWork_file()')
         sys.exit(10)
@@ -1451,7 +1451,7 @@ def do_check(filter_name):
 #                        rom_object.filenames[index])
       # ~ Wide way ~
       if index == 0:
-        NARS.print_info('\033[100m{0}\033[0m'.format(rom_object.setName))
+        NARS.print_info('\033[7m{0}\033[0m'.format(rom_object.setName))
       NARS.print_info(' {:3d} '.format(rom_object.scores[index]) +
                       haveFlag + ' ' +  excludeFlag + ' ' + parentFlag + ' ' + copyFlag + '  ' +
                       rom_object.filenames[index])
@@ -1548,7 +1548,7 @@ def do_checkArtwork(filter_name):
   num_subst_fanart    = 0
   num_missing_fanart  = 0
   for rom_base_name in sorted(roms_destDir_list):
-    NARS.print_info('\033[100m{0}\033[0m'.format(rom_base_name + ".zip"))
+    NARS.print_info('\033[7m{0}\033[0m'.format(rom_base_name + ".zip"))
     artwork_dic = artwork_copy_dic[rom_base_name]
 
     # --- Check thumb ---
