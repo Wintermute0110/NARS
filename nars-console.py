@@ -34,7 +34,7 @@ __prog_option_log = 0
 __prog_option_log_filename = __config_logFileName
 __prog_option_dry_run = 0
 __prog_option_clean_ROMs = 0
-__prog_option_clean_NFO = 0
+__prog_option_clean_NFOs = 0
 __prog_option_clean_ArtWork = 0
 __prog_option_sync = 0
 
@@ -606,7 +606,7 @@ def optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config):
           pclone_list = pclone_obj.filenames
           break
       if len(pclone_list) == 0:
-        print_error('Logical error')
+        NARS.print_error('Logical error')
         sys.exit(10)
       # Check if artwork exists for every from of this set
       for pclone_rom_full_name in pclone_list:
@@ -659,7 +659,7 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
   NARS.have_dir_or_abort(thumbsDestDir, 'thumbsDestDir')
   NARS.have_dir_or_abort(fanartDestDir, 'fanartDestDir')
 
-  # --- Delete unknown thumbs
+  # --- Delete unknown thumb ---
   thumbs_file_list = []
   for file in os.listdir(thumbsDestDir):
     if file.endswith(".png"):
@@ -670,10 +670,11 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
     art_baseName, ext = os.path.splitext(file) # Remove extension
     if art_baseName not in artwork_copy_dic:
       num_cleaned_thumbs += 1
-      delete_ROM_file(file, thumbsDestDir)
-      print_info('<Deleted thumb > ' + file)
+      fileName = thumbsDestDir + file
+      NARS.delete_file(fileName, __prog_option_dry_run)
+      NARS.print_info('<Deleted thumb > ' + file)
 
-  # --- Delete unknown fanart
+  # --- Delete unknown fanart ---
   fanart_file_list = []
   for file in os.listdir(fanartDestDir):
     if file.endswith(".png"):
@@ -684,8 +685,9 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
     art_baseName, ext = os.path.splitext(file) # Remove extension
     if art_baseName not in artwork_copy_dic:
       num_cleaned_fanart += 1
-      delete_ROM_file(file, fanartDestDir)
-      print_info(' <Deleted fanart> ' + file)
+      fileName = fanartDestDir + file
+      NARS.delete_file(fileName, __prog_option_dry_run)
+      NARS.print_info(' <Deleted fanart> ' + file)
 
   # --- Report
   NARS.print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs')
@@ -879,13 +881,13 @@ def get_Tag_dic(romMainList_list):
 # dictionary. The first game in the list PClone.filenames is the parent game
 # according to the DAT file, and the rest are the clones in no particular order.
 #
-# Returns:
-# romMainList = [PClone, PClone, PClone, ...]
+# Returns,
+#  romMainList = [PClone, PClone, PClone, ...]
 #
-# PClone object:
-#  PClone.filenames  [list] full game filename (with extension)
+# PClone object,
+#  PClone.filenames  [str list] full game filename (with extension). First one is the parent.
 #
-def get_NoIntro_Main_list(filter_config):
+def get_NoIntro_Main_PClone_list(filter_config):
   __debug_parse_NoIntro_XML_Config = 0
   
   XML_filename = filter_config.NoIntro_XML
@@ -977,15 +979,26 @@ def get_NoIntro_Main_list(filter_config):
     pclone_obj.filenames = []
     pclone_obj.filenames.append(romNoIntroObj.baseName + '.zip')   
     # If game has clones add them to the list of filenames
+    # NOTE To avoid problems with artwork substitution, make sure the list of
+    #      clones is alphabetically sorted, so the output of the program is
+    #      always the same for the same input. Otherwise, due to dictionary race
+    #      conditions the order of this list may vary from execution to execution, and
+    #      that is bad!
     if romNoIntroObj.hasClones:
+      # Put clones in temporal list
+      clones_list = []
       for clone in romNoIntroObj.clone_list:
-        pclone_obj.filenames.append(clone + '.zip')  
+        clones_list.append(clone + '.zip')
+      # Sort alphabetically
+      for clone in sorted(clones_list):
+        pclone_obj.filenames.append(clone)
+
     # Add MainROM to the list
     romMainList_list.append(pclone_obj)
 
   return romMainList_list
 
-def get_directory_Main_list(filter_config):
+def get_directory_Main_PClone_list(filter_config):
   """Reads a directory and creates a unique ROM parent/clone list"""
   __debug_sourceDir_ROM_scanner = 0
   
@@ -1020,29 +1033,67 @@ def get_directory_Main_list(filter_config):
       pclone_ROM_dict[baseName] = filenames
   
   # --- Create ROM main list ---
+  # NOTE To avoid problems with artwork substitution, make sure the list of
+  #      clones is alphabetically sorted, so the output of the program is
+  #      always the same for the same input. Otherwise, due to dictionary race
+  #      conditions the order of this list may vary from execution to execution, and
+  #      that is bad!
   romMainList_list = []
   for key in pclone_ROM_dict:
-    # - Create object and add first ROM (parent ROM)
-    mainROM = MainROM()
-    mainROM.filenames = pclone_ROM_dict[key]
-    # - Add MainROM to the list
+    # Create object and add first ROM (parent ROM)
+    mainROM = PClone()
+    mainROM.filenames = sorted(pclone_ROM_dict[key])
+    # Add PClone object to the list
     romMainList_list.append(mainROM) 
 
   return romMainList_list
 
+#
+# Create a data structure of the form,
+# [ 
+#   [score1, file1, parent1, include1, ... ],
+#   [score2, file2, parent2, include2, ... ], 
+#   ...
+# ]
+# Then, this matrix can be reorded first by second column and then by first column (keeping order
+# of the previously ordered second column) using lamba expressions.
+#
+def get_set_double_sorted(PClone_obj):
+
+  # --- Create the list of lists ---
+  ROM_list_list = [ ]
+  for i in range(len(PClone_obj.filenames)):
+    ROM_list_list.append( (PClone_obj.scores[i], PClone_obj.filenames[i], PClone_obj.parent[i], PClone_obj.include[i]) )
+  # print(ROM_list_list)
+
+  # --- Sort list of list by two rows ---
+  # See http://stackoverflow.com/questions/5212870/sorting-a-python-list-by-two-criteria
+  ROM_list_list.sort(key = lambda row:  row[1])
+  ROM_list_list.sort(key = lambda row: -row[0]) # - means inverse sorting
+  # print(ROM_list_list)
+
+  # --- Convert back ---
+  PClone_obj_out = PClone()
+  PClone_obj_out.setName   =  PClone_obj.setName
+  PClone_obj_out.scores    = [row[0] for row in ROM_list_list]
+  PClone_obj_out.filenames = [row[1] for row in ROM_list_list]
+  PClone_obj_out.parent    = [row[2] for row in ROM_list_list]
+  PClone_obj_out.include   = [row[3] for row in ROM_list_list]
+
+  return PClone_obj_out
+
 # Score and filter the main ROM list.
 #
-# Returns:
-# romMain_list = [MainROM, MainROM, MainROM, ...]
-#
-# MainROM.setName   [str]
-# MainROM.filenames [str list]
-# MainROM.scores    [int list]
-# MainROM.include   [int list]
-# MainROM.parent    [int list]
+# Returns,
+#  romMain_list = [PClone, PClone, PClone, ...]
+#  PClone.setName   [str]
+#  PClone.filenames [str list]
+#  PClone.scores    [int list]
+#  PClone.include   [int list]
+#  PClone.parent    [int list]
 #
 def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
-  NARS.print_info('[Filtering ROMs]')
+  NARS.print_info('[Scoring and filtering ROMs]')
   __debug_main_ROM_list = 0
 
   upTag_list      = filter_config.filterUpTags
@@ -1070,29 +1121,22 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
       if includeTag_list is not None:  isTag_include = isTag(tags, includeTag_list)
       if excludeTag_list is not None:  isTag_exclude = isTag(tags, excludeTag_list)
       # Filtering cases,
-      #  A) <includeTags>     empty | <excludeTags>     empty
-      #  B) <includeTags>     empty | <excludeTags> NON empty
-      #  C) <includeTags> NON empty | <excludeTags>     empty
-      #  D) <includeTags> NON empty | <excludeTags> NON empty
-      #
-      #  A) Include all ROMs
-      #  B) Exclude ROM with excludeTags only
-      #  C) Include all ROMs
-      #  D) Exclude ROM if not includeTags and excludeTags
-      #     Include ROM if includeTags regardless of excludeTags
+      #  A) <includeTags>     empty | <excludeTags>     empty --> Include all ROMs
+      #  B) <includeTags>     empty | <excludeTags> NON empty --> Exclude ROM with excludeTags only
+      #  C) <includeTags> NON empty | <excludeTags>     empty --> Include all ROMs
+      #  D) <includeTags> NON empty | <excludeTags> NON empty --> Exclude ROM if not includeTags and excludeTags
+      #                                                           Include ROM if includeTags regardless of excludeTags
+      # By default do not exclude ROMs
       includeThisROM = 1
-      if   isTag_include is     None and isTag_exclude is     None:
-        pass
-      elif isTag_include is     None and isTag_exclude is not None and isTag_exclude:
-        includeThisROM = 0
-      elif isTag_include is not None and isTag_exclude is     None:
-        pass
+      if isTag_include is None and isTag_exclude is not None:
+        if isTag_exclude: 
+          includeThisROM = 0
       elif isTag_include is not None and isTag_exclude is not None:
-        if not isTag_include and isTag_exclude:
+        if not isTag_include and isTag_exclude: 
           includeThisROM = 0
       include_list.append(includeThisROM)
     mainROM_obj.include = include_list
-  # By default not exclude ROMs
+
   # --- Add parent/clone flag ---
   # The parent ROM in the set is the first in the list, but would be good to know which
   # is the parent ROM after reordering.
@@ -1103,7 +1147,7 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
 
   # --- DEBUG: print main ROM list with scores and include flags ---
   if __debug_main_ROM_list:
-    print("[DEBUG main ROM list scored]")
+    print("[DEBUG PClone ROM set object scored]")
     for mainROM_obj in romMain_list:
       print(mainROM_obj.filenames)
       print(mainROM_obj.scores)
@@ -1115,15 +1159,11 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
   # artwork (for example, the use has artwork for an excluded ROM
   # belonging to the same set as the first ROM).
   #
-  # Issue #2 If a parent and a clone receive the same score, then select
-  #          the parent ROM and not the clone.
+  # GH Issue #2 If a parent and a clone receive the same score, then select
+  #             the parent ROM and not the clone.
   romMain_list_sorted = []
   romSetName_list = []
   for ROM_obj in romMain_list:
-    # --- Get a list with the indices of the sorted list ---
-    sorted_idx = [i[0] for i in sorted(enumerate(ROM_obj.scores), key=lambda x:x[1])]
-    sorted_idx.reverse()
-
     # --- Add setName field ---
     # The set name is the stripped name of the first ROM in the unsorted
     # This is compatible with both No-Intro and directory listings
@@ -1132,17 +1172,29 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
     stripped_ROM_name = get_ROM_baseName(thisFileName)
     ROM_obj.setName = stripped_ROM_name
 
-    # --- Reorder MainROM object lists ---
-    ROM_sorted = PClone()
-    ROM_sorted.filenames = [ROM_obj.filenames[i] for i in sorted_idx]
-    ROM_sorted.scores    = [ROM_obj.scores[i] for i in sorted_idx]
-    ROM_sorted.include   = [ROM_obj.include[i] for i in sorted_idx]
-    ROM_sorted.parent    = [ROM_obj.parent[i] for i in sorted_idx]
-    ROM_sorted.setName   = ROM_obj.setName
+    # --- Reorder PClone set object lists ---
+    # sorted_idx = [i[0] for i in sorted(enumerate(ROM_obj.scores), key=lambda x:x[1])]
+    # sorted_idx.reverse()
+    # ROM_sorted = PClone()
+    # ROM_sorted.setName   =  ROM_obj.setName
+    # ROM_sorted.filenames = [ROM_obj.filenames[i] for i in sorted_idx]
+    # ROM_sorted.scores    = [ROM_obj.scores[i]    for i in sorted_idx]
+    # ROM_sorted.include   = [ROM_obj.include[i]   for i in sorted_idx]
+    # ROM_sorted.parent    = [ROM_obj.parent[i]    for i in sorted_idx]
+
+    # Problem  There is a random behaviour: if there are several ROMs with same score their position
+    #          in the sorted list is random and changes on every execution of the program. This has
+    #          bad consequences specially for artwork substitution but also have observed the issue
+    #          when updating ROMs.
+    # Solution Traverse the list of sorted ROMs. If there are several ROMs with same score that
+    #          subgroup must be ordered alphabetically.
+    # NOTE     This function implements the Solution and also orders by scores, making the original
+    #          code to sort the PClone set unnecesary.
+    ROM_sorted = get_set_double_sorted(ROM_obj)
 
     # Issue #2
-    # Check if parent has maximum and same score as one or several clones.
-    # If so, put the parent first.
+    # Check if parent has maximum score OR parent has same score as one or several clones.
+    # If the latter, put the parent first.
     top_scored_ROM_list = []
     maximum_score = ROM_sorted.scores[0]
     for i in range(len(ROM_sorted.filenames)):
@@ -1158,7 +1210,7 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
       ROM_sorted.include[parent_index], ROM_sorted.include[0]     = ROM_sorted.include[0], ROM_sorted.include[parent_index]
       ROM_sorted.parent[parent_index], ROM_sorted.parent[0]       = ROM_sorted.parent[0], ROM_sorted.parent[parent_index]
 
-  # --- Insert reordered MainROM into ordered list ---
+    # --- Insert reordered MainROM into ordered list ---
     romMain_list_sorted.append(ROM_sorted)
     romSetName_list.append(stripped_ROM_name)
   romMain_list = romMain_list_sorted
@@ -1171,14 +1223,22 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
 
   return romMain_list
 
-def filter_ROMs(filter_config):
-  # --- Obtain main parent/clone list, either based on DAT file or sourceDir filelist ---
+#
+# Gets main PClone ROM list, either using a No-Intro DAT or guessing by the ROMs in sourceDir
+#
+def get_PClone_main_list(filter_config):
   if filter_config.NoIntro_XML is None:
     NARS.print_info('Using directory listing')
-    romMainList_list = get_directory_Main_list(filter_config)
+    romMainList_list = get_directory_Main_PClone_list(filter_config)
   else:
     NARS.print_info('Using No-Intro parent/clone DAT')
-    romMainList_list = get_NoIntro_Main_list(filter_config)
+    romMainList_list = get_NoIntro_Main_PClone_list(filter_config)
+
+  return romMainList_list
+
+def filter_ROMs(filter_config):
+  # --- Obtain main parent/clone list, either based on DAT file or sourceDir filelist ---
+  romMainList_list = get_PClone_main_list(filter_config)
 
   # --- Get tag list for every rom ---
   rom_Tag_dic = get_Tag_dic(romMainList_list)
@@ -1499,7 +1559,7 @@ def do_update(filter_name):
     clean_ROMs_destDir(destDir, rom_copy_list)
 
   # --- Delete NFO files of ROMs not present in the destination directory.
-  if __prog_option_clean_NFO:
+  if __prog_option_clean_NFOs:
     delete_redundant_NFO(destDir)
 
 def do_checkArtwork(filter_name):
@@ -1524,12 +1584,7 @@ def do_checkArtwork(filter_name):
   NARS.print_info("Fanart Source directory '{:}'".format(fanartSourceDir))
 
   # --- Obtain main parent/clone list, either based on DAT or filelist ---
-  if filter_config.NoIntro_XML == None:
-    NARS.print_info('Using directory listing')
-    romMainList_list = get_directory_Main_list(filter_config)
-  else:
-    NARS.print_info('Using No-Intro parent/clone DAT')
-    romMainList_list = get_NoIntro_Main_list(filter_config)
+  romMainList_list = get_PClone_main_list(filter_config)
 
   # --- Create a list of ROMs in destDir ---
   roms_destDir_list = []
@@ -1618,12 +1673,7 @@ def do_update_artwork(filter_name):
   NARS.print_info("Fanart Destination directory '{:}'".format(fanart_dest_dir))
 
   # --- Obtain main parent/clone list, either based on DAT or filelist ---
-  if filter_config.NoIntro_XML == None:
-    NARS.print_info('Using directory listing')
-    romMainList_list = get_directory_Main_list(filter_config)
-  else:
-    NARS.print_info('Using No-Intro parent/clone DAT')
-    romMainList_list = get_NoIntro_Main_list(filter_config)
+  romMainList_list = get_PClone_main_list(filter_config)
 
   # --- Create a list of ROMs in dest_dir ---
   roms_destDir_list = []
@@ -1668,7 +1718,7 @@ def do_printHelp():
 \033[35m--logto\033[0m \033[31m[logName]\033[0m        Save program output in the file you specify.
 \033[35m--dryRun\033[0m                 Don't modify destDir at all, just print the operations to be done.
 \033[35m--cleanROMs\033[0m              Deletes ROMs in destDir not present in the filtered ROM list.
-\033[35m--cleanNFO\033[0m               Deletes redundant NFO files in destination directory.
+\033[35m--cleanNFOs\033[0m              Deletes redundant NFO files in destination directory.
 \033[35m--cleanArtWork\033[0m           Deletes unknown artwork in destination.""")
 
 # -----------------------------------------------------------------------------
@@ -1684,7 +1734,7 @@ parser.add_argument('-l', '--log', help="log output to default file", action='st
 parser.add_argument('--logto', help="log output to specified file", nargs = 1)
 parser.add_argument('--dryRun', help="don't modify any files", action="store_true")
 parser.add_argument('--cleanROMs', help="clean destDir of unknown ROMs", action="store_true")
-parser.add_argument('--cleanNFO', help="clean redundant NFO files", action="store_true")
+parser.add_argument('--cleanNFOs', help="clean redundant NFO files", action="store_true")
 parser.add_argument('--cleanArtWork', help="clean unknown ArtWork", action="store_true")
 parser.add_argument('command',
    help="usage, list, list-nointro, check-nointro, list-tags, \
@@ -1711,7 +1761,7 @@ if args.logto:
   __prog_option_log_filename = args.logto[0]
 if args.dryRun:       __prog_option_dry_run = 1
 if args.cleanROMs:    __prog_option_clean_ROMs = 1
-if args.cleanNFO:     __prog_option_clean_NFO = 1
+if args.cleanNFOs:     __prog_option_clean_NFOs = 1
 if args.cleanArtWork: __prog_option_clean_ArtWork = 1
 
 # --- Positional arguments that don't require parsing of the config file ---
