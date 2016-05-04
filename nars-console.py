@@ -368,6 +368,7 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
 
   NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
 
+__debug_delete_redundant_NFO = 0
 def delete_redundant_NFO(destDir):
   NARS.print_info('[Deleting redundant NFO files]')
   num_deletedNFO_files = 0
@@ -375,13 +376,17 @@ def delete_redundant_NFO(destDir):
     if file.endswith(".nfo"):
       # Chech if there is a corresponding ROM for this NFO file
       thisFileName, thisFileExtension = os.path.splitext(file)
-      romFileName_temp = thisFileName + '.zip'
-      if not exists_ROM_file(romFileName_temp, destDir):
+      romFileName_temp = destDir + thisFileName + '.zip'
+      if not os.path.isfile(romFileName_temp):
+        if __debug_delete_redundant_NFO:
+          print('MISSING \'{0}\''.format(romFileName_temp))
         fileName = destDir + file
         NARS.delete_file(fileName, __prog_option_dry_run)
         num_deletedNFO_files += 1
         NARS.print_info('<Deleted NFO> ' + file)
-
+      else:
+        if __debug_delete_redundant_NFO:
+          print('EXISTS  \'{0}\''.format(romFileName_temp))
   NARS.print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
 
 def copy_ArtWork_list(filter_config, rom_copy_dic):
