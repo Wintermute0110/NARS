@@ -2,35 +2,44 @@
 <ROMcollections>
 
 <!-- Nintendo ROMS -->
-<collection name="Nintendo SNES" shortname="snes">
-  <ROMsSource>/home/kodi/roms/roms-nintendo-snes/</ROMsSource>
-  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-nintendo-snes/</ROMsDest>
+<collection name="Nintendo SNES with No-Intro DAT" shortname="snes">
+  <Options>NoBIOS</Options>
 
-  <ThumbsSource>/home/kodi/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
-  <FanartSource>/home/kodi/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
-  <ThumbsDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
-  <FanartDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
+  <Source     >/home/kodi/roms/roms-nintendo-snes/</Source>
+  <Destination>/home/kodi/NUC-remote/ROMs/roms-nintendo-snes/</Destination>
+
+  <SourceTitles    >./artwork-test-source/titles/</SourceTitles>
+  <SourceSnaps     >./artwork-test-source/snaps/</SourceSnaps>
+  <SourceFanarts   >./artwork-test-source/fanarts/</SourceFanarts>
+  <SourceBanners   >./artwork-test-source/banners/</SourceBanners>
+  <SourceClearlogos>./artwork-test-source/clearlogos/</SourceClearlogos>
+  <SourceBoxfronts >./artwork-test-source/boxfronts/</SourceBoxfronts>
+  <SourceBoxbacks  >./artwork-test-source/boxbacks/</SourceBoxbacks>
+  <SourceCartridges>./artwork-test-source/cartridges/</SourceCartridges>
+  <SourceFlyers    >./artwork-test-source/flyers/</SourceFlyers>
+  <SourceMaps      >./artwork-test-source/maps/</SourceMaps>
+  <SourceManuals   >./artwork-test-source/manuals/</SourceManuals>
+  <SourceTrailers  >./artwork-test-source/trailers/</SourceTrailers>
+
+  <DestinationTitles    >./artwork-test-dest/titles/</DestinationTitles>
+  <DestinationSnaps     >./artwork-test-dest/snaps/</DestinationSnaps>
+  <DestinationFanarts   >./artwork-test-dest/fanarts/</DestinationFanarts>
+  <DestinationBanners   >./artwork-test-dest/banners/</DestinationBanners>
+  <DestinationClearlogos>./artwork-test-dest/clearlogos/</DestinationClearlogos>
+  <DestinationBoxfronts >./artwork-test-dest/boxfront/</DestinationBoxfronts>
+  <DestinationBoxbacks  >./artwork-test-dest/boxback/</DestinationBoxbacks>
+  <DestinationCartridges>./artwork-test-dest/cartridges/</DestinationCartridges>
+  <DestinationFlyers    >./artwork-test-dest/flyers/</DestinationFlyers>
+  <DestinationMaps      >./artwork-test-dest/manuals/</DestinationMaps>
+  <DestinationManuals   >./artwork-test-dest/manuals/</DestinationManuals>
+  <DestinationTrailers  >./artwork-test-dest/trailers/</DestinationTrailers>
 
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto, France</filterDownTags>
   <includeTags>Europe, USA</includeTags>
   <excludeTags>Japan</excludeTags>
-</collection>
-
-<collection name="Nintendo SNES wit No-Intro DAT" shortname="snes_dat">
-  <NoIntroDat>/home/kodi/roms/DAT/SNES Parent-Clone (20140608).dat</NoIntroDat>
-  <ROMsSource>/home/kodi/roms/roms-nintendo-snes/</ROMsSource>
-  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-nintendo-snes/</ROMsDest>
-
-  <ThumbsSource>/home/kodi/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
-  <FanartSource>/home/kodi/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
-  <ThumbsDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
-  <FanartDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
-
-  <filterUpTags>Europe, World, Rev 1</filterUpTags>
-  <filterDownTags>Japan, Beta, Proto, France</filterDownTags>
-  <includeTags>Europe, USA</includeTags>
-  <excludeTags>Japan</excludeTags>
+  <!-- Search strings, separated by commas. If found, ROM will not be included -->
+  <excludeGame></excludeGame>
 </collection>
 
 <!-- Sega ROMS -->

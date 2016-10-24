@@ -16,18 +16,24 @@
   <ThumbsDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
   <FanartDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
 
-  <!-- Main filter -->
-  <!-- Main filter options:
-         NoClones, NoSamples, NoMechanical, NoBIOS, NoNonworking
+  <!-- General options
+       YearExpansion  By default years like 19?? or 198? WILL NOT be expanded. Most games with 
+                      such partially known dates are bootlegs or low quality games. Specify 
+                      this option to expand game dates and not filter out games with invalid 
+                      dates (you probably do not want this, so comment it).
+    -->
+  <!--  <Options>YearExpansion</Options> -->
+
+  <!-- Main filter 
+       Options: NoClones, NoSamples, NoMechanical, NoBIOS, NoNonworking
     -->
   <MainFilter>NoClones, NoSamples, NoMechanical, NoBIOS, NoNonworking</MainFilter>
 
-  <!-- MAME driver filter
-       Important drivers:
-         neogeo_noslot   Neo-Geo
-         cps1            Capcom CPS1
-         cps2            Capcom CPS2
-         cps3            Capcom CPS3
+  <!-- MAME driver filter. Some important drivers:
+       neogeo_noslot  Neo-Geo MVS
+       cps1           Capcom CPS1
+       cps2           Capcom CPS2
+       cps3           Capcom CPS3
     -->
   <!-- Example: not cps1 and not cps2 and not cps3 -->
   <Driver>not cps1</Driver>
@@ -75,18 +81,43 @@
         year >= 1980 and year &lt; 1990   - All games released in the 1980's
     -->
   <Years>year >= 1990 and year &lt; 2000</Years>
-  
-  <!-- By default years like 19?? or 198? WILL NOT be expanded. Most games with 
-       such partially known dates are bootlegs or low quality games. Specify 
-       this option to expand game dates and not filter out games with invalid 
-       dates (you probably do not want this, so comment it).
-    -->
-  <!-- <YearsOpts>YearExpansion</YearsOpts> -->
 </MAMEFilter>
 
 <MAMEFilter name="cps1">
   <ROMsSource>/home/kodi/roms/roms-mame/</ROMsSource>
   <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-mame-cps1/</ROMsDest>
+
+  <MainFilter>NoClones, NoSamples, NoMechanical</MainFilter>
+  <Driver>cps1</Driver>
+</MAMEFilter>
+
+<MAMEFilter name="test">
+  <Source     >./roms-test-source/</Source>
+  <Destination>./roms-test-dest/</Destination>
+
+  <SourceTitles    >./artwork-test-source/titles/</SourceTitles>
+  <SourceSnaps     >./artwork-test-source/snaps/</SourceSnaps>
+  <SourceFanarts   >./artwork-test-source/fanarts/</SourceFanarts>
+  <SourceMarquees  >./artwork-test-source/marquees/</SourceMarquees>
+  <SourceClearlogos>./artwork-test-source/clearlogo/</SourceClearlogos>
+  <SourceCabinets  >./artwork-test-source/cabinets/</SourceCabinets>
+  <SourceCPanels   >./artwork-test-source/cpanels/</SourceCPanels>
+  <SourcePCBs      >./artwork-test-source/pcbs/</SourcePCBs>
+  <SourceFlyers    >./artwork-test-source/flyers/</SourceFlyers>
+  <SourceManuals   >./artwork-test-source/manuals/</SourceManuals>
+  <SourceTrailers  >./artwork-test-source/trailers/</SourceTrailers>
+
+  <DestinationTitles    >./artwork-test-dest/titles/</DestinationTitles>
+  <DestinationSnaps     >./artwork-test-dest/snaps/</DestinationSnaps>
+  <DestinationFanarts   >./artwork-test-dest/fanarts/</DestinationFanarts>
+  <DestinationMarquees  >./artwork-test-dest/banners/</DestinationMarquees>
+  <DestinationClearlogos>./artwork-test-dest/clearlogos/</DestinationClearlogos>
+  <DestinationCabinets  >./artwork-test-dest/boxfront/</DestinationCabinets>
+  <DestinationCPanels   >./artwork-test-dest/boxback/</DestinationCPanels>
+  <DestinationPCBs      >./artwork-test-dest/cartridges/</DestinationPCBs>
+  <DestinationFlyers    >./artwork-test-dest/flyers/</DestinationFlyers>
+  <DestinationManuals   >./artwork-test-dest/manuals/</DestinationManuals>
+  <DestinationTrailers  >./artwork-test-dest/trailers/</DestinationTrailers>
 
   <MainFilter>NoClones, NoSamples, NoMechanical</MainFilter>
   <Driver>cps1</Driver>
