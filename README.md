@@ -2,11 +2,9 @@ NARS Advanced ROM Sorting
 =========================
 
 **NARS Advanced ROM Sorting (NARS)** is a set of Python scripts that allows you to filter
-your ROM collections to remove unwanted ROMs from Kodi's launcher plugins like
-*Advanced Launcher*, *ROM Collection Browser*, or any other front-end. If the ROM
-collections are updated or a new version of the emulators installed (which may
-require some new ROMs to be updated) **NARS** is able to synchronise the ROM
-directories of your HTPC quickly and effectively. **NARS** includes three programs
+your ROM collections to remove unwanted ROMs. If the ROM collections are updated or a new 
+version of the emulators installed (which may require some new ROMs to be updated) **NARS** 
+is able to synchronise the ROM directories quickly. **NARS** includes two components:
 
 - `nars-console` filters a ROM collection with No-Intro names and copies
 the filtered list to the destination directory of your choice. Multiple ROM
@@ -22,8 +20,4 @@ ROMs are copied to different destination directories. It also creates NFO files
 with game information for launchers and copies local artwork if available so
 offline scrapers can be used.
 
-- `nars-launcher-AL` parses Kodi's *Advanced Launcher* configuration file and scans your
-ROM launchers for missing ROMs. It prints a report with the launchers you have to update.
-
-More information can be found on the 
-[documentation](http://wintermute0110.github.io/NARS/).
+More information can be found on the [documentation/tutorial](http://wintermute0110.github.io/NARS/).
