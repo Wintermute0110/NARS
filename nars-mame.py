@@ -61,58 +61,58 @@ class Config:
 
     def new_filter(self):
         f = {
-            'SourceROMs' : '',
-            'DestinationROMs' : '',
-            'SourceCHDs' : '',
-            'DestinationCHDs' : '',
-            'SourceSamples' : '',
+            'SourceROMs'         : '',
+            'DestinationROMs'    : '',
+            'SourceCHDs'         : '',
+            'DestinationCHDs'    : '',
+            'SourceSamples'      : '',
             'DestinationSamples' : '',
 
-            'Options' : '',
-            'MachineSwap' : [],
-            'Include' : '',
-            'Exclude' : '',
-            'Driver' : '',
-            'Categories' : '',
-            'DisplayType' : '',
+            'Options'            : '',
+            'Include'            : '',
+            'Exclude'            : '',
+            'MachineSwap'        : [],
+            'Driver'             : '',
+            'Categories'         : '',
+            'DisplayType'        : '',
             'DisplayOrientation' : '',
-            'Controls' : '',
-            'Buttons' : '',
-            'Players' : '',
-            'Years' : '',
+            'Controls'           : '',
+            'Buttons'            : '',
+            'Players'            : '',
+            'Years'              : '',
 
-            'SourceTitles' : '',
-            'SourceSnaps' : '',
-            'SourceFanarts' : '',
-            'SourceMarquees' : '',
-            'SourceClearlogos' : '',
-            'SourceCabinets' : '',
-            'SourceCPanels' : '',
-            'SourcePCBs' : '',
-            'SourceFlyers' : '',
-            'SourceManuals' : '',
-            'SourceTrailers' : '',
+            'SourceTitles'       : '',
+            'SourceSnaps'        : '',
+            'SourceFanarts'      : '',
+            'SourceMarquees'     : '',
+            'SourceClearlogos'   : '',
+            'SourceCabinets'     : '',
+            'SourceCPanels'      : '',
+            'SourcePCBs'         : '',
+            'SourceFlyers'       : '',
+            'SourceManuals'      : '',
+            'SourceTrailers'     : '',
 
-            'DestinationTitles' : '',
-            'DestinationSnaps' : '',
-            'DestinationFanarts' : '',
-            'DestinationMarquees' : '',
+            'DestinationTitles'     : '',
+            'DestinationSnaps'      : '',
+            'DestinationFanarts'    : '',
+            'DestinationMarquees'   : '',
             'DestinationClearlogos' : '',
-            'DestinationCabinets' : '',
-            'DestinationCPanels' : '',
-            'DestinationPCBs' : '',
-            'DestinationFlyers' : '',
-            'DestinationManuals' : '',
-            'DestinationTrailers' : '',
+            'DestinationCabinets'   : '',
+            'DestinationCPanels'    : '',
+            'DestinationPCBs'       : '',
+            'DestinationFlyers'     : '',
+            'DestinationManuals'    : '',
+            'DestinationTrailers'   : ''
         }
-        
+
         return f
 
 #
 # Parses configuration file using ElementTree
-# Changes global variable config of type Config
+# Changes global variable configuration of type Config
 #
-config = Config()
+configuration = Config()
 parse_rjust = 16
 def parse_File_Config():
     NARS.print_info('[Parsing config file]')
@@ -121,11 +121,14 @@ def parse_File_Config():
     for root_child in root:
         # --- Parse global tags ---
         if root_child.tag in ['MAME_XML', 'MAME_XML_redux', 'Catver', 'Merged_XML']:
-            config.options[root_child.tag] = root_child.text
+            # Tags like this <tag></tag> are None. Skip those so configuration dictionary gets default value.
+            if root_child.text is None: continue
+            configuration.options[root_child.tag] = root_child.text
             NARS.print_debug('Main tag {0} = {1}'.format(root_child.tag, root_child.text))
         elif root_child.tag == 'MachineSwap':
+            if root_child.text is None: continue        
             (A, B) = parse_tag_MachineSwap(root_child.text)
-            config.options['MachineSwap'].append(config.new_machine_swap(A, B))
+            configuration.options['MachineSwap'].append(configuration.new_machine_swap(A, B))
             NARS.print_debug('Main tag MachineSwap {0} --> {1}'.format(A, B))
 
         # --- Parse filter ---
@@ -134,63 +137,70 @@ def parse_File_Config():
             if 'name' not in root_child.attrib:
                 NARS.print_error('[ERROR] <MAMEFilter> tag does not have name attribute')
                 sys.exit(10)
-            filter = config.new_filter()
+            filter = configuration.new_filter()
             filter_name = root_child.attrib['name']
             NARS.print_debug(' name = ' + filter_name)
 
             for filter_child in root_child:
-                # Tags like this <tag></tag> are None. Skip those so config dictionary gets default value.
-                if filter_child.text is None: continue 
+                # Tags like this <tag></tag> are None. Skip those so configuration dictionary gets default value.
+                if filter_child.text is None: continue
+
                 # >> Directory tags
                 if filter_child.tag in ['SourceROMs', 'SourceCHDs', 'SourceSamples', 
-                                        'DestinationROMs', 'DestinationCHDs', 
-                                        'DestinationSamples']:
+                                        'DestinationROMs', 'DestinationCHDs', 'DestinationSamples',
+                                        'SourceTitles', 'SourceSnaps', 'SourceFanarts', 'SourceMarquees',
+                                        'SourceClearlogos', 'SourceCabinets', 'SourceCPanels', 'SourcePCBs',
+                                        'SourceFlyers', 'SourceManuals', 'SourceTrailers',
+                                        'DestinationTitles', 'DestinationSnaps', 'DestinationFanarts', 'DestinationMarquees',
+                                        'DestinationClearlogos', 'DestinationCabinets', 'DestinationCPanels', 'DestinationPCBs',
+                                        'DestinationFlyers', 'DestinationManuals', 'DestinationTrailers']:
                     clean_dir = fix_directory_name(filter_child.text)
                     filter[filter_child.tag] = clean_dir
                     NARS.print_debug(' {0} = {1}'.format(filter_child.tag, clean_dir))
 
+                # >> Strings
+                elif filter_child.tag in ['Driver', 'Categories', 'DisplayType', 'DisplayOrientation', 
+                                          'Controls', 'Buttons', 'Players', 'Years']:
+                    fixed_string = filter_child.text
+                    filter[filter_child.tag] = fixed_string
+                    NARS.print_debug(' {0} = {1}'.format(filter_child.tag, fixed_string))
+
                 # >> Comma separated value tags
-                elif filter_child.tag in ['Include', 'Exclude']:
+                elif filter_child.tag in ['Options', 'Include', 'Exclude']:
                     t_list = trim_list(filter_child.text.split(","))
                     filter[filter_child.tag] = t_list
                     NARS.print_debug(' {0} = {1}'.format(filter_child.tag, t_list))
-                        
-                # >> MachineSwap 
+
+                # >> MachineSwap tag
                 elif filter_child.tag == 'MachineSwap':
-                    (name_A, name_B) = parse_tag_MachineSwap(filter_child.text)
-                    filter_class.MachineSwap[name_A] = name_B
-                    NARS.print_debug(' MachineSwap    = ' + name_A + " --> " + name_B)
+                    (A, B) = parse_tag_MachineSwap(filter_child.text)
+                    filter['MachineSwap'].append(configuration.new_machine_swap(A, B))
+                    NARS.print_debug('Filter tag MachineSwap {0} --> {1}'.format(A, B))
 
                 else:
                     NARS.print_error('[ERROR] Inside <MAMEFilter> named "{0}"'.format(filter_name))
                     NARS.print_error('[ERROR] Unrecognised tag <{0}>'.format(filter_child.tag))
                     sys.exit(10)
-            # --- Check for errors in this filter ---
-            if not sourceDirFound:
-                NARS.print_error('[ERROR] ROMsSource directory not found in config file')
-                sys.exit(10)
-            if not destDirFound:
-                NARS.print_error('[ERROR] ROMsDest directory not found in config file')
-                sys.exit(10)
             # --- Add filter class to configuration dictionary of filters ---
-            configFile.filter_dic[filter_class.name] = filter_class
+            configuration.filters[filter_name] = filter
         else:
             NARS.print_error('[ERROR] At XML root level')
             NARS.print_error('[ERROR] Unrecognised tag <{0}>'.format(root_child.tag))
             sys.exit(10)
-  
+
     # ~~~ Check for configuration errors ~~~
-    if configFile.MAME_XML is None:
+    if not configuration.options['MAME_XML']:
         NARS.print_error('[ERROR] <MAME_XML> tag not found or empty.')
         sys.exit(10)
-    if configFile.MAME_XML_redux is None:
+    if not configuration.options['MAME_XML_redux']:
         NARS.print_error('[ERROR] <MAME_XML_redux> tag not found or empty.')
         sys.exit(10)
-    if configFile.MergedInfo_XML is None:
-        NARS.print_error('[ERROR] <MergedInfo_XML> tag not found or empty.')
+    if not configuration.options['Catver']:
+        NARS.print_error('[ERROR] <Catver> tag not found or empty.')
         sys.exit(10)
-
-    return configFile
+    if not configuration.options['Merged_XML']:
+        NARS.print_error('[ERROR] <Merged_XML> tag not found or empty.')
+        sys.exit(10)
 
 def get_Filter_from_Config(filterName):
   "Returns the configuration filter object given the filter name"
@@ -1585,8 +1595,8 @@ def do_reduce_XML():
   """Strip out unused MAME XML information, and add ROM/CHD dependencies"""
 
   NARS.print_info('[Reducing MAME XML machine database]')
-  input_filename = configuration.MAME_XML
-  output_filename = configuration.MAME_XML_redux
+  input_filename  = configuration.options['MAME_XML']
+  output_filename = configuration.options['Merged_XML']
 
   # --- Build XML output file ---
   tree_output = ET.ElementTree()
@@ -3184,48 +3194,32 @@ if command == 'query' or \
     print('\033[31m[ERROR]\033[0m Command "{0}" requires a filter name'.format(command))
     sys.exit(10)
 
-# ~~~ Read configuration file ~~~
-configuration = parse_File_Config()
+# ~~~ Read configuration file. Sets global variable 'configuration' ~~~
+parse_File_Config()
 
 # --- Positional arguments that don't require a filterName ---
-if command == 'reduce-XML':
-  do_reduce_XML()
-elif command == 'merge-XML':
-  do_merge()
-elif command == 'list-merged':
-  do_list_merged()
-elif command == 'list-categories':
-  do_list_categories()
-elif command == 'list-genres':
-  do_list_genres()
-elif command == 'list-drivers':
-  do_list_drivers()
-elif command == 'list-controls':
-  do_list_controls()
-elif command == 'list-years':
-  do_list_years()
-elif command == 'query':
-  do_query(args.filterNameA)
-elif command == 'list':
-  do_list_filters()
-elif command == 'diff':
-  do_diff(args.filterNameA, args.filterNameB)
-elif command == 'check':
-  do_check(args.filterNameA)
-elif command == 'copy':
-  do_update(args.filterNameA)
+if command == 'reduce-XML':         do_reduce_XML()
+elif command == 'merge-XML':        do_merge()
+elif command == 'list-merged':      do_list_merged()
+elif command == 'list-categories':  do_list_categories()
+elif command == 'list-genres':      do_list_genres()
+elif command == 'list-drivers':     do_list_drivers()
+elif command == 'list-controls':    do_list_controls()
+elif command == 'list-years':       do_list_years()
+elif command == 'query':            do_query(args.filterNameA)
+elif command == 'list':             do_list_filters()
+elif command == 'diff':             do_diff(args.filterNameA, args.filterNameB)
+elif command == 'check':            do_check(args.filterNameA)
+elif command == 'copy':             do_update(args.filterNameA)
 elif command == 'update':
   __prog_option_sync = 1
   do_update(args.filterNameA)
-elif command == 'copy-chd':
-  do_update_CHD(args.filterNameA)
+elif command == 'copy-chd':         do_update_CHD(args.filterNameA)
 elif command == 'update-chd':
   __prog_option_sync = 1
   do_update_CHD(args.filterNameA)
-elif command == 'check-artwork':
-  do_check_Artwork(args.filterNameA)
-elif command == 'copy-artwork':
-  do_update_Artwork(args.filterNameA)
+elif command == 'check-artwork':    do_check_Artwork(args.filterNameA)
+elif command == 'copy-artwork':     do_update_Artwork(args.filterNameA)
 elif command == 'update-artwork':
   __prog_option_sync = 1
   do_update_Artwork(args.filterNameA)
