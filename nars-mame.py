@@ -43,203 +43,154 @@ __prog_option_sync = 0
 # -----------------------------------------------------------------------------
 # Configuration file stuff
 # -----------------------------------------------------------------------------
-# --- Config file options global class (like a C struct) ---
-class ConfigFile:
-  def __init__(self):
-    self.MAME_XML       = ''
-    self.MAME_XML_redux = ''
-    self.MergedInfo_XML = ''
-    self.Catver         = ''
-    self.Genre          = ''
-    self.MachineSwap    = {}
-    self.filter_dic     = {}
+class Config:
+    def __init__(self):
+        self.options = {
+            'MAME_XML' : '',
+            'MAME_XML_redux' : '',
+            'Catver' : '',
+            'Merged_XML' : '',
+            'MachineSwap' : []
+        }
 
-class ConfigFileFilter:
-  def __init__(self):
-    # By default things are None, which means user didn't wrote them in config
-    # file OR no text was written ('', or blanks (spaces, tabs)).
-    self.name              = None
-    # Directory names
-    self.sourceDir         = None
-    self.destDir           = None
-    self.sourceDir_CHD     = None
-    self.fanartSourceDir   = None
-    self.fanartDestDir     = None
-    self.thumbsSourceDir   = None
-    self.thumbsDestDir     = None
-    self.samplesSourceDir  = None
-    self.samplesDestDir    = None
-    # Filters
-    self.includeFilter     = None
-    self.excludeFilter     = None
-    self.driverFilter      = None
-    self.categoriesFilter  = None
-    self.displayTypeFilter = None
-    self.orientationFilter = None
-    self.controlsFilter    = None
-    self.buttons_exp       = None
-    self.players_exp       = None
-    self.year_exp          = None
-    # Options
-    self.year_YearExpansion_opt = 0
-    self.MachineSwap = {}
+        # { 'filter_name' : { filter_dic } }
+        self.filters = {}
 
+    def new_machine_swap(self, A, B):
+        return {'old' : A, 'new' : B}
+
+    def new_filter(self):
+        f = {
+            'SourceROMs' : '',
+            'DestinationROMs' : '',
+            'SourceCHDs' : '',
+            'DestinationCHDs' : '',
+            'SourceSamples' : '',
+            'DestinationSamples' : '',
+
+            'Options' : '',
+            'MachineSwap' : [],
+            'Include' : '',
+            'Exclude' : '',
+            'Driver' : '',
+            'Categories' : '',
+            'DisplayType' : '',
+            'DisplayOrientation' : '',
+            'Controls' : '',
+            'Buttons' : '',
+            'Players' : '',
+            'Years' : '',
+
+            'SourceTitles' : '',
+            'SourceSnaps' : '',
+            'SourceFanarts' : '',
+            'SourceMarquees' : '',
+            'SourceClearlogos' : '',
+            'SourceCabinets' : '',
+            'SourceCPanels' : '',
+            'SourcePCBs' : '',
+            'SourceFlyers' : '',
+            'SourceManuals' : '',
+            'SourceTrailers' : '',
+
+            'DestinationTitles' : '',
+            'DestinationSnaps' : '',
+            'DestinationFanarts' : '',
+            'DestinationMarquees' : '',
+            'DestinationClearlogos' : '',
+            'DestinationCabinets' : '',
+            'DestinationCPanels' : '',
+            'DestinationPCBs' : '',
+            'DestinationFlyers' : '',
+            'DestinationManuals' : '',
+            'DestinationTrailers' : '',
+        }
+        
+        return f
+
+#
 # Parses configuration file using ElementTree
-# Returns a ConfigFile object
+# Changes global variable config of type Config
+#
+config = Config()
 parse_rjust = 16
 def parse_File_Config():
-  NARS.print_info('[Parsing config file]')
-  tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
-  root = tree.getroot()
+    NARS.print_info('[Parsing config file]')
+    tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
+    root = tree.getroot()
+    for root_child in root:
+        # --- Parse global tags ---
+        if root_child.tag in ['MAME_XML', 'MAME_XML_redux', 'Catver', 'Merged_XML']:
+            config.options[root_child.tag] = root_child.text
+            NARS.print_debug('Main tag {0} = {1}'.format(root_child.tag, root_child.text))
+        elif root_child.tag == 'MachineSwap':
+            (A, B) = parse_tag_MachineSwap(root_child.text)
+            config.options['MachineSwap'].append(config.new_machine_swap(A, B))
+            NARS.print_debug('Main tag MachineSwap {0} --> {1}'.format(A, B))
 
-  # --- Configuration object returned ---
-  configFile = ConfigFile()
-
-  # --- Parse filters ---
-  for root_child in root:
-    # === Parse global tags ===
-    if root_child.tag == 'MAME_XML':
-      configFile.MAME_XML = root_child.text
-      NARS.print_debug('MAME_XML       = ' + root_child.text)
-    elif root_child.tag == 'MAME_XML_redux':
-      configFile.MAME_XML_redux = root_child.text
-      NARS.print_debug('MAME_XML_redux = ' + root_child.text)
-    elif root_child.tag == 'Merged_XML':
-      configFile.MergedInfo_XML = root_child.text
-      NARS.print_debug('Merged_XML     = ' + root_child.text)
-    elif root_child.tag == 'Catver':
-      configFile.Catver = root_child.text
-      NARS.print_debug('Catver         = ' + root_child.text)
-    elif root_child.tag == 'Genre':
-      configFile.Genre = root_child.text
-      NARS.print_debug('Genre          = ' + root_child.text)
-    elif root_child.tag == 'MachineSwap':
-      (name_A, name_B) = parse_tag_MachineSwap(root_child.text)
-      configFile.MachineSwap[name_A] = name_B
-      NARS.print_debug('MachineSwap    = ' + name_A + " --> " + name_B)
-
-    # === Parse filter ===
-    elif root_child.tag == 'MAMEFilter':
-      NARS.print_debug('<MAMEFilter>')
-      if 'name' not in root_child.attrib:
-        NARS.print_error('[ERROR] <MAMEFilter> tag does not have name attribute')
-        sys.exit(10)
-      NARS.print_debug(' name = ' + root_child.attrib['name'])
-      filter_class = ConfigFileFilter()
-      filter_class.name = root_child.attrib['name']
-      sourceDirFound = 0
-      destDirFound = 0
-      for filter_child in root_child:
-        if filter_child.tag == 'ROMsSource':
-          NARS.print_debug(' ROMsSource = ' + filter_child.text)
-          sourceDirFound = 1
-          filter_class.sourceDir = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'ROMsDest':
-          NARS.print_debug(' ROMsDest = ' + filter_child.text)
-          destDirFound = 1
-          filter_class.destDir = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'CHDsSource':
-          NARS.print_debug(' CHDsSource = ' + filter_child.text)
-          filter_class.sourceDir_CHD = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'FanartSource':
-          NARS.print_debug(' FanartSource = ' + filter_child.text)
-          filter_class.fanartSourceDir = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'FanartDest':
-          NARS.print_debug(' FanartDest = ' + filter_child.text)
-          filter_class.fanartDestDir = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'ThumbsSource':
-          NARS.print_debug(' ThumbsSource = ' + filter_child.text)
-          filter_class.thumbsSourceDir = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'ThumbsDest':
-          NARS.print_debug(' ThumbsDest = ' + filter_child.text)
-          filter_class.thumbsDestDir = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'SamplesSource':
-          NARS.print_debug(' SamplesSource = ' + filter_child.text)
-          filter_class.samplesSourceDir = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'SamplesDest':
-          NARS.print_debug(' SamplesDest = ' + filter_child.text)
-          filter_class.samplesDestDir = fix_directory_name(filter_child.text)
-        elif filter_child.tag == 'Include':
-          if filter_child.text is not None:
-            NARS.print_debug(' Include = ' + filter_child.text)
-            filter_class.includeFilter = trim_list(filter_child.text.split(","))
-        elif filter_child.tag == 'Exclude':
-          if filter_child.text is not None:
-            NARS.print_debug(' Exclude = ' + filter_child.text)
-            filter_class.excludeFilter = trim_list(filter_child.text.split(","))
-        elif filter_child.tag == 'Driver':
-          if filter_child.text is not None:
-            NARS.print_debug(' Driver = ' + filter_child.text)
-            filter_class.driverFilter = filter_child.text
-        elif filter_child.tag == 'Categories':
-          if filter_child.text is not None:
-            NARS.print_debug(' Categories = ' + filter_child.text)
-            filter_class.categoriesFilter = filter_child.text
-        elif filter_child.tag == 'DisplayType':
-          if filter_child.text is not None:
-            NARS.print_debug(' DisplayType = ' + filter_child.text)
-            filter_class.displayTypeFilter = filter_child.text
-        elif filter_child.tag == 'DisplayOrientation':
-          if filter_child.text is not None:
-            NARS.print_debug(' DisplayOrientation = ' + filter_child.text)
-            filter_class.orientationFilter = filter_child.text
-        elif filter_child.tag == 'Controls':
-          if filter_child.text is not None:
-            NARS.print_debug(' Controls = ' + filter_child.text)
-            filter_class.controlsFilter = filter_child.text
-        elif filter_child.tag == 'Buttons':
-          if filter_child.text is not None:
-            NARS.print_debug(' Buttons = ' + filter_child.text)
-            filter_class.buttons_exp = filter_child.text
-        elif filter_child.tag == 'Players':
-          if filter_child.text is not None:
-            NARS.print_debug(' Players = ' + filter_child.text)
-            filter_class.players_exp = filter_child.text
-        elif filter_child.tag == 'Years':
-          if filter_child.text is not None:
-            NARS.print_debug(' Years = ' + filter_child.text)
-            filter_class.year_exp = filter_child.text
-        elif filter_child.tag == 'YearsOpts':
-          if filter_child.text is not None:
-            NARS.print_debug(' YearsOpts = ' + filter_child.text)
-            yearOpts_list = trim_list(filter_child.text.split(","))
-            for option in yearOpts_list:
-              # Only one option supported at the moment
-              if option == 'YearExpansion':
-                filter_class.year_YearExpansion = 1
-              else:
-                NARS.print_error('Unknown option ' + option + 'inside <YearsOpts>')
+        # --- Parse filter ---
+        elif root_child.tag == 'MAMEFilter':
+            NARS.print_debug('<MAMEFilter>')
+            if 'name' not in root_child.attrib:
+                NARS.print_error('[ERROR] <MAMEFilter> tag does not have name attribute')
                 sys.exit(10)
-        elif filter_child.tag == 'MachineSwap':
-          (name_A, name_B) = parse_tag_MachineSwap(filter_child.text)
-          filter_class.MachineSwap[name_A] = name_B
-          NARS.print_debug(' MachineSwap    = ' + name_A + " --> " + name_B)
-        else:
-          NARS.print_error('[ERROR] Inside <MAMEFilter> named \'{0}\''.format(filter_class.name))
-          NARS.print_error('[ERROR] Unrecognised tag <{0}>'.format(filter_child.tag))
-          sys.exit(10)
-      # --- Check for errors in this filter ---
-      if not sourceDirFound:
-        NARS.print_error('[ERROR] ROMsSource directory not found in config file')
-        sys.exit(10)
-      if not destDirFound:
-        NARS.print_error('[ERROR] ROMsDest directory not found in config file')
-        sys.exit(10)
-      # --- Add filter class to configuration dictionary of filters ---
-      configFile.filter_dic[filter_class.name] = filter_class
-  
-  # ~~~ Check for configuration errors ~~~
-  if configFile.MAME_XML is None:
-    NARS.print_error('[ERROR] <MAME_XML> tag not found or empty.')
-    sys.exit(10)
-  if configFile.MAME_XML_redux is None:
-    NARS.print_error('[ERROR] <MAME_XML_redux> tag not found or empty.')
-    sys.exit(10)
-  if configFile.MergedInfo_XML is None:
-    NARS.print_error('[ERROR] <MergedInfo_XML> tag not found or empty.')
-    sys.exit(10)
+            filter = config.new_filter()
+            filter_name = root_child.attrib['name']
+            NARS.print_debug(' name = ' + filter_name)
 
-  return configFile
+            for filter_child in root_child:
+                # Tags like this <tag></tag> are None. Skip those so config dictionary gets default value.
+                if filter_child.text is None: continue 
+                # >> Directory tags
+                if filter_child.tag in ['SourceROMs', 'SourceCHDs', 'SourceSamples', 
+                                        'DestinationROMs', 'DestinationCHDs', 
+                                        'DestinationSamples']:
+                    clean_dir = fix_directory_name(filter_child.text)
+                    filter[filter_child.tag] = clean_dir
+                    NARS.print_debug(' {0} = {1}'.format(filter_child.tag, clean_dir))
+
+                # >> Comma separated value tags
+                elif filter_child.tag in ['Include', 'Exclude']:
+                    t_list = trim_list(filter_child.text.split(","))
+                    filter[filter_child.tag] = t_list
+                    NARS.print_debug(' {0} = {1}'.format(filter_child.tag, t_list))
+                        
+                # >> MachineSwap 
+                elif filter_child.tag == 'MachineSwap':
+                    (name_A, name_B) = parse_tag_MachineSwap(filter_child.text)
+                    filter_class.MachineSwap[name_A] = name_B
+                    NARS.print_debug(' MachineSwap    = ' + name_A + " --> " + name_B)
+
+                else:
+                    NARS.print_error('[ERROR] Inside <MAMEFilter> named "{0}"'.format(filter_name))
+                    NARS.print_error('[ERROR] Unrecognised tag <{0}>'.format(filter_child.tag))
+                    sys.exit(10)
+            # --- Check for errors in this filter ---
+            if not sourceDirFound:
+                NARS.print_error('[ERROR] ROMsSource directory not found in config file')
+                sys.exit(10)
+            if not destDirFound:
+                NARS.print_error('[ERROR] ROMsDest directory not found in config file')
+                sys.exit(10)
+            # --- Add filter class to configuration dictionary of filters ---
+            configFile.filter_dic[filter_class.name] = filter_class
+        else:
+            NARS.print_error('[ERROR] At XML root level')
+            NARS.print_error('[ERROR] Unrecognised tag <{0}>'.format(root_child.tag))
+            sys.exit(10)
+  
+    # ~~~ Check for configuration errors ~~~
+    if configFile.MAME_XML is None:
+        NARS.print_error('[ERROR] <MAME_XML> tag not found or empty.')
+        sys.exit(10)
+    if configFile.MAME_XML_redux is None:
+        NARS.print_error('[ERROR] <MAME_XML_redux> tag not found or empty.')
+        sys.exit(10)
+    if configFile.MergedInfo_XML is None:
+        NARS.print_error('[ERROR] <MergedInfo_XML> tag not found or empty.')
+        sys.exit(10)
+
+    return configFile
 
 def get_Filter_from_Config(filterName):
   "Returns the configuration filter object given the filter name"
