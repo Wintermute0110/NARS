@@ -1596,7 +1596,7 @@ def do_reduce_XML():
 
   NARS.print_info('[Reducing MAME XML machine database]')
   input_filename  = configuration.options['MAME_XML']
-  output_filename = configuration.options['Merged_XML']
+  output_filename = configuration.options['MAME_XML_redux']
 
   # --- Build XML output file ---
   tree_output = ET.ElementTree()
