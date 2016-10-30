@@ -1,0 +1,126 @@
+<!-- Example configuration file for NARS-mame -->
+<MAMEConfig>
+<General>
+  <MAME_XML      >./DAT-mame/mame-0154.xml</MAME_XML>
+  <MAME_XML_redux>./DAT-mame/mame-0154-reduced.xml</MAME_XML_redux>
+  <Catver        >./DAT-mame/Catver.ini</Catver>
+  <MergedInfo    >./DAT-mame/mame-0154-merged.xml</MergedInfo>
+</General>
+
+<MAMEFilter name="main">
+  <ROMsSource>/home/kodi/roms/roms-mame/</ROMsSource>
+  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-mame-main/</ROMsDest>
+
+  <ThumbsSource>/home/kodi/roms/ArtWork/nintendo-snes-boxes/</ThumbsSource>
+  <FanartSource>/home/kodi/roms/ArtWork/nintendo-snes-snaps/</FanartSource>
+  <ThumbsDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-thumbs/</ThumbsDest>
+  <FanartDest  >/home/kodi/NUC-remote/ROMs/ArtWork/nintendo-snes-fanart/</FanartDest>
+
+  <!-- General options
+       YearExpansion  By default years like 19?? or 198? WILL NOT be expanded. Most games with 
+                      such partially known dates are bootlegs or low quality games. Specify 
+                      this option to expand game dates and not filter out games with invalid 
+                      dates (you probably do not want this, so comment it).
+    -->
+  <!--  <Options>YearExpansion</Options> -->
+
+  <!-- Main filter 
+       Options: NoClones, NoSamples, NoMechanical, NoBIOS, NoNonworking
+    -->
+  <MainFilter>NoClones, NoSamples, NoMechanical, NoBIOS, NoNonworking</MainFilter>
+
+  <!-- MAME driver filter. Some important drivers:
+       neogeo_noslot  Neo-Geo MVS
+       cps1           Capcom CPS1
+       cps2           Capcom CPS2
+       cps3           Capcom CPS3
+    -->
+  <!-- Example: not cps1 and not cps2 and not cps3 -->
+  <Driver>not cps1</Driver>
+
+  <!-- Categories filter
+       This filter implies OR conditions between filtering options 
+       Some categories you probably don't want:
+         Mature, Casino, PinMAME, Fruit_Machines
+    -->
+  <!-- Examples: 
+        not Mature and not Casino and not PinMAME and not Fruit_Machines
+        not Casino and not PinMAME and not Fruit_Machines
+    -->
+  <Categories>not Mature and not Casino and not PinMAME and not Fruit_Machines</Categories>
+
+  <!-- Controls -->
+  <!-- Examples: 
+        Joy                          - Include if Joy and maybe other controls.
+        Joy and not Mahjong          - Include if Joy and maybe other controls, 
+                                       but not Mahjong.
+        not Mahjong and not Hanafuda - Exclude game if Mahjong or Hanafuda.
+        not (Mahjong or Hanafuda)    - Same as above
+        Joy and not(Mahjong or Gambling or Hanafuda or Keyboard or Keypad or Mouse)
+    -->
+  <Controls>not Mahjong and not Gambling and not Hanafuda</Controls>
+
+  <!-- Buttons is a Python expression. < must be converted in &lt; -->
+  <!-- Examples: 
+        buttons == 1 and buttons == 2   - Only 1 or 2 buttons
+        buttons &lt;= 4                 - 4 buttons or less
+    -->
+  <Buttons>buttons == 1 or buttons == 2</Buttons>
+  
+  <!-- Players is a Python expression. < must be converted in &lt; -->
+  <!-- Examples: 
+        players == 1      - Only 1 player
+        players &lt;= 2   - 2 players or less
+    -->
+  <Players>players == 1 or players == 2</Players>
+
+  <!-- Years is a Python expression. < must be converted in &lt;
+    -->
+  <!-- Examples: 
+        year == 1991                      - Only games release on 1991
+        year >= 1980 and year &lt; 1990   - All games released in the 1980's
+    -->
+  <Years>year >= 1990 and year &lt; 2000</Years>
+</MAMEFilter>
+
+<MAMEFilter name="cps1">
+  <ROMsSource>/home/kodi/roms/roms-mame/</ROMsSource>
+  <ROMsDest  >/home/kodi/NUC-remote/ROMs/roms-mame-cps1/</ROMsDest>
+
+  <MainFilter>NoClones, NoSamples, NoMechanical</MainFilter>
+  <Driver>cps1</Driver>
+</MAMEFilter>
+
+<MAMEFilter name="test">
+  <Source     >./roms-test-source/</Source>
+  <Destination>./roms-test-dest/</Destination>
+
+  <SourceTitles    >./artwork-test-source/titles/</SourceTitles>
+  <SourceSnaps     >./artwork-test-source/snaps/</SourceSnaps>
+  <SourceFanarts   >./artwork-test-source/fanarts/</SourceFanarts>
+  <SourceMarquees  >./artwork-test-source/marquees/</SourceMarquees>
+  <SourceClearlogos>./artwork-test-source/clearlogo/</SourceClearlogos>
+  <SourceCabinets  >./artwork-test-source/cabinets/</SourceCabinets>
+  <SourceCPanels   >./artwork-test-source/cpanels/</SourceCPanels>
+  <SourcePCBs      >./artwork-test-source/pcbs/</SourcePCBs>
+  <SourceFlyers    >./artwork-test-source/flyers/</SourceFlyers>
+  <SourceManuals   >./artwork-test-source/manuals/</SourceManuals>
+  <SourceTrailers  >./artwork-test-source/trailers/</SourceTrailers>
+
+  <DestinationTitles    >./artwork-test-dest/titles/</DestinationTitles>
+  <DestinationSnaps     >./artwork-test-dest/snaps/</DestinationSnaps>
+  <DestinationFanarts   >./artwork-test-dest/fanarts/</DestinationFanarts>
+  <DestinationMarquees  >./artwork-test-dest/banners/</DestinationMarquees>
+  <DestinationClearlogos>./artwork-test-dest/clearlogos/</DestinationClearlogos>
+  <DestinationCabinets  >./artwork-test-dest/boxfront/</DestinationCabinets>
+  <DestinationCPanels   >./artwork-test-dest/boxback/</DestinationCPanels>
+  <DestinationPCBs      >./artwork-test-dest/cartridges/</DestinationPCBs>
+  <DestinationFlyers    >./artwork-test-dest/flyers/</DestinationFlyers>
+  <DestinationManuals   >./artwork-test-dest/manuals/</DestinationManuals>
+  <DestinationTrailers  >./artwork-test-dest/trailers/</DestinationTrailers>
+
+  <MainFilter>NoClones, NoSamples, NoMechanical</MainFilter>
+  <Driver>cps1</Driver>
+</MAMEFilter>
+
+</MAMEConfig>
