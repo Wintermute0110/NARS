@@ -202,14 +202,13 @@ def parse_File_Config():
         NARS.print_error('[ERROR] <Merged_XML> tag not found or empty.')
         sys.exit(10)
 
+#
+# Returns the configuration filter object given the filter name
+#
 def get_Filter_from_Config(filterName):
-  "Returns the configuration filter object given the filter name"
-  for key in configuration.filter_dic:
-    if key == filterName:
-      return configuration.filter_dic[key]
-
-  NARS.print_error('get_Filter_from_Config >> filter ' + filterName + ' not found in configuration file')
-  sys.exit(20)
+    if filterName in configuration.filters: return configuration.filters[filterName]
+    NARS.print_error('get_Filter_from_Config >> filter "{0}" not found in configuration file'.format(filterName))
+    sys.exit(20)
 
 # -----------------------------------------------------------------------------
 # Misc functions
@@ -1115,15 +1114,14 @@ def filter_MAME_machines(mame_dic, filter_config):
 # -----------------------------------------------------------------------------
 # Parse Catver.ini and MAME reduced XML file
 # -----------------------------------------------------------------------------
-def parse_catver_ini():
+def parse_catver_ini(catver_filename):
   """Parses Catver.ini and returns a ..."""
 
   # --- Parse Catver.ini and create a histogram with the categories ---
   NARS.print_info('[Parsing Catver.ini]')
-  cat_filename = configuration.Catver
-  NARS.print_verb(' Opening ' + cat_filename)
+  NARS.print_verb(' Opening ' + catver_filename)
   final_categories_dic = {}
-  f = open(cat_filename, 'r')
+  f = open(catver_filename, 'r')
   # 0 -> Looking for '[Category]' tag
   # 1 -> Reading categories
   # 2 -> Categories finished. STOP
@@ -1168,8 +1166,8 @@ def parse_catver_ini():
 # Returns dictionary machine_dict with key the Machine name and value a Machine object.
 #
 def parse_MAME_merged_XML():
-  filename = configuration.MergedInfo_XML
   NARS.print_info('[Parsing MAME merged XML]')
+  filename = configuration.options['Merged_XML']
   tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
 
   # --- Raw list: literal information from the XML
@@ -1988,11 +1986,12 @@ def do_merge():
   """Merges main MAME database ready for filtering"""
 
   NARS.print_info('[Building merged MAME filter database]')
-  mame_redux_filename = configuration.MAME_XML_redux
-  merged_filename = configuration.MergedInfo_XML
+  mame_redux_filename = configuration.options['MAME_XML_redux']
+  catver_filename     = configuration.options['Catver']
+  merged_filename     = configuration.options['Merged_XML']
 
   # --- Get categories from Catver.ini
-  categories_dic = parse_catver_ini()
+  categories_dic = parse_catver_ini(catver_filename)
 
   # --- Read MAME XML or reduced MAME XML and incorporate categories
   # NOTE: this piece of code is very similar to do_reduce_XML()
@@ -2089,7 +2088,7 @@ def do_list_merged():
   """Short list of MAME XML file"""
 
   NARS.print_info('[List reduced MAME XML]')
-  filename = configuration.MergedInfo_XML
+  filename = configuration.options['Merged_XML']
   tree = NARS.XML_read_file_cElementTree(filename, "Parsing merged XML file")
 
   # Root element (Reduced MAME XML):
@@ -2192,7 +2191,7 @@ def do_list_categories():
   NARS.print_info('[Listing categories from catver.ini]')
 
   # --- Create a histogram with the available categories based only in catver.ini ---
-  cat_filename = configuration.Catver
+  cat_filename = configuration.options['Catver']
   NARS.print_info('Parsing ' + cat_filename)
   categories_dic = {}
   main_categories_dic = {}
@@ -2295,9 +2294,11 @@ def do_list_genres():
   __debug_do_list_genres = 0
   NARS.print_info('[Listing categories from genre.ini]')
 
+  NARS.print_info('NOT IMPLEMENTED YET')
+  sys.exit(1)
 
   # --- Create a histogram with the available categories based only in catver.ini ---
-  genre_filename = configuration.Genre
+  genre_filename = configuration.options['Genre']
   NARS.print_info('Parsing ' + genre_filename)
   # { key = 'Genre name' : value = [machine1, machine2, ...], ... }
   categories_dic = {}
@@ -2378,7 +2379,7 @@ def do_list_drivers():
   NARS.print_info('NOTE: mechanical are not included')
   NARS.print_info('NOTE: devices are not included')
 
-  filename = configuration.MergedInfo_XML
+  filename = configuration.options['Merged_XML']
   tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # --- Do histogram ---
@@ -2434,8 +2435,7 @@ def do_list_controls():
   NARS.print_info('NOTE: mechanical are not included')
   NARS.print_info('NOTE: devices are not included')
 
-  # filename = configuration.MergedInfo_XML;
-  filename = configuration.MAME_XML_redux
+  filename = configuration.options['Merged_XML']
   tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # --- Histogram data
@@ -2574,8 +2574,7 @@ def do_list_years():
   NARS.print_info('NOTE: mechanical are not included')
   NARS.print_info('NOTE: devices are not included')
 
-  # filename = configuration.MergedInfo_XML;
-  filename = configuration.MAME_XML_redux
+  filename = configuration.options['Merged_XML']
   tree = NARS.XML_read_file_cElementTree(filename, "Reading merged XML file")
 
   # --- Histogram data
@@ -2693,27 +2692,27 @@ def do_list_filters():
   root = tree.getroot()
   for root_child in root:
     if root_child.tag == 'MAME_XML':
-      NARS.print_info('MAME_XML        ' + root_child.text)
+      NARS.print_info('MAME_XML        {0}'.format(root_child.text))
     elif root_child.tag == 'MAME_XML_redux':
-      NARS.print_info('MAME_XML_redux  ' + root_child.text)
+      NARS.print_info('MAME_XML_redux  {0}'.format(root_child.text))
     elif root_child.tag == 'Merged_XML':
-      NARS.print_info('Merged_XML      ' + root_child.text)
+      NARS.print_info('Merged_XML      {0}'.format(root_child.text))
     elif root_child.tag == 'Catver':
-      NARS.print_info('Catver          ' + root_child.text)
+      NARS.print_info('Catver          {0}'.format(root_child.text))
     elif root_child.tag == 'Genre':
-      NARS.print_info('Genre           ' + root_child.text)
+      NARS.print_info('Genre           {0}'.format(root_child.text))
     elif root_child.tag == 'MachineSwap':
-      NARS.print_info('MachineSwap     ' + root_child.text)
+      NARS.print_info('MachineSwap     {0}'.format(root_child.text))
     elif root_child.tag == 'MAMEFilter':
       NARS.print_info('<MAME filter>')
-      NARS.print_info('Name            ' + root_child.attrib['name'])
+      NARS.print_info('Name            {0}'.format(root_child.attrib['name']))
       for root_child_node in root_child:
-        if root_child_node.tag == 'ROMsSource':
-          NARS.print_info('ROMsSource      ' + root_child_node.text)
-        elif root_child_node.tag == 'ROMsDest':
-          NARS.print_info('ROMsDest        ' + root_child_node.text)
+        if root_child_node.tag == 'SourceROMs':
+          NARS.print_info('SourceROMs      {0}'.format(root_child_node.text))
+        elif root_child_node.tag == 'DestinationROMs':
+          NARS.print_info('DestinationROMs {0}'.format(root_child_node.text))
     else:
-      print('Tag with wrong name ' + root_child.tag)
+      print('Root tag with unrecognised name {0}'.format(root_child.tag))
       sys.exit(10)
 
 #
@@ -2800,9 +2799,8 @@ def do_check(filterName):
 
   # --- Get configuration for the selected filter and check for errors ---
   filter_config = get_Filter_from_Config(filterName)
-  NARS.have_dir_or_abort(filter_config.sourceDir, 'ROMsSource')
-  NARS.have_dir_or_abort(filter_config.sourceDir_CHD, 'CHDsSource')
-  NARS.have_dir_or_abort(filter_config.destDir, 'ROMsDest')
+  NARS.have_dir_or_abort(filter_config['SourceROMs'], 'SourceROMs')
+  NARS.have_dir_or_abort(filter_config['DestinationROMs'], 'DestinationROMs')
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_dic = parse_MAME_merged_XML()
@@ -2904,7 +2902,7 @@ def do_update(filterName):
   if __prog_option_clean_NFO:
     NARS.clean_NFO_destDir(destDir, __prog_option_dry_run)
 
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 # Copy ROMs in destDir
 def do_update_CHD(filterName):
   """Applies filter and copies ROMs into destination directory"""
@@ -2943,7 +2941,7 @@ def do_update_CHD(filterName):
   if __prog_option_clean_CHD:
     NARS.clean_CHDs_destDir(CHD_dic, destDir, __prog_option_dry_run)
 
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 def do_check_Artwork(filterName):
   """Checks for missing artwork and prints a report"""
 
@@ -2952,11 +2950,11 @@ def do_check_Artwork(filterName):
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_from_Config(filterName)
-  destDir = filter_config.destDir
-  thumbsSourceDir = filter_config.thumbsSourceDir
-  fanartSourceDir = filter_config.fanartSourceDir
+  destDir         = filter_config['DestinationROMs']
+  thumbsSourceDir = filter_config['SourceTitles']
+  fanartSourceDir = filter_config['SourceSnaps']
 
-  # --- Check for errors, missing paths, etc...
+  # --- Check for missing paths ---
   NARS.have_dir_or_abort(destDir, 'ROMsDest')
   NARS.have_dir_or_abort(thumbsSourceDir, 'ThumbsSource')
   NARS.have_dir_or_abort(fanartSourceDir, 'FanartSource')
@@ -2975,9 +2973,8 @@ def do_check_Artwork(filterName):
   mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
   rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list)
   
-  # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
-  # Crate a dictionary where key and value are the same (no artwork
-  # substitution in xru-mame).
+  # --- Mimic the behaviour of optimize_ArtWork_list() in nars-console ---
+  # Crate a dictionary where key and value are the same (no artwork substitution in nars-mame).
   artwork_copy_dic = {}
   for rom in rom_copy_list:
     artwork_copy_dic[rom] = rom
@@ -3030,12 +3027,12 @@ def do_check_Artwork(filterName):
   NARS.print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)))
   NARS.print_info('Number of original ArtWork = ' + str(num_original))
   NARS.print_info('Number of replaced ArtWork = ' + str(num_replaced))
-  NARS.print_info('Number of have Thumbs    = ' + str(num_have_thumbs))
-  NARS.print_info('Number of missing Thumbs = ' + str(num_missing_thumbs))
-  NARS.print_info('Number of have Fanart    = ' + str(num_have_fanart))
-  NARS.print_info('Number of missing Fanart = ' + str(num_missing_fanart))
+  NARS.print_info('Number of have Thumbs      = ' + str(num_have_thumbs))
+  NARS.print_info('Number of missing Thumbs   = ' + str(num_missing_thumbs))
+  NARS.print_info('Number of have Fanart      = ' + str(num_have_fanart))
+  NARS.print_info('Number of missing Fanart   = ' + str(num_missing_fanart))
 
-# ----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 def do_update_Artwork(filterName):
   """Reads ROM destDir and copies Artwork"""
 
@@ -3122,9 +3119,9 @@ def do_printHelp():
 \033[35m--cleanCHD\033[0m                Deletes unknown CHDs in destination directory.
 \033[35m--cleanArtWork\033[0m            Deletes unknown Artowork in destination directories.""")
 
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 # main function
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 print('\033[36mNARS Advanced ROM Sorting - MAME edition\033[0m' +
       ' version ' + NARS.__software_version)
 
