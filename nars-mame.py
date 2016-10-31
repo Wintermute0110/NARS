@@ -275,26 +275,28 @@ def add_to_histogram(key, hist_dic):
 
   return hist_dic
 
-# Removes trailing '.c' or '.cpp' from string
 #
+# Removes trailing '.c', '.cpp' or '.hxx' from string
 # Returns the trimmed string
+#
 def trim_driver_string(driver_str):
-  # Check that string does not containg weird characters
-  pattern = re.compile(r'\\/,')
-  if pattern.findall(driver_str):
-    print('Driver string contains weird characters ' + driver_str)
-    sys.exit(10)
+    # Check that string does not containg weird characters
+    pattern = re.compile(r'\\/,')
+    if pattern.findall(driver_str):
+        print('Driver string contains weird characters ' + driver_str)
+        sys.exit(10)
 
-  # If driver name ends in .c, for example cps1.c, then trim .c
-  if driver_str[-2:] == '.c':
-    old_driver_str = driver_str
-    driver_str = old_driver_str[:-2]
-  # If driver name ends in .cpp, for example cps2.cpp, then trim .cpp
-  elif driver_str[-4:] == '.cpp':
-    old_driver_str = driver_str
-    driver_str = old_driver_str[:-4]
+    # >> If driver name ends in .c, for example cps1.c, then trim .c
+    if driver_str[-2:] == '.c':
+        driver_str = driver_str[:-2]
+    # >> If driver name ends in .cpp, for example cps2.cpp, then trim .cpp
+    elif driver_str[-4:] == '.cpp':
+        driver_str = driver_str[:-4]
+    # >> If driver name ends in .hxx, for example neodriv.hxx, then trim .hxx
+    elif driver_str[-4:] == '.hxx':
+        driver_str = driver_str[:-4]
 
-  return driver_str
+    return driver_str
 
 def trim_list(input_list):
   for index, item in enumerate(input_list):
@@ -2995,6 +2997,7 @@ def do_check_Artwork(filterName):
         NARS.print_info("Game        " + rom_baseName + ".zip")
         if rom_baseName not in artwork_copy_dic:
             print(' Not found')
+            art_baseName = ''
         else:
             art_baseName = artwork_copy_dic[rom_baseName]
 
