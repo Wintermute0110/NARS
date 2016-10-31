@@ -2991,8 +2991,6 @@ def do_check_Artwork(filterName):
     num_replaced = 0
     num_have_thumbs = 0
     num_missing_thumbs = 0
-    num_have_fanart = 0
-    num_missing_fanart = 0
     for rom_baseName in sorted(roms_destDir_list):
         NARS.print_info("Game        " + rom_baseName + ".zip")
         if rom_baseName not in artwork_copy_dic:
@@ -3000,11 +2998,7 @@ def do_check_Artwork(filterName):
         else:
             art_baseName = artwork_copy_dic[rom_baseName]
 
-        # --- Check if artwork exist
-        thumb_Source_fullFileName = thumbsSourceDir + art_baseName + '.png'
-        fanart_Source_fullFileName = fanartSourceDir + art_baseName + '.png'
-
-        # - Has artwork been replaced?
+        # >> Has artwork been replaced?
         if rom_baseName != art_baseName:
             num_replaced += 1
             print(' Replaced   ' + art_baseName)
@@ -3012,21 +3006,16 @@ def do_check_Artwork(filterName):
             num_original += 1
             print(' Original   ' + art_baseName)
 
-        # - Have thumb
-        if not os.path.isfile(thumb_Source_fullFileName):
-            num_missing_thumbs += 1
-            print(' Missing T  ' + art_baseName + '.png')
-        else:
-            num_have_thumbs += 1
-            print(' Have T     ' + art_baseName + '.png')
-
-        # - Have fanart
-        if not os.path.isfile(fanart_Source_fullFileName):
-            num_missing_fanart += 1
-            print(' Missing F  ' + art_baseName + '.png')
-        else:
-            num_have_fanart += 1
-            print(' Have F     ' + art_baseName + '.png')
+        # --- Check if artwork exist ---
+        for item in MAME_ARTWORK_LIST:
+            source_dir = filter_config[item[0]]
+            thumb_Source_fullFileName = source_dir + art_baseName + '.png'
+            if not os.path.isfile(thumb_Source_fullFileName):
+                num_missing_thumbs += 1
+                print(' Missing {0:<15} {1}.png'.format(item[0], art_baseName))
+            else:
+                num_have_thumbs += 1
+                print(' Have    {0:<15} {1}.png'.format(item[0], art_baseName))
 
     NARS.print_info('[Report]')
     NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)))
@@ -3035,8 +3024,6 @@ def do_check_Artwork(filterName):
     NARS.print_info('Number of replaced ArtWork = ' + str(num_replaced))
     NARS.print_info('Number of have Thumbs      = ' + str(num_have_thumbs))
     NARS.print_info('Number of missing Thumbs   = ' + str(num_missing_thumbs))
-    NARS.print_info('Number of have Fanart      = ' + str(num_have_fanart))
-    NARS.print_info('Number of missing Fanart   = ' + str(num_missing_fanart))
 
 # -------------------------------------------------------------------------------------------------
 def do_update_Artwork(filterName):
