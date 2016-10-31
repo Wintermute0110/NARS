@@ -638,11 +638,12 @@ def filter_do_IncludeExclude(machines_dic, filterControl, fieldName, filterName)
 
   return machines_filtered_dic
 
-__debug_filter_main_filter = 0
-# Main filter. <Include> and <Exclude> tags.
-# filterControl 1 Include filter
-#               0 Exclude filter
 #
+# Main filter: <Include> and <Exclude> tags.
+# filterControl True   Do Include filter
+#               False  Do Exclude filter
+#
+__debug_filter_main_filter = 0
 def filter_main_filter(machines_dic, filter_config, filterControl):
     if filterControl:    filter_str_list = filter_config['Include']
     else:                filter_str_list = filter_config['Exclude']
@@ -651,9 +652,7 @@ def filter_main_filter(machines_dic, filter_config, filterControl):
         print('filter_config = [' + ', '.join(filter_str_list) + ']')
 
     # ~~~ Do nothing if user did not wrote tag or tag is empty ~~~
-    if filter_str_list is None:
-        NARS.print_info('Doing nothing')
-        return machines_dic
+    if not filter_str_list: return machines_dic
 
     # ~~~ Traverse list ~~~
     for filter_str in filter_str_list:
@@ -690,7 +689,7 @@ def filter_do_Driver_tag(mame_xml_dic, filter_config):
     NARS.print_info('<Driver filter>')
   
     if not filter_config['Driver']:
-        NARS.print_info('User wants all drivers')
+        # NARS.print_info('User wants all drivers')
         return mame_xml_dic
     driver_filter_expression = filter_config['Driver']
     filtered_out_games = 0
@@ -728,7 +727,7 @@ def filter_do_Categories_tag(mame_xml_dic, filter_config):
     NARS.print_info('<Categories filter>')
 
     if not filter_config['Categories']:
-        NARS.print_info('User wants all categories')
+        # NARS.print_info('User wants all categories')
         return mame_xml_dic
       
     categories_filter_expression = filter_config['Categories']
@@ -765,7 +764,7 @@ def filter_do_displayType_tag(mame_xml_dic, filter_config):
     NARS.print_info('<Display type filter>')
 
     if not filter_config['DisplayType']:
-        NARS.print_info('User wants all categories')
+        # NARS.print_info('User wants all categories')
         return mame_xml_dic
     displayType_filter_expression = filter_config['DisplayType']
     machines_filtered_dic = {}
@@ -798,7 +797,7 @@ def filter_do_Orientation_tag(mame_xml_dic, filter_config):
     NARS.print_info('<Orientation filter>')
 
     if not filter_config['DisplayOrientation']:
-        NARS.print_info('User wants all display orientations')
+        # NARS.print_info('User wants all display orientations')
         return mame_xml_dic
     orientation_filter_expression = filter_config['DisplayOrientation']
     machines_filtered_dic = {}
@@ -835,7 +834,7 @@ def filter_do_Controls_tag(mame_xml_dic, filter_config):
     NARS.print_info('<Controls filter>')
 
     if not filter_config['Controls']:
-        NARS.print_info('User wants all controls')
+        # NARS.print_info('User wants all controls')
         return mame_xml_dic
     controls_type_filter_expression = filter_config['Controls']
     filtered_out_games = 0
@@ -872,7 +871,7 @@ def filter_do_Buttons_tag(mame_xml_dic, filter_config):
     NARS.print_info('<Buttons filter>')
 
     if not filter_config['Buttons']:
-        NARS.print_info('User wants all buttons')
+        # NARS.print_info('User wants all buttons')
         return mame_xml_dic
     button_filter_expression = filter_config['Buttons']
     machines_filtered_dic = {}
@@ -905,7 +904,7 @@ def filter_do_Players_tag(mame_xml_dic, filter_config):
     NARS.print_info('<Players filter>')
 
     if not filter_config['Players']:
-        NARS.print_info('User wants all players')
+        # NARS.print_info('User wants all players')
         return mame_xml_dic
     players_filter_expression = filter_config['Players']
     machines_filtered_dic = {}
@@ -2812,7 +2811,7 @@ def do_check(filterName):
     # If machine has no ROMs then skip checking
     if romObject.hasROMs:
       num_roms += 1
-      sourceFullFilename = filter_config.sourceDir + romObject.name + '.zip'
+      sourceFullFilename = filter_config['SourceROMs'] + romObject.name + '.zip'
       fileName = romObject.name + '.zip'
       if not os.path.isfile(sourceFullFilename):
         missing_roms += 1
@@ -2827,7 +2826,7 @@ def do_check(filterName):
     # --- Check if CHD exists ---
     for CHD_file in romObject.CHD_depends_list:
       num_CHD += 1
-      CHD_FullFilename = filter_config.sourceDir_CHD + '/' +  romObject.name + '/' + CHD_file + '.chd'
+      CHD_FullFilename = filter_config['SourceCHDs'] + '/' +  romObject.name + '/' + CHD_file + '.chd'
       CHD_Filename = romObject.name + '/' + CHD_file + '.chd'
       if not os.path.isfile(CHD_FullFilename):
         missing_CHD += 1
@@ -2860,12 +2859,12 @@ def do_update(filterName):
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_from_Config(filterName)
-  sourceDir = filter_config.sourceDir
-  destDir = filter_config.destDir
+  sourceDir = filter_config['SourceROMs']
+  destDir   = filter_config['DestinationROMs']
 
   # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(sourceDir, 'ROMsSource')
-  NARS.have_dir_or_abort(destDir, 'ROMsDest')
+  NARS.have_dir_or_abort(sourceDir, 'SourceROMs')
+  NARS.have_dir_or_abort(destDir, 'DestinationROMs')
 
   # --- Get MAME parent/clone dictionary --------------------------------------
   mame_xml_dic = parse_MAME_merged_XML()
