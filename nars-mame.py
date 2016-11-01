@@ -61,12 +61,9 @@ class Config:
 
     def new_filter(self):
         f = {
-            'SourceROMs'         : '',
-            'DestinationROMs'    : '',
-            'SourceCHDs'         : '',
-            'DestinationCHDs'    : '',
-            'SourceSamples'      : '',
-            'DestinationSamples' : '',
+            'SourceROMs'         : '', 'DestinationROMs'    : '',
+            'SourceCHDs'         : '', 'DestinationCHDs'    : '',
+            'SourceSamples'      : '', 'DestinationSamples' : '',
 
             'Options'            : '',
             'Include'            : '',
@@ -81,29 +78,17 @@ class Config:
             'Players'            : '',
             'Years'              : '',
 
-            'SourceTitles'       : '',
-            'SourceSnaps'        : '',
-            'SourceFanarts'      : '',
-            'SourceMarquees'     : '',
-            'SourceClearlogos'   : '',
-            'SourceCabinets'     : '',
-            'SourceCPanels'      : '',
-            'SourcePCBs'         : '',
-            'SourceFlyers'       : '',
-            'SourceManuals'      : '',
-            'SourceTrailers'     : '',
-
-            'DestinationTitles'     : '',
-            'DestinationSnaps'      : '',
-            'DestinationFanarts'    : '',
-            'DestinationMarquees'   : '',
-            'DestinationClearlogos' : '',
-            'DestinationCabinets'   : '',
-            'DestinationCPanels'    : '',
-            'DestinationPCBs'       : '',
-            'DestinationFlyers'     : '',
-            'DestinationManuals'    : '',
-            'DestinationTrailers'   : ''
+            'SourceTitles'       : '', 'DestinationTitles'     : '',
+            'SourceSnaps'        : '', 'DestinationSnaps'      : '',
+            'SourceFanarts'      : '', 'DestinationFanarts'    : '',
+            'SourceMarquees'     : '', 'DestinationMarquees'   : '',
+            'SourceClearlogos'   : '', 'DestinationClearlogos' : '',
+            'SourceCabinets'     : '', 'DestinationCabinets'   : '',
+            'SourceCPanels'      : '', 'DestinationCPanels'    : '',
+            'SourcePCBs'         : '', 'DestinationPCBs'       : '',
+            'SourceFlyers'       : '', 'DestinationFlyers'     : '',
+            'SourceManuals'      : '', 'DestinationManuals'    : '',
+            'SourceTrailers'     : '', 'DestinationTrailers'   : ''
         }
 
         return f
