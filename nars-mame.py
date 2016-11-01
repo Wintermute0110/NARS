@@ -2950,7 +2950,7 @@ def do_check_Artwork(filterName):
     # --- Check for missing paths ---
     # >> If source/dest path is '', disable that asset.
     # >> If source/dest path does not exist, disable that asset.
-    enabled_asset_list = [False] * len(ROM_ASSET_LIST)
+    enabled_asset_list = [False] * len(MAME_ARTWORK_LIST)
     for index, item in enumerate(MAME_ARTWORK_LIST):
         asset_name = item[A_NAME]
         source_dir = filter_config[item[A_SOURCE]]
@@ -2960,10 +2960,11 @@ def do_check_Artwork(filterName):
         DestConfigured     = True if dest_dir else False
         SourceExists       = True if os.path.isdir(source_dir) else False
         DestExists         = True if os.path.isdir(dest_dir) else False
-        enabled_asset_list = True if (SourceConfigured and DestConfigured and SourceExists and DestExists) else False
+        enabled_asset_list[index] = True if (SourceConfigured and DestConfigured and \
+                                             SourceExists and DestExists) else False
 
     # --- Create a list of ROMs in destDir ---
-    roms_destDir_list = fs_create_dir_list_files(destDir, '.zip')
+    roms_destDir_list = NARS.fs_create_dir_list_files(destDir, '.zip')
 
     # --- Get MAME parent/clone dictionary --------------------------------------
     mame_xml_dic = parse_MAME_merged_XML()
@@ -2983,8 +2984,10 @@ def do_check_Artwork(filterName):
     num_replaced = 0
     num_have_thumbs = 0
     num_missing_thumbs = 0
+    NARS.print_info('Game            '
+                    'Title  Snaps  F_art  Mrqee  Clogo    Cab   CPan   PCBs  Flyer    Man    Tra')
     for rom_baseName in sorted(roms_destDir_list):
-        NARS.print_info("Game        " + rom_baseName + ".zip")
+        # NARS.print_info("Game        " + rom_baseName + ".zip")
         if rom_baseName not in artwork_copy_dic:
             print(' Not found')
             art_baseName = ''
@@ -2994,13 +2997,13 @@ def do_check_Artwork(filterName):
         # >> Has artwork been replaced?
         if rom_baseName != art_baseName:
             num_replaced += 1
-            print(' Replaced   ' + art_baseName)
+            # print(' Replaced   ' + art_baseName)
         else:
             num_original += 1
-            print(' Original   ' + art_baseName)
+            # print(' Original   ' + art_baseName)
 
         # --- Check if artwork exist ---
-        have_asset_list = [False] * len(ROM_ASSET_LIST)
+        have_asset_list = [False] * len(MAME_ARTWORK_LIST)
         for index, item in enumerate(MAME_ARTWORK_LIST):
             if not enabled_asset_list[index]: continue
             source_dir = filter_config[item[A_SOURCE]]
@@ -3013,12 +3016,13 @@ def do_check_Artwork(filterName):
                 have_asset_list[index] = False
 
         # --- Print information ---
-        asset_num = len(ROM_ASSET_LIST)
+        asset_num = len(MAME_ARTWORK_LIST)
         info_str = ''
         for index, item in enumerate(MAME_ARTWORK_LIST):
-            if not enabled_asset_list[index]: info_str += '  DIS'
-            else:                             info_str += ' HAVE' if have_asset_list[index] else ' MISS'
-        NARS.print_info('Game {0}.zip {1}'.format(rom_baseName, info_str))
+            if not enabled_asset_list[index]: info_str += '    DIS'
+            else:
+                info_str += '   \033[32mHAVE\033[0m' if have_asset_list[index] else '   \033[31mMISS\033[0m'
+        NARS.print_info('{0:<12}  {1}'.format(rom_baseName, info_str))
 
     NARS.print_info('[Report]')
     NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)))
@@ -3044,7 +3048,7 @@ def do_update_Artwork(filterName):
     # --- Check for missing paths ---
     # >> If source/dest path is '', disable that asset.
     # >> If source/dest path does not exist, disable that asset.
-    enabled_asset_list = [False] * len(ROM_ASSET_LIST)
+    enabled_asset_list = [False] * len(MAME_ARTWORK_LIST)
     for index, item in enumerate(MAME_ARTWORK_LIST):
         asset_name = item[A_NAME]
         source_dir = filter_config[item[A_SOURCE]]
@@ -3054,10 +3058,11 @@ def do_update_Artwork(filterName):
         DestConfigured     = True if dest_dir else False
         SourceExists       = True if os.path.isdir(source_dir) else False
         DestExists         = True if os.path.isdir(dest_dir) else False
-        enabled_asset_list = True if (SourceConfigured and DestConfigured and SourceExists and DestExists) else False
+        enabled_asset_list[index] = True if (SourceConfigured and DestConfigured and 
+                                             SourceExists and DestExists) else False
 
     # --- Create a list of ROMs in destDir ---
-    roms_destDir_list = fs_create_dir_list_files(destDir, '.zip')
+    roms_destDir_list = NARS.fs_create_dir_list_files(destDir, '.zip')
 
     # --- Get MAME parent/clone dictionary --------------------------------------
     mame_xml_dic = parse_MAME_merged_XML()

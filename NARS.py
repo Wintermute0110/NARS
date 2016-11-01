@@ -282,7 +282,7 @@ def update_file(source_path, dest_path, __prog_option_dry_run):
 # -------------------------------------------------------------------------------------------------
 def fs_create_dir_list_files(directory, endswith):
     file_list = []
-    for file in os.listdir(destDir):
+    for file in os.listdir(directory):
         if file.endswith(endswith):
             thisFileName, thisFileExtension = os.path.splitext(file)
             file_list.append(thisFileName)
@@ -517,7 +517,7 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
 #
 def copy_ArtWork_file(art_baseName, asset_name, source_dir, dest_dir, __prog_option_sync, __prog_option_dry_run):
     art_path_source = source_dir + art_baseName + '.png'
-    art_path_dest   = dest_dir   + rom_baseName + '.png'
+    art_path_dest   = dest_dir   + art_baseName + '.png'
     if __prog_option_sync: ret = update_file(art_path_source, art_path_dest, __prog_option_dry_run)
     else:                  ret = copy_file(art_path_source, art_path_dest, __prog_option_dry_run)
 
