@@ -2710,9 +2710,9 @@ def do_diff(filterNameA, filterNameB):
   mame_filtered_dic_B = filter_MAME_machines(mame_dic, filter_config_B)
 
   # ~~~ Print diff ~~~
-  # + Needs Python 3.5
+  # >> Merge dictionaries. Needs Python 3.5
   # merged_filtered_dic = {**mame_filtered_dic_A, **mame_filtered_dic_B}
-  # + Classical way of merging dictionaries
+  # >> Merge dictionaries. Classical way of merging dictionaries
   merged_filtered_dic = mame_filtered_dic_A.copy()
   merged_filtered_dic.update(mame_filtered_dic_B)
   merged_filtered_set = set(merged_filtered_dic.keys())
@@ -2918,18 +2918,21 @@ def do_update_CHD(filterName):
     NARS.clean_CHDs_destDir(CHD_dic, destDir, __prog_option_dry_run)
 
 # -------------------------------------------------------------------------------------------------
+A_NAME   = 0
+A_SOURCE = 1
+A_DEST   = 2
 MAME_ARTWORK_LIST = [
-    ('SourceTitles',     'DestinationTitles'),
-    ('SourceSnaps',      'DestinationSnaps'),
-#    ('SourceFanarts',    'DestinationFanarts'),
-    ('SourceMarquees',   'DestinationMarquees'),
-#    ('SourceClearlogos', 'DestinationClearlogos'),
-    ('SourceCabinets',   'DestinationCabinets'),
-    ('SourceCPanels',    'DestinationCPanels'),
-    ('SourcePCBs',       'DestinationPCBs'),
-    ('SourceFlyers',     'DestinationFlyers'),
-#    ('SourceManuals',    'DestinationManuals'),
-#    ('SourceTrailers',   'DestinationTrailers')
+    ('Titles',     'SourceTitles',     'DestinationTitles'),
+    ('Snaps',      'SourceSnaps',      'DestinationSnaps'),
+    ('Fanarts',    'SourceFanarts',    'DestinationFanarts'),
+    ('Marquees',   'SourceMarquees',   'DestinationMarquees'),
+    ('Clearlogos', 'SourceClearlogos', 'DestinationClearlogos'),
+    ('Cabinets',   'SourceCabinets',   'DestinationCabinets'),
+    ('CPanels',    'SourceCPanels',    'DestinationCPanels'),
+    ('PCBs',       'SourcePCBs',       'DestinationPCBs'),
+    ('Flyers',     'SourceFlyers',     'DestinationFlyers'),
+    ('Manuals',    'SourceManuals',    'DestinationManuals'),
+    ('Trailers',   'SourceTrailers',   'DestinationTrailers')
 ]
 
 #
@@ -2942,22 +2945,25 @@ def do_check_Artwork(filterName):
     # --- Get configuration for the selected filter and check for errors ---
     filter_config = get_Filter_from_Config(filterName)
     destDir = filter_config['DestinationROMs']
+    NARS.have_dir_or_abort(destDir, 'DestinationROMs')
 
     # --- Check for missing paths ---
-    NARS.have_dir_or_abort(destDir, 'ROMsDest')
-    for item in MAME_ARTWORK_LIST:
-        source_dir = filter_config[item[0]]
-        dest_dir   = filter_config[item[1]]
-        NARS.print_info('Checking dir {0} and {1}'.format(source_dir, dest_dir))
-        NARS.have_dir_or_abort(source_dir, item[0])
-        NARS.have_dir_or_abort(dest_dir, item[1])
+    # >> If source/dest path is '', disable that asset.
+    # >> If source/dest path does not exist, disable that asset.
+    enabled_asset_list = [False] * len(ROM_ASSET_LIST)
+    for index, item in enumerate(MAME_ARTWORK_LIST):
+        asset_name = item[A_NAME]
+        source_dir = filter_config[item[A_SOURCE]]
+        dest_dir   = filter_config[item[A_DEST]]
+        NARS.print_info('Checking {0} directories'.format(asset_name))
+        SourceConfigured   = True if source_dir else False
+        DestConfigured     = True if dest_dir else False
+        SourceExists       = True if os.path.isdir(source_dir) else False
+        DestExists         = True if os.path.isdir(dest_dir) else False
+        enabled_asset_list = True if (SourceConfigured and DestConfigured and SourceExists and DestExists) else False
 
-    # --- Create a list of ROMs in destDir
-    roms_destDir_list = []
-    for file in os.listdir(destDir):
-        if file.endswith(".zip"):
-            thisFileName, thisFileExtension = os.path.splitext(file)
-            roms_destDir_list.append(thisFileName)
+    # --- Create a list of ROMs in destDir ---
+    roms_destDir_list = fs_create_dir_list_files(destDir, '.zip')
 
     # --- Get MAME parent/clone dictionary --------------------------------------
     mame_xml_dic = parse_MAME_merged_XML()
@@ -2969,8 +2975,7 @@ def do_check_Artwork(filterName):
     # --- Mimic the behaviour of optimize_ArtWork_list() in nars-console ---
     # Crate a dictionary where key and value are the same (no artwork substitution in nars-mame).
     artwork_copy_dic = {}
-    for rom in rom_copy_list:
-        artwork_copy_dic[rom] = rom
+    for rom in rom_copy_list: artwork_copy_dic[rom] = rom
 
     # --- Print list in alphabetical order
     NARS.print_info('[Artwork report]')
@@ -2995,15 +3000,25 @@ def do_check_Artwork(filterName):
             print(' Original   ' + art_baseName)
 
         # --- Check if artwork exist ---
-        for item in MAME_ARTWORK_LIST:
-            source_dir = filter_config[item[0]]
+        have_asset_list = [False] * len(ROM_ASSET_LIST)
+        for index, item in enumerate(MAME_ARTWORK_LIST):
+            if not enabled_asset_list[index]: continue
+            source_dir = filter_config[item[A_SOURCE]]
             thumb_Source_fullFileName = source_dir + art_baseName + '.png'
-            if not os.path.isfile(thumb_Source_fullFileName):
-                num_missing_thumbs += 1
-                print(' Missing {0:<15} {1}.png'.format(item[0], art_baseName))
-            else:
+            if os.path.isfile(thumb_Source_fullFileName):
                 num_have_thumbs += 1
-                print(' Have    {0:<15} {1}.png'.format(item[0], art_baseName))
+                have_asset_list[index] = True
+            else:
+                num_missing_thumbs += 1
+                have_asset_list[index] = False
+
+        # --- Print information ---
+        asset_num = len(ROM_ASSET_LIST)
+        info_str = ''
+        for index, item in enumerate(MAME_ARTWORK_LIST):
+            if not enabled_asset_list[index]: info_str += '  DIS'
+            else:                             info_str += ' HAVE' if have_asset_list[index] else ' MISS'
+        NARS.print_info('Game {0}.zip {1}'.format(rom_baseName, info_str))
 
     NARS.print_info('[Report]')
     NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)))
@@ -3014,57 +3029,69 @@ def do_check_Artwork(filterName):
     NARS.print_info('Number of missing Thumbs   = ' + str(num_missing_thumbs))
 
 # -------------------------------------------------------------------------------------------------
+#
+# Reads ROM destDir and copies Artwork
+#
 def do_update_Artwork(filterName):
-  """Reads ROM destDir and copies Artwork"""
+    NARS.print_info('[Updating/copying ArtWork]')
+    NARS.print_info('Filter name = ' + filterName)
 
-  NARS.print_info('[Updating/copying ArtWork]')
-  NARS.print_info('Filter name = ' + filterName)
+    # --- Get configuration for the selected filter ---
+    filter_config = get_Filter_from_Config(filterName)
+    destDir = filter_config['DestinationROMs']
+    NARS.have_dir_or_abort(destDir, 'DestinationROMs')
 
-  # --- Get configuration for the selected filter and check for errors
-  filter_config = get_Filter_from_Config(filterName)
-  destDir = filter_config.destDir
-  thumbsSourceDir = filter_config.thumbsSourceDir
-  fanartSourceDir = filter_config.fanartSourceDir
-  thumbsDestDir = filter_config.thumbsDestDir
-  fanartDestDir = filter_config.fanartDestDir
+    # --- Check for missing paths ---
+    # >> If source/dest path is '', disable that asset.
+    # >> If source/dest path does not exist, disable that asset.
+    enabled_asset_list = [False] * len(ROM_ASSET_LIST)
+    for index, item in enumerate(MAME_ARTWORK_LIST):
+        asset_name = item[A_NAME]
+        source_dir = filter_config[item[A_SOURCE]]
+        dest_dir   = filter_config[item[A_DEST]]
+        NARS.print_info('Checking {0} directories'.format(asset_name))
+        SourceConfigured   = True if source_dir else False
+        DestConfigured     = True if dest_dir else False
+        SourceExists       = True if os.path.isdir(source_dir) else False
+        DestExists         = True if os.path.isdir(dest_dir) else False
+        enabled_asset_list = True if (SourceConfigured and DestConfigured and SourceExists and DestExists) else False
 
-  # --- Check for errors, missing paths, etc...
-  NARS.have_dir_or_abort(destDir, 'ROMsDest')
-  NARS.have_dir_or_abort(thumbsSourceDir, 'ThumbsSource')
-  NARS.have_dir_or_abort(fanartSourceDir, 'FanartSource')
-  NARS.have_dir_or_abort(thumbsDestDir, 'ThumbsDest')
-  NARS.have_dir_or_abort(fanartDestDir, 'FanartDest')
+    # --- Create a list of ROMs in destDir ---
+    roms_destDir_list = fs_create_dir_list_files(destDir, '.zip')
 
-  # --- Create a list of ROMs in destDir
-  roms_destDir_list = []
-  for file in os.listdir(destDir):
-    if file.endswith(".zip"):
-      thisFileName, thisFileExtension = os.path.splitext(file)
-      roms_destDir_list.append(thisFileName)
+    # --- Get MAME parent/clone dictionary --------------------------------------
+    mame_xml_dic = parse_MAME_merged_XML()
 
-  # --- Get MAME parent/clone dictionary --------------------------------------
-  mame_xml_dic = parse_MAME_merged_XML()
+    # --- Apply filter and create list of files to be copied --------------------
+    mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
+    rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list)
 
-  # --- Apply filter and create list of files to be copied --------------------
-  mame_filtered_dic = filter_MAME_machines(mame_xml_dic, filter_config)
-  rom_copy_list = create_copy_list(mame_filtered_dic, roms_destDir_list)
+    # --- Mimic the behaviour of optimize_ArtWork_list() in mame-console
+    # Crate a dictionary where key and value are the same (no artwork substitution in nars-mame).
+    artwork_copy_dic = {}
+    for rom in rom_copy_list: artwork_copy_dic[rom] = rom
 
-  # --- Mimic the behaviour of optimize_ArtWork_list() in xru-console
-  # Crate a dictionary where key and value are the same (no artwork
-  # substitution in xru-mame).
-  artwork_copy_dic = {}
-  for rom in rom_copy_list:
-    artwork_copy_dic[rom] = rom
+    # --- Copy/Update artwork ---
+    for rom_baseName in sorted(roms_destDir_list):
+        if rom_baseName not in artwork_copy_dic:
+            print(' Not found')
+            sys.exit(10)
+        else:
+            art_baseName = artwork_copy_dic[rom_baseName]
 
-  # --- Copy/Update artwork    
-  NARS.copy_ArtWork_list(filter_config, artwork_copy_dic, __prog_option_sync, __prog_option_dry_run)
+        for index, item in enumerate(MAME_ARTWORK_LIST):
+            if not enabled_asset_list[index]: continue
+            asset_name = item[A_NAME]
+            source_dir = filter_config[item[A_SOURCE]]
+            dest_dir   = filter_config[item[A_DEST]]
+            NARS.copy_ArtWork_file(art_baseName, asset_name, source_dir, dest_dir, __prog_option_sync, __prog_option_dry_run)
 
-  # --- If --cleanArtWork is on then delete unknown files.
-  if __prog_option_clean_ArtWork:
-    NARS.clean_ArtWork_destDir(filter_config, artwork_copy_dic, __prog_option_dry_run)
+    # --- If --cleanArtWork is on then delete unknown files.
+    # if __prog_option_clean_ArtWork:
+    #     NARS.clean_ArtWork_destDir(filter_config, artwork_copy_dic, __prog_option_dry_run)
 
 def do_printHelp():
-  print("""\033[32mUsage: nars-mame.py [options] <command> [filter]\033[0m
+    print("""\033[32mUsage: nars-mame.py [options] <command> [filter]\033[0m
 
 \033[32mCommands:\033[0m
 \033[31musage\033[0m                     Print usage information (this text)
@@ -3176,34 +3203,34 @@ if command == 'query' or \
 parse_File_Config()
 
 # --- Positional arguments that don't require a filterName ---
-if command == 'reduce-XML':         do_reduce_XML()
-elif command == 'merge-XML':        do_merge()
-elif command == 'list-merged':      do_list_merged()
-elif command == 'list-categories':  do_list_categories()
-elif command == 'list-genres':      do_list_genres()
-elif command == 'list-drivers':     do_list_drivers()
-elif command == 'list-controls':    do_list_controls()
-elif command == 'list-years':       do_list_years()
-elif command == 'query':            do_query(args.filterNameA)
-elif command == 'list':             do_list_filters()
-elif command == 'diff':             do_diff(args.filterNameA, args.filterNameB)
-elif command == 'check':            do_check(args.filterNameA)
-elif command == 'copy':             do_update(args.filterNameA)
+if command == 'reduce-XML':        do_reduce_XML()
+elif command == 'merge-XML':       do_merge()
+elif command == 'list-merged':     do_list_merged()
+elif command == 'list-categories': do_list_categories()
+elif command == 'list-genres':     do_list_genres()
+elif command == 'list-drivers':    do_list_drivers()
+elif command == 'list-controls':   do_list_controls()
+elif command == 'list-years':      do_list_years()
+elif command == 'query':           do_query(args.filterNameA)
+elif command == 'list':            do_list_filters()
+elif command == 'diff':            do_diff(args.filterNameA, args.filterNameB)
+elif command == 'check':           do_check(args.filterNameA)
+elif command == 'copy':            do_update(args.filterNameA)
 elif command == 'update':
-  __prog_option_sync = 1
-  do_update(args.filterNameA)
-elif command == 'copy-chd':         do_update_CHD(args.filterNameA)
+    __prog_option_sync = 1
+    do_update(args.filterNameA)
+elif command == 'copy-chd':        do_update_CHD(args.filterNameA)
 elif command == 'update-chd':
-  __prog_option_sync = 1
-  do_update_CHD(args.filterNameA)
-elif command == 'check-artwork':    do_check_Artwork(args.filterNameA)
-elif command == 'copy-artwork':     do_update_Artwork(args.filterNameA)
+    __prog_option_sync = 1
+    do_update_CHD(args.filterNameA)
+elif command == 'check-artwork':   do_check_Artwork(args.filterNameA)
+elif command == 'copy-artwork':    do_update_Artwork(args.filterNameA)
 elif command == 'update-artwork':
-  __prog_option_sync = 1
-  do_update_Artwork(args.filterNameA)
+    __prog_option_sync = 1
+    do_update_Artwork(args.filterNameA)
 else:
-  print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
-  sys.exit(1)
+    print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
+    sys.exit(1)
 
-# Bye bye
+# --- Bye bye ---
 sys.exit(0)

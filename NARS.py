@@ -212,10 +212,12 @@ def have_dir_or_abort(dirName, infoStr):
     print_error('\033[31m[ERROR]\033[0m Directory does not exist ' + infoStr + ' = ' + dirName)
     sys.exit(10)
 
+#
 # Returns:
 #  0  File copied, no error
 #  1  Source file missing
 # -1  Copy error (exception)
+#
 def copy_file(source_path, dest_path, __prog_option_dry_run):
   print_debug('Copying ' + source_path)
   print_debug('Into    ' + dest_path)
@@ -275,9 +277,18 @@ def update_file(source_path, dest_path, __prog_option_dry_run):
 
   return 0
 
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 # Filesystem helper functions
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
+def fs_create_dir_list_files(directory, endswith):
+    file_list = []
+    for file in os.listdir(destDir):
+        if file.endswith(endswith):
+            thisFileName, thisFileExtension = os.path.splitext(file)
+            file_list.append(thisFileName)
+
+    return file_list
+
 def copy_ROM_list(rom_list, sourceDir, destDir, __prog_option_sync, __prog_option_dry_run):
   print_info('[Copying ROMs into destDir]')
 
@@ -426,7 +437,7 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
   num_updated_fanart = 0
   num_missing_fanart = 0
   for rom_baseName in sorted(rom_copy_dic):
-    # --- Get artwork name
+    # --- Get artwork name ---
     art_baseName = rom_copy_dic[rom_baseName]
     num_artwork += 1
 
@@ -500,6 +511,28 @@ def copy_ArtWork_list(filter_config, rom_copy_dic, __prog_option_sync, __prog_op
   print_info('Copied fanart ' + '{:6d}'.format(num_copied_fanart))
   print_info('Updated fanart ' + '{:5d}'.format(num_updated_fanart))
   print_info('Missing fanart ' + '{:5d}'.format(num_missing_fanart))
+
+#
+#
+#
+def copy_ArtWork_file(art_baseName, asset_name, source_dir, dest_dir, __prog_option_sync, __prog_option_dry_run):
+    art_path_source = source_dir + art_baseName + '.png'
+    art_path_dest   = dest_dir   + rom_baseName + '.png'
+    if __prog_option_sync: ret = update_file(art_path_source, art_path_dest, __prog_option_dry_run)
+    else:                  ret = copy_file(art_path_source, art_path_dest, __prog_option_dry_run)
+
+    # >> On default verbosity level only report copied files
+    if ret == 0:
+      print_info('<Copied  {0}> {1}'.format(asset_name, art_baseName))
+    elif ret == 1:
+      print_info('<Missing {0}> {1}'.format(asset_name, art_baseName))
+    elif ret == 2:
+      print_verb('<Updated {0}> {1}'.format(asset_name, art_baseName))
+    elif ret == -1:
+      print_info('<ERROR   {0}> {1}'.format(asset_name, art_baseName))
+    else:
+      print_error('Wrong value returned by update_file()/copy_file()')
+      sys.exit(10)
 
 # Delete ROMs present in destDir not present in the filtered list
 # 1) Make a list of .zip files in destDir
