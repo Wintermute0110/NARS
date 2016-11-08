@@ -1288,9 +1288,10 @@ def do_list_filters():
 
     # Test if all mandatory elements are there
 
+#
+# List of NoIntro XML file.
+#
 def do_list_nointro(filter_name):
-  """List of NoIntro XML file"""
-
   NARS.print_info('\033[1m[Listing No-Intro XML DAT]\033[0m')
   NARS.print_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
@@ -1349,9 +1350,10 @@ def do_list_nointro(filter_name):
     NARS.print_error('[ERROR] num_games != num_parents + num_clones')
     sys.exit(10)
 
+#
+# Checks ROMs in sourceDir against NoIntro XML file.
+#
 def do_check_nointro(filter_name):
-  """Checks ROMs in sourceDir against NoIntro XML file"""
-
   NARS.print_info('[Checking ROMs against No-Intro XML DAT]')
   NARS.print_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
@@ -1409,9 +1411,10 @@ def do_check_nointro(filter_name):
   NARS.print_info('Missing ROMs        {:5d}'.format(missing_roms))
   NARS.print_info('Unknown ROMs        {:5d}'.format(unknown_roms))
 
+#
+# Makes a histograms of the tags of the ROMs in sourceDir
+#
 def do_taglist(filter_name):
-  """Makes a histograms of the tags of the ROMs in sourceDir"""
-
   NARS.print_info('[Listing tags]')
   NARS.print_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
@@ -1531,9 +1534,10 @@ def do_check(filter_name):
   NARS.print_info('Include  {:5d}'.format(num_include_roms))
   NARS.print_info('Exclude  {:5d}'.format(num_exclude_roms))
 
+#
+#   Applies filter and updates (copies) ROMs
+#
 def do_update(filter_name):
-  """Applies filter and updates (copies) ROMs"""
-
   NARS.print_info('[Copy/Update ROMs]')
   NARS.print_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
@@ -1566,9 +1570,10 @@ def do_update(filter_name):
   if __prog_option_clean_NFOs:
     delete_redundant_NFO(destDir)
 
+#
+# Checks for missing artwork and prints a report
+#
 def do_checkArtwork(filter_name):
-  """Checks for missing artwork and prints a report"""
-
   NARS.print_info('[Check-ArtWork]')
   NARS.print_info("Filter name '{:}'".format(filter_name))
 
@@ -1801,5 +1806,5 @@ else:
   print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
   sys.exit(1)
 
-# Bye bye
+# --- Bye bye ---
 sys.exit(0)
