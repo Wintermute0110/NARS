@@ -27,7 +27,7 @@ import NARS
 
 # --- Global variables ---
 __config_configFileName = 'nars-console-config.xml'
-__config_logFileName = 'nars-console-log.txt'
+__config_logFileName    = 'nars-console-log.txt'
 
 # --- Program options (from command line) ---
 __prog_option_log = 0
@@ -197,8 +197,10 @@ def parse_File_Config():
 
   return configFile
 
+#
+# Returns the configuration filter object given the filter name
+#
 def get_Filter_from_Config(filterName):
-  "Returns the configuration filter object given the filter name"
   for key in configuration.filter_dic:
     if key == filterName:
       return configuration.filter_dic[key]
@@ -1785,28 +1787,16 @@ if command == 'list-nointro' or command == 'check-nointro' or \
 configuration = parse_File_Config()
 
 # --- Positional arguments that don't require a filterName
-if command == 'list':
-  do_list_filters()
-elif command == 'list-nointro':
-  do_list_nointro(args.filterName)
-elif command == 'check-nointro':
-  do_check_nointro(args.filterName)
-elif command == 'list-tags':
-  do_taglist(args.filterName)
-elif command == 'check':
-  do_check(args.filterName)
-elif command == 'copy':
-  do_update(args.filterName)
-elif command == 'update':
-  __prog_option_sync = 1
-  do_update(args.filterName)
-elif command == 'check-artwork':
-  do_checkArtwork(args.filterName)
-elif command == 'copy-artwork':
-  do_update_artwork(args.filterName)
-elif command == 'update-artwork':
-  __prog_option_sync = 1
-  do_update_artwork(args.filterName)
+if   command == 'list':           do_list_filters()
+elif command == 'list-nointro':   do_list_nointro(args.filterName)
+elif command == 'check-nointro':  do_check_nointro(args.filterName)
+elif command == 'list-tags':      do_taglist(args.filterName)
+elif command == 'check':          do_check(args.filterName)
+elif command == 'copy':           do_update(args.filterName, False)
+elif command == 'update':         do_update(args.filterName, True)
+elif command == 'check-artwork':  do_checkArtwork(args.filterName)
+elif command == 'copy-artwork':   do_update_artwork(args.filterName, False)
+elif command == 'update-artwork': do_update_artwork(args.filterName, True)
 else:
   print('\033[31m[ERROR]\033[0m Unrecognised command "{0}"'.format(command))
   sys.exit(1)
