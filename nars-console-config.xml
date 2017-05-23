@@ -2,7 +2,8 @@
 <ROMcollections>
 
 <!-- Nintendo ROMS -->
-<collection name="Nintendo SNES with No-Intro DAT" shortname="snes">
+<collection name="Genesis with No-Intro DAT" shortname="genesis">
+  <NoIntroDat>Sega - Mega Drive - Genesis Parent-Clone (20170318-044444).dat</NoIntroDat>
   <Options>NoBIOS</Options>
   <filterUpTags>Europe, World, Rev 1</filterUpTags>
   <filterDownTags>Japan, Beta, Proto, France</filterDownTags>
@@ -13,8 +14,12 @@
        If substring found in ROM name then ROM will be excluded -->
   <excludeGame></excludeGame>
 
+  <!--
   <Source     >/home/kodi/roms/roms-nintendo-snes/</Source>
   <Destination>/home/kodi/NUC-remote/ROMs/roms-nintendo-snes/</Destination>
+   -->
+  <Source     >./source/</Source>
+  <Destination>./dest/</Destination>
 
   <SourceTitles    >./artwork-test-source/titles/</SourceTitles>
   <SourceSnaps     >./artwork-test-source/snaps/</SourceSnaps>
@@ -41,17 +46,6 @@
   <DestinationMaps      >./artwork-test-dest/manuals/</DestinationMaps>
   <DestinationManuals   >./artwork-test-dest/manuals/</DestinationManuals>
   <DestinationTrailers  >./artwork-test-dest/trailers/</DestinationTrailers>
-</collection>
-
-<!-- Sega ROMS -->
-<collection name="Sega Mega Drive" shortname="genesis">
-  <filterUpTags>Europe, World, Rev 1</filterUpTags>
-  <filterDownTags>Japan, Beta, Proto</filterDownTags>
-  <includeTags>Europe, USA</includeTags>
-  <excludeTags>Japan</excludeTags>
-
-  <Source>/home/kodi/roms/roms-sega-genesis/</Source>
-  <Destination>/home/kodi/NUC-remote/ROMs/roms-sega-genesis/</Destination>
 </collection>
 
 </ROMcollections>

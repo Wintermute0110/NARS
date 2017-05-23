@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # NARS Advanced ROM Sorting - Console ROMs
-# Copyright (c) 2014-2016 Wintermute0110 <wintermute0110@gmail.com>
+# Copyright (c) 2014-2017 Wintermute0110 <wintermute0110@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -41,172 +41,141 @@ __prog_option_sync = 0
 # -----------------------------------------------------------------------------
 # Configuration file stuff
 # -----------------------------------------------------------------------------
-# --- Config file options global class (like a C struct) ---
-class ConfigFile:
-  def __init__(self):
-    self.filter_dic = {}
+class Config:
+    def __init__(self):
+        self.filters = {}
 
-class ConfigFileFilter:
-  def __init__(self):
-    # By default things are None, which means user didn't wrote them in config
-    # file OR no text was written ('', or blanks (spaces, tabs)).
-    self.name            = None  # str
-    self.shortname       = None  # str
-    self.sourceDir       = None  # str
-    self.destDir         = None  # str
-    self.NoIntro_XML     = None  # str
-    self.option_NoBIOS   = False # bool
-    self.fanartSourceDir = None  # str
-    self.fanartDestDir   = None  # str
-    self.thumbsSourceDir = None  # str
-    self.thumbsDestDir   = None  # str
-    self.filterUpTags    = None  # str list
-    self.filterDownTags  = None  # str list
-    self.includeTags     = None  # str list
-    self.excludeTags     = None  # str list
+    def new_filter(self):
+        f = {
+            'NoIntroDat'       : '',
+            'Options'          : '',
+            'filterUpTags'     : '',
+            'filterDownTags'   : '',
+            'includeTags'      : '',
+            'excludeTags'      : '',
+            'excludeGame'      : '',
 
+            'Source'           : '', 'Destination'    : '',
+
+            'SourceTitles'     : '', 'DestinationTitles'     : '',
+            'SourceSnaps'      : '', 'DestinationSnaps'      : '',
+            'SourceFanarts'    : '', 'DestinationFanarts'    : '',
+            'SourceBanners'    : '', 'DestinationBanners'    : '',
+            'SourceClearlogos' : '', 'DestinationClearlogos' : '',
+            'SourceBoxfronts'  : '', 'DestinationBoxfronts'  : '',
+            'SourceBoxbacks'   : '', 'DestinationBoxbacks'   : '',
+            'SourceCartridges' : '', 'DestinationCartridges' : '',
+            'SourceFlyers'     : '', 'DestinationFlyers'     : '',
+            'SourceMaps'       : '', 'DestinationMaps'       : '',
+            'SourceManuals'    : '', 'DestinationManuals'    : '',
+            'SourceTrailers'   : '', 'DestinationTrailers'   : '',
+
+            'name'          : '',
+            'option_NoBIOS' : False,
+        }
+
+        return f
+
+#
 # Parses configuration file using ElementTree
 # Returns a ConfigFile object
+#
+configuration = Config()
 parse_rjust = 16
 def parse_File_Config():
-  NARS.print_info('\033[1m[Parsing config file]\033[0m')
-  tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
-  root = tree.getroot()
+    NARS.p_info('\033[1m[Parsing config file]\033[0m')
+    tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Reading configuration XML file")
+    root = tree.getroot()
+    for root_child in root:
+        # --- Parse global tags ---
+        # --- Parse filter ---
+        if root_child.tag == 'collection':
+            NARS.p_debug('<collection>')
+            # --- Mandatory attributes of <collection> tag ---
+            if 'name' not in root_child.attrib:
+                NARS.print_error('<collection> tag does not have name attribute')
+                sys.exit(10)
+            if 'shortname' not in root_child.attrib:
+                NARS.print_error('<collection> tag does not have shortname attribute')
+                sys.exit(10)
+            filter = configuration.new_filter()
+            filter_name = root_child.attrib['name']
+            filter_shortname = root_child.attrib['shortname']
+            NARS.p_debug('Name'.ljust(parse_rjust) + filter_name)
+            NARS.p_debug('ShortName'.ljust(parse_rjust) + filter_shortname)
 
-  # --- Configuration object returned ---
-  configFile = ConfigFile()
+            # Parse filter (<collection> tags)
+            # NOTE If tag is like this <tag></tag> then xml.text is None
+            for filter_child in root_child:
+                # Tags like this <tag></tag> are None. Skip those so configuration dictionary gets default value.
+                if filter_child.text is None: continue
+                
+                # >> Directory tags
+                if filter_child.tag in ['Source', 'Destination',
+                                        'SourceTitles', 'SourceSnaps', 'SourceFanarts', 'SourceBanners',
+                                        'SourceClearlogos', 'SourceBoxfronts', 'SourceBoxbacks', 'SourceCartridges',
+                                        'SourceFlyers', 'SourceMaps', 'SourceManuals', 'SourceTrailers',
+                                        'DestinationTitles', 'DestinationSnaps', 'DestinationFanarts', 'DestinationBanners',
+                                        'DestinationClearlogos', 'DestinationBoxfronts', 'DestinationBoxbacks', 'DestinationCartridges',
+                                        'DestinationFlyers', 'DestinationMaps', 'DestinationManuals', 'DestinationTrailers']:
+                    clean_dir = NARS.util_sanitize_dir_name(filter_child.text)
+                    filter[filter_child.tag] = clean_dir
+                    NARS.p_debug(' {0} = {1}'.format(filter_child.tag, clean_dir))
 
-  # --- Parse filters ---
-  for root_child in root:
-    if root_child.tag == 'collection':
-      NARS.print_debug('{collection}')
-      # --- Mandatory attributes of <collection> tag ---
-      if 'name' not in root_child.attrib:
-        NARS.print_error('<collection> tag does not have name attribute')
-        sys.exit(10)
-      if 'shortname' not in root_child.attrib:
-        NARS.print_error('<collection> tag does not have shortname attribute')
-        sys.exit(10)
+                # >> Strings
+                elif filter_child.tag == 'NoIntroDat':
+                    fixed_string = filter_child.text
+                    filter[filter_child.tag] = fixed_string
+                    NARS.p_debug(' {0} = {1}'.format(filter_child.tag, fixed_string))
 
-      filter_class = ConfigFileFilter()
-      filter_class.name = NARS.strip_string(root_child.attrib['name'])
-      filter_class.shortname = NARS.strip_string(root_child.attrib['shortname'])
-      NARS.print_debug('Name'.ljust(parse_rjust) + filter_class.name)
-      NARS.print_debug('ShortName'.ljust(parse_rjust) + filter_class.shortname)
+                # >> Comma separated value tags
+                elif filter_child.tag in ['filterUpTags', 'filterDownTags',
+                                          'includeTags', 'excludeTags', 'excludeGame']:
+                    t_list = NARS.util_trim_str_list(filter_child.text.split(","))
+                    filter[filter_child.tag] = t_list
+                    NARS.p_debug(' {0} = {1}'.format(filter_child.tag, t_list))
 
-      # Parse filter (<collection> tags)
-      # NOTE If tag is like this <tag></tag> then xml.text is None
-      for filter_child in root_child:
-        # ~~~ Directories ~~~
-        if filter_child.tag == 'ROMsSource':
-          if filter_child.text is None: continue
-          filter_class.sourceDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
-          NARS.print_debug('ROMsSource'.ljust(parse_rjust) + filter_class.sourceDir)
-        elif filter_child.tag == 'ROMsDest':
-          if filter_child.text is None: continue
-          filter_class.destDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text)) 
-          NARS.print_debug('ROMsDest'.ljust(parse_rjust) + filter_class.destDir)          
-        elif filter_child.tag == 'FanartSource':
-          if filter_child.text is None: continue
-          filter_class.fanartSourceDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
-          NARS.print_debug('FanartSource'.ljust(parse_rjust) + filter_class.fanartSourceDir)
-        elif filter_child.tag == 'FanartDest':
-          if filter_child.text is None: continue
-          filter_class.fanartDestDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
-          NARS.print_debug('FanartDest'.ljust(parse_rjust) + filter_class.fanartDestDir)
-        elif filter_child.tag == 'ThumbsSource':
-          if filter_child.text is None: continue
-          filter_class.thumbsSourceDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
-          NARS.print_debug('ThumbsSource'.ljust(parse_rjust) + filter_class.thumbsSourceDir)
-        elif filter_child.tag == 'ThumbsDest':
-          if filter_child.text is None: continue
-          filter_class.thumbsDestDir = NARS.sanitize_dir_name(NARS.strip_string(filter_child.text))
-          NARS.print_debug('ThumbsDest'.ljust(parse_rjust) + filter_class.thumbsDestDir)
+                # >> Options
+                elif filter_child.tag == 'Options':
+                    if filter_child.text is None: continue
+                    # Trim comma-separated string, then trim each element after splitting
+                    str = NARS.util_strip_string(filter_child.text)
+                    str_list = str.split(",")
+                    for index, item in enumerate(str_list):
+                        str_list[index] = NARS.util_strip_string(item)
+                    NARS.p_debug('Options'.ljust(parse_rjust) + ', '.join(str_list))
 
-        # ~~~ Files ~~~
-        elif filter_child.tag == 'NoIntroDat':
-          if filter_child.text is None: continue
-          filter_class.NoIntro_XML = NARS.strip_string(filter_child.text)
-          NARS.print_debug('NoIntroDat'.ljust(parse_rjust) + filter_class.NoIntro_XML)
+                    # Parse each option individually
+                    for index, item in enumerate(str_list):
+                        if str_list[index] == 'NoBIOS':
+                            filter['NoBIOS'] = True
+                        else:
+                            print('[ERROR] On <collection> \'{0}\' in configuration file'.format(filter_class.name))
+                            print('[ERROR] On tag <{0}>'.format(filter_child.tag))
+                            print('[ERROR] Unrecognised option \'{0}\''.format(str_list[index]))
+                            sys.exit(10)
 
-        # ~~~ Options ~~~
-        elif filter_child.tag == 'Options':
-          if filter_child.text is None: continue
-          # Trim comma-separated string, then trim each element after splitting
-          str = NARS.strip_string(filter_child.text)
-          str_list = str.split(",")
-          for index, item in enumerate(str_list):
-            str_list[index] = NARS.strip_string(item)
-          NARS.print_debug('Options'.ljust(parse_rjust) + ', '.join(str_list))
-
-          # Parse each option individually
-          for index, item in enumerate(str_list):
-            if str_list[index] == 'NoBIOS':
-              filter_class.option_NoBIOS = True
-            else:
-              print('[ERROR] On <collection> \'{0}\' in configuration file'.format(filter_class.name))
-              print('[ERROR] On tag <{0}>'.format(filter_child.tag))
-              print('[ERROR] Unrecognised option \'{0}\''.format(str_list[index]))
-              sys.exit(10)
-
-        # ~~~ Comma separated strings ~~~
-        elif filter_child.tag == 'filterUpTags':
-          # If string is None then continue
-          if filter_child.text is None: continue
-          # Trim comma-separated string
-          str = NARS.strip_string(filter_child.text)
-          # Trim each list element separately
-          str_list = str.split(",")
-          for index, item in enumerate(str_list):
-            str_list[index] = NARS.strip_string(item)
-          filter_class.filterUpTags = str_list
-          NARS.print_debug('filterUpTags'.ljust(parse_rjust) + ', '.join(str_list))
-        elif filter_child.tag == 'filterDownTags':
-          if filter_child.text is None: continue
-          str = NARS.strip_string(filter_child.text)
-          str_list = str.split(",")
-          for index, item in enumerate(str_list):
-            str_list[index] = NARS.strip_string(item)
-          filter_class.filterDownTags = str_list
-          NARS.print_debug('filterDownTags'.ljust(parse_rjust) + ', '.join(str_list))
-        elif filter_child.tag == 'includeTags':
-          if filter_child.text is None: continue
-          str = NARS.strip_string(filter_child.text)
-          str_list = str.split(",")
-          for index, item in enumerate(str_list):
-            str_list[index] = NARS.strip_string(item)
-          filter_class.includeTags = str_list
-          NARS.print_debug('includeTags'.ljust(parse_rjust) + ', '.join(str_list))
-        elif filter_child.tag == 'excludeTags':
-          if filter_child.text is None: continue
-          str = NARS.strip_string(filter_child.text)
-          str_list = str.split(",")
-          for index, item in enumerate(str_list):
-            str_list[index] = NARS.strip_string(item)
-          filter_class.excludeTags = str_list
-          NARS.print_debug('excludeTags'.ljust(parse_rjust) + ', '.join(str_list))
-          
-
+                else:
+                  print('[ERROR] On <collection> \'{0}\''.format(filter_name))
+                  print('[ERROR] Unrecognised tag <{0}>'.format(filter_child.tag))
+                  sys.exit(10)
+            # --- Add filter class to configuration dictionary of filters ---
+            filter['name'] = filter_name
+            configuration.filters[filter_shortname] = filter
+            NARS.p_debug('Adding filter "{0}"'.format(filter_name))
         else:
-          print('[ERROR] On <collection> \'{0}\' in configuration file'.format(filter_class.name))
-          print('[ERROR] Unrecognised tag <{0}>'.format(filter_child.tag))
-          sys.exit(10)
-
-      # --- Aggregate filter to configuration main variable ---
-      configFile.filter_dic[filter_class.shortname] = filter_class
-
-  return configFile
+            NARS.print_error('[ERROR] At XML root level')
+            NARS.print_error('[ERROR] Unrecognised tag <{0}>'.format(root_child.tag))
+            sys.exit(10)
 
 #
 # Returns the configuration filter object given the filter name
 #
 def get_Filter_from_Config(filterName):
-  for key in configuration.filter_dic:
-    if key == filterName:
-      return configuration.filter_dic[key]
-
-  print('[ERROR] get_Filter_from_Config >> filter "' + filterName + '" not found in configuration file')
-  sys.exit(20)
+    if filterName in configuration.filters:
+        return configuration.filters[filterName]
+    NARS.print_error('get_Filter_from_Config >> filter "{0}" not found in configuration file'.format(filterName))
+    sys.exit(20)
 
 # -----------------------------------------------------------------------------
 # Filesystem functions
@@ -224,13 +193,13 @@ def copy_ArtWork_file(fileName, artName, sourceDir, destDir):
   if not os.path.isfile(sourceFullFilename):
     return 1
 
-  NARS.print_debug('Copying ' + sourceFullFilename)
-  NARS.print_debug('Into    ' + destFullFilename)
+  NARS.p_debug('Copying ' + sourceFullFilename)
+  NARS.p_debug('Into    ' + destFullFilename)
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      NARS.print_debug("copy_ArtWork_file >> Error happened")
+      NARS.p_debug("copy_ArtWork_file >> Error happened")
 
   return 0
 
@@ -258,23 +227,23 @@ def update_ArtWork_file(fileName, artName, sourceDir, destDir):
 
   # If sizes are equal Skip copy and return 1
   if sizeSource == sizeDest:
-    NARS.print_debug('Updated ' + destFullFilename)
+    NARS.p_debug('Updated ' + destFullFilename)
     return 2
 
   # destFile does not exist or sizes are different, copy.
-  NARS.print_debug('Copying ' + sourceFullFilename)
-  NARS.print_debug('Into    ' + destFullFilename)
+  NARS.p_debug('Copying ' + sourceFullFilename)
+  NARS.p_debug('Into    ' + destFullFilename)
   if not __prog_option_dry_run:
     try:
       shutil.copy(sourceFullFilename, destFullFilename)
     except EnvironmentError:
-      NARS.print_debug("update_ArtWork_file >> Error happened")
+      NARS.p_debug("update_ArtWork_file >> Error happened")
 
   return 0
 
 # -----------------------------------------------------------------------------
 def copy_ROM_list(rom_list, sourceDir, destDir):
-  NARS.print_info('[Copying ROMs into destDir]')
+  NARS.p_info('[Copying ROMs into destDir]')
 
   num_steps = len(rom_list)
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
@@ -292,17 +261,17 @@ def copy_ROM_list(rom_list, sourceDir, destDir):
     dest_path = destDir + romFileName
     NARS.copy_file(source_path, dest_path, __prog_option_dry_run)
     num_copied_roms += 1
-    NARS.print_info('<Copied> ' + romFileName)
+    NARS.p_info('<Copied> ' + romFileName)
     sys.stdout.flush()
 
     # --- Update progress
     step += 1
 
-  NARS.print_info('[Report]')
-  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms))
+  NARS.p_info('[Report]')
+  NARS.p_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms))
 
 def update_ROM_list(rom_list, sourceDir, destDir):
-  NARS.print_info('[Updating ROMs into destDir]')
+  NARS.p_info('[Updating ROMs into destDir]')
   
   num_steps = len(rom_list)
   # 0 here prints [0, ..., 99%] instead [1, ..., 100%]
@@ -322,12 +291,12 @@ def update_ROM_list(rom_list, sourceDir, destDir):
       # On default verbosity level only report copied files
       sys.stdout.write('{:5.2f}% '.format(percentage))
       num_copied_roms += 1
-      NARS.print_info('<Copied > ' + romFileName)
+      NARS.p_info('<Copied > ' + romFileName)
     elif ret == 1:
       if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:5.2f}% '.format(percentage))
       num_updated_roms += 1
-      NARS.print_info('<Miss   > ' + romFileName)
+      NARS.p_info('<Miss   > ' + romFileName)
     elif ret == 2:
       if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:5.2f}% '.format(percentage))
@@ -337,7 +306,7 @@ def update_ROM_list(rom_list, sourceDir, destDir):
       if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:5.2f}% '.format(percentage))
       num_updated_roms += 1
-      NARS.print_info('<ERROR  > ' + romFileName)
+      NARS.p_info('<ERROR  > ' + romFileName)
     else:
       NARS.print_error('[ERROR] update_ROM_list: Wrong value returned by NARS.update_file()')
       sys.exit(10)
@@ -346,12 +315,12 @@ def update_ROM_list(rom_list, sourceDir, destDir):
     # --- Update progress
     step += 1
 
-  NARS.print_info('[Report]')
-  NARS.print_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms))
-  NARS.print_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms))
+  NARS.p_info('[Report]')
+  NARS.p_info('Copied ROMs ' + '{:6d}'.format(num_copied_roms))
+  NARS.p_info('Updated ROMs ' + '{:5d}'.format(num_updated_roms))
 
 def clean_ROMs_destDir(destDir, rom_copy_dic):
-  NARS.print_info('[Cleaning ROMs in ROMsDest]')
+  NARS.p_info('[Cleaning ROMs in ROMsDest]')
 
   # --- Delete ROMs present in destDir not present in the filtered list
   rom_main_list = []
@@ -366,13 +335,13 @@ def clean_ROMs_destDir(destDir, rom_copy_dic):
       fileName = destDir + file
       NARS.delete_file(fileName, __prog_option_dry_run)
       num_cleaned_roms += 1
-      NARS.print_info('<Deleted> ' + file)
+      NARS.p_info('<Deleted> ' + file)
 
-  NARS.print_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
+  NARS.p_info('Deleted ' + str(num_cleaned_roms) + ' redundant ROMs')
 
 __debug_delete_redundant_NFO = 0
 def delete_redundant_NFO(destDir):
-  NARS.print_info('[Deleting redundant NFO files]')
+  NARS.p_info('[Deleting redundant NFO files]')
   num_deletedNFO_files = 0
   for file in os.listdir(destDir):
     if file.endswith(".nfo"):
@@ -385,14 +354,14 @@ def delete_redundant_NFO(destDir):
         fileName = destDir + file
         NARS.delete_file(fileName, __prog_option_dry_run)
         num_deletedNFO_files += 1
-        NARS.print_info('<Deleted NFO> ' + file)
+        NARS.p_info('<Deleted NFO> ' + file)
       else:
         if __debug_delete_redundant_NFO:
           print('EXISTS  \'{0}\''.format(romFileName_temp))
-  NARS.print_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
+  NARS.p_info('Deleted ' + str(num_deletedNFO_files) + ' redundant NFO files')
 
 def copy_ArtWork_files(filter_config, artwork_copy_dic):
-  NARS.print_info('[Copying ArtWork]')
+  NARS.p_info('[Copying ArtWork]')
   
   # --- Check that directories exist
   fanartSourceDir = filter_config.fanartSourceDir
@@ -422,11 +391,11 @@ def copy_ArtWork_files(filter_config, artwork_copy_dic):
       if ret == 0:
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_copied_thumbs += 1
-        NARS.print_info('<Copied Thumb  > ' + art_baseName)
+        NARS.p_info('<Copied Thumb  > ' + art_baseName)
       elif ret == 1:
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_missing_thumbs += 1
-        NARS.print_info('<Missing Thumb > ' + art_baseName)
+        NARS.p_info('<Missing Thumb > ' + art_baseName)
       else:
         NARS.print_error('Wrong value returned by copy_ArtWork_file()')
         sys.exit(10)
@@ -441,11 +410,11 @@ def copy_ArtWork_files(filter_config, artwork_copy_dic):
       if ret == 0:
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_copied_fanart += 1
-        NARS.print_info('<Copied Fanart > ' + art_baseName)
+        NARS.p_info('<Copied Fanart > ' + art_baseName)
       elif ret == 1:
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_missing_fanart += 1
-        NARS.print_info('<Missing Fanart> ' + art_baseName)
+        NARS.p_info('<Missing Fanart> ' + art_baseName)
       else:
         print_error('Wrong value returned by copy_ArtWork_file()')
         sys.exit(10)
@@ -453,14 +422,14 @@ def copy_ArtWork_files(filter_config, artwork_copy_dic):
     # --- Update progress ---
     step += 1
 
-  NARS.print_info('[Report]')
-  NARS.print_info('Copied thumbs   {:5d}'.format(num_copied_thumbs))
-  NARS.print_info('Missing thumbs  {:5d}'.format(num_missing_thumbs))
-  NARS.print_info('Copied fanart   {:5d}'.format(num_copied_fanart))
-  NARS.print_info('Missing fanart  {:5d}'.format(num_missing_fanart))
+  NARS.p_info('[Report]')
+  NARS.p_info('Copied thumbs   {:5d}'.format(num_copied_thumbs))
+  NARS.p_info('Missing thumbs  {:5d}'.format(num_missing_thumbs))
+  NARS.p_info('Copied fanart   {:5d}'.format(num_copied_fanart))
+  NARS.p_info('Missing fanart  {:5d}'.format(num_missing_fanart))
 
 def update_ArtWork_files(filter_config, artwork_copy_dic):
-  NARS.print_info('[Updating ArtWork]')
+  NARS.p_info('[Updating ArtWork]')
   
   # --- Check that directories exist ---
   thumbsSourceDir = filter_config.thumbsSourceDir
@@ -493,12 +462,12 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
         # On default verbosity level only report copied files
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_copied_thumbs += 1
-        NARS.print_info('<Copied  Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
+        NARS.p_info('<Copied  Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
       elif ret == 1:
         # Also report missing artwork
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_missing_thumbs += 1
-        NARS.print_info('<Missing Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
+        NARS.p_info('<Missing Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
       elif ret == 2:
         if NARS.log_level >= NARS.Log.verb:
           sys.stdout.write('{:5.2f}% '.format(percentage))
@@ -516,12 +485,12 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
         # Also report missing artwork
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_copied_fanart += 1
-        NARS.print_info('<Copied  Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
+        NARS.p_info('<Copied  Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
       elif ret == 1:
         # Also report missing artwork
         sys.stdout.write('{:5.2f}% '.format(percentage))
         num_missing_fanart += 1
-        NARS.print_info('<Missing Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
+        NARS.p_info('<Missing Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
       elif ret == 2:
         if NARS.log_level >= NARS.Log.verb:
           sys.stdout.write('{:5.2f}% '.format(percentage))
@@ -534,13 +503,13 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
     # --- Update progress
     step += 1
 
-  NARS.print_info('[Report]')
-  NARS.print_info('Copied thumbs   {:5d}'.format(num_copied_thumbs))
-  NARS.print_info('Updated thumbs  {:5d}'.format(num_updated_thumbs))
-  NARS.print_info('Missing thumbs  {:5d}'.format(num_missing_thumbs))
-  NARS.print_info('Copied fanart   {:5d}'.format(num_copied_fanart))
-  NARS.print_info('Updated fanart  {:5d}'.format(num_updated_fanart))
-  NARS.print_info('Missing fanart  {:5d}'.format(num_missing_fanart))
+  NARS.p_info('[Report]')
+  NARS.p_info('Copied thumbs   {:5d}'.format(num_copied_thumbs))
+  NARS.p_info('Updated thumbs  {:5d}'.format(num_updated_thumbs))
+  NARS.p_info('Missing thumbs  {:5d}'.format(num_missing_thumbs))
+  NARS.p_info('Copied fanart   {:5d}'.format(num_copied_fanart))
+  NARS.p_info('Updated fanart  {:5d}'.format(num_updated_fanart))
+  NARS.p_info('Missing fanart  {:5d}'.format(num_missing_fanart))
 
 # Artwork may be available for some of the parent/clones in the ROM set, but
 # not for the filtered ROMs. This function test against alll
@@ -561,7 +530,7 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
 def optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config):
   __debug_optimize_ArtWork = 0
 
-  NARS.print_info('[Optimising ArtWork file list]')
+  NARS.p_info('[Optimising ArtWork file list]')
   thumbsSourceDir = filter_config.thumbsSourceDir
   thumbsDestDir   = filter_config.thumbsDestDir
   fanartSourceDir = filter_config.fanartSourceDir
@@ -652,7 +621,7 @@ def optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config):
   return artwork_copy_dic
 
 def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
-  NARS.print_info('[Cleaning ArtWork]')
+  NARS.p_info('[Cleaning ArtWork]')
 
   thumbsDestDir = filter_config.thumbsDestDir
   fanartDestDir = filter_config.fanartDestDir
@@ -674,7 +643,7 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
       num_cleaned_thumbs += 1
       fileName = thumbsDestDir + file
       NARS.delete_file(fileName, __prog_option_dry_run)
-      NARS.print_info('<Deleted thumb > ' + file)
+      NARS.p_info('<Deleted thumb > ' + file)
 
   # --- Delete unknown fanart ---
   fanart_file_list = []
@@ -689,20 +658,20 @@ def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
       num_cleaned_fanart += 1
       fileName = fanartDestDir + file
       NARS.delete_file(fileName, __prog_option_dry_run)
-      NARS.print_info(' <Deleted fanart> ' + file)
+      NARS.p_info(' <Deleted fanart> ' + file)
 
   # --- Report
-  NARS.print_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs')
-  NARS.print_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart')
+  NARS.p_info('Deleted ' + str(num_cleaned_thumbs) + ' redundant thumbs')
+  NARS.p_info('Deleted ' + str(num_cleaned_fanart) + ' redundant fanart')
 
 #
 # Creates the list of ROMs to be copied based on the ordered main ROM list
 #
 def create_copy_list(romMain_list, filter_config):
   # --- Scan sourceDir to get the list of available ROMs ---
-  NARS.print_info('[Scanning sourceDir for ROMs to be copied/updated]')
-  if filter_config.option_NoBIOS: NARS.print_info('Option NoBIOS is ON')
-  else:                           NARS.print_info('Option NoBIOS is OFF')
+  NARS.p_info('[Scanning sourceDir for ROMs to be copied/updated]')
+  if filter_config.option_NoBIOS: NARS.p_info('Option NoBIOS is ON')
+  else:                           NARS.p_info('Option NoBIOS is OFF')
 
   sourceDir = filter_config.sourceDir
   sourceDir_rom_list = []
@@ -721,7 +690,7 @@ def create_copy_list(romMain_list, filter_config):
       if filename in sourceDir_rom_list and includeFlag:
         # If option NoBIOS is ON and the ROM name starts with '[BIOS]' then skip it
         if filter_config.option_NoBIOS and re.search('^\[BIOS\]', filename):
-          NARS.print_debug('NoBIOS is ON. Skipping ROM \'{0}\''.format(filename))
+          NARS.p_debug('NoBIOS is ON. Skipping ROM \'{0}\''.format(filename))
           continue
 
         # Only pick one ROM of the pclone list
@@ -927,9 +896,9 @@ def get_NoIntro_Main_PClone_list(filter_config):
       # --- Add new game to the list ---
       rom_raw_dict[romName] = romObject
   del tree
-  NARS.print_info('Total number of games {:5d}'.format(num_games))
-  NARS.print_info('Number of parents     {:5d}'.format(num_parents))
-  NARS.print_info('Number of clones      {:5d}'.format(num_clones))
+  NARS.p_info('Total number of games {:5d}'.format(num_games))
+  NARS.p_info('Number of parents     {:5d}'.format(num_parents))
+  NARS.p_info('Number of clones      {:5d}'.format(num_clones))
 
   # --- Create a parent-clone list ---
   rom_pclone_dict = {}
@@ -969,10 +938,10 @@ def get_NoIntro_Main_PClone_list(filter_config):
   # DEBUG: print parent-clone dictionary
   for key in rom_pclone_dict:
     romObj = rom_pclone_dict[key]
-    NARS.print_debug("Parent '" + romObj.baseName + "'")
+    NARS.p_debug("Parent '" + romObj.baseName + "'")
     if romObj.hasClones:
       for clone in romObj.clone_list:
-        NARS.print_debug(" Clone '" + clone + "'")
+        NARS.p_debug(" Clone '" + clone + "'")
 
   # --- Create ROM main list ---
   romMainList_list = []
@@ -1007,7 +976,7 @@ def get_directory_Main_PClone_list(filter_config):
   __debug_sourceDir_ROM_scanner = 0
   
   # --- Read all files in sourceDir ---
-  NARS.print_info('[Reading ROMs in source dir]')
+  NARS.p_info('[Reading ROMs in source dir]')
   sourceDir = filter_config.sourceDir
   romMainList_dict = {}
   num_ROMs_sourceDir = 0
@@ -1020,7 +989,7 @@ def get_directory_Main_PClone_list(filter_config):
       if __debug_sourceDir_ROM_scanner:
         print("  ROM       '" + romObject.fileName + "'")
         print("   baseName '" + romObject.baseName + "'")
-  NARS.print_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs')
+  NARS.p_info('Found ' + str(num_ROMs_sourceDir) + ' ROMs')
   
   # --- Create a parent/clone list based on the baseName of the ROM ---
   pclone_ROM_dict = {}  # Key is ROM basename
@@ -1097,7 +1066,7 @@ def get_set_double_sorted(PClone_obj):
 #  PClone.parent    [int list]
 #
 def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
-  NARS.print_info('[Scoring and filtering ROMs]')
+  NARS.p_info('[Scoring and filtering ROMs]')
   __debug_main_ROM_list = 0
 
   upTag_list      = filter_config.filterUpTags
@@ -1232,10 +1201,10 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
 #
 def get_PClone_main_list(filter_config):
   if filter_config.NoIntro_XML is None:
-    NARS.print_info('Using directory listing')
+    NARS.p_info('Using directory listing')
     romMainList_list = get_directory_Main_PClone_list(filter_config)
   else:
-    NARS.print_info('Using No-Intro parent/clone DAT')
+    NARS.p_info('Using No-Intro parent/clone DAT')
     romMainList_list = get_NoIntro_Main_PClone_list(filter_config)
 
   return romMainList_list
@@ -1258,16 +1227,16 @@ def filter_ROMs(filter_config):
 # -----------------------------------------------------------------------------
 list_ljust = 16
 def do_list_filters():
-  NARS.print_info('\033[1m[Listing configuration file]\033[0m')
+  NARS.p_info('\033[1m[Listing configuration file]\033[0m')
   tree = NARS.XML_read_file_ElementTree(__config_configFileName, "Parsing configuration XML file")
 
   # --- This iterates through the collections ---
   root = tree.getroot()
   for collection in root:
     # print collection.tag, collection.attrib;
-    NARS.print_info('\033[93m{ROM Collection}\033[0m')
-    NARS.print_info('Short name'.ljust(list_ljust) + collection.attrib['shortname'])
-    NARS.print_info('Name'.ljust(list_ljust) + collection.attrib['name'])
+    NARS.p_info('\033[93m{ROM Collection}\033[0m')
+    NARS.p_info('Short name'.ljust(list_ljust) + collection.attrib['shortname'])
+    NARS.p_info('Name'.ljust(list_ljust) + collection.attrib['name'])
 
     # --- For every collection, iterate over the elements ---
     for collectionEL in collection:
@@ -1276,7 +1245,7 @@ def do_list_filters():
       elif collectionEL.tag == 'dest':
         NARS.print_verb('Destination'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'NoIntroDat' and collectionEL.text is not None:
-        NARS.print_info('NoIntroDat'.ljust(list_ljust) + collectionEL.text)
+        NARS.p_info('NoIntroDat'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
         NARS.print_verb('filterUpTags'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
@@ -1292,10 +1261,10 @@ def do_list_filters():
 # List of NoIntro XML file.
 #
 def do_list_nointro(filter_name):
-  NARS.print_info('\033[1m[Listing No-Intro XML DAT]\033[0m')
-  NARS.print_info("Filter name '{:}'".format(filter_name))
+  NARS.p_info('\033[1m[Listing No-Intro XML DAT]\033[0m')
+  NARS.p_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
-  filename = filter_config.NoIntro_XML
+  filename = filter_config['NoIntroDat']
   if filename is None:
     print('\033[31m[ERROR]\033[0m Filter "{0}", No-Intro DAT not configured!'.format(filter_name))
     sys.exit(10)
@@ -1336,16 +1305,16 @@ def do_list_nointro(filter_name):
           region_str = game_child.attrib['region']
     # ~~~ Print ~~~
     if game_kind == 'Parent':
-      NARS.print_info('\033[100m{:>6}  {:<{ljustNum}} {:}\033[0m'.format(
+      NARS.p_info('\033[100m{:>6}  {:<{ljustNum}} {:}\033[0m'.format(
         game_kind, game_EL.attrib['name'],  region_str, ljustNum=max_game_str_length))
     else:
-      NARS.print_info('{:>6}  {:<{ljustNum}} {:}'.format(
+      NARS.p_info('{:>6}  {:<{ljustNum}} {:}'.format(
         game_kind, game_EL.attrib['name'], region_str, ljustNum=max_game_str_length))
 
-  NARS.print_info('[Report]')
-  NARS.print_info('Number of games   {:5d}'.format(num_games))
-  NARS.print_info('Number of parents {:5d}'.format(num_parents))
-  NARS.print_info('Number of clones  {:5d}'.format(num_clones))
+  NARS.p_info('[Report]')
+  NARS.p_info('Number of games   {:5d}'.format(num_games))
+  NARS.p_info('Number of parents {:5d}'.format(num_parents))
+  NARS.p_info('Number of clones  {:5d}'.format(num_clones))
   if num_games != num_parents + num_clones:
     NARS.print_error('[ERROR] num_games != num_parents + num_clones')
     sys.exit(10)
@@ -1354,16 +1323,16 @@ def do_list_nointro(filter_name):
 # Checks ROMs in sourceDir against NoIntro XML file.
 #
 def do_check_nointro(filter_name):
-  NARS.print_info('[Checking ROMs against No-Intro XML DAT]')
-  NARS.print_info("Filter name '{:}'".format(filter_name))
+  NARS.p_info('[Checking ROMs against No-Intro XML DAT]')
+  NARS.p_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
 
   # --- Get parameters and check for errors
-  sourceDir = filter_config.sourceDir
+  sourceDir = filter_config['Source']
   NARS.have_dir_or_abort(sourceDir, 'sourceDir')
 
   # --- Load No-Intro DAT
-  XML_filename = filter_config.NoIntro_XML
+  XML_filename = filter_config['NoIntroDat']
   if XML_filename is None:
     print_error('[ERROR] No-Intro XML DAT not configured for this filer.')
     sys.exit(10)
@@ -1381,7 +1350,7 @@ def do_check_nointro(filter_name):
       nointro_roms.append(game_attrib['name'] + '.zip')
 
   # Check how many ROMs we have in sourceDir and the DAT
-  NARS.print_info('[Scanning ROMs in sourceDir]')
+  NARS.p_info('[Scanning ROMs in sourceDir]')
   have_roms = 0
   unknown_roms = 0
   file_list = []
@@ -1394,33 +1363,33 @@ def do_check_nointro(filter_name):
         NARS.print_verb('\033[32m{   Have ROM}\033[0m  ' + file)
       else:
         unknown_roms += 1
-        NARS.print_info('\033[33m{Unknown ROM}\033[0m  ' + file)
+        NARS.p_info('\033[33m{Unknown ROM}\033[0m  ' + file)
 
   # Check how many ROMs we have in the DAT not in sourceDir
   missing_roms = 0
   for game in sorted(nointro_roms):
     filename = sourceDir + game
     if not os.path.isfile(filename):
-      NARS.print_info('\033[31m{Missing ROM}\033[0m  ' + game)
+      NARS.p_info('\033[31m{Missing ROM}\033[0m  ' + game)
       missing_roms += 1
 
-  NARS.print_info('[Report]')
-  NARS.print_info('Files in sourceDir  {:5d}'.format(len(file_list)))
-  NARS.print_info('Games in DAT        {:5d}'.format(num_games))
-  NARS.print_info('Have ROMs           {:5d}'.format(have_roms))
-  NARS.print_info('Missing ROMs        {:5d}'.format(missing_roms))
-  NARS.print_info('Unknown ROMs        {:5d}'.format(unknown_roms))
+  NARS.p_info('[Report]')
+  NARS.p_info('Files in sourceDir  {:5d}'.format(len(file_list)))
+  NARS.p_info('Games in DAT        {:5d}'.format(num_games))
+  NARS.p_info('Have ROMs           {:5d}'.format(have_roms))
+  NARS.p_info('Missing ROMs        {:5d}'.format(missing_roms))
+  NARS.p_info('Unknown ROMs        {:5d}'.format(unknown_roms))
 
 #
 # Makes a histograms of the tags of the ROMs in sourceDir
 #
 def do_taglist(filter_name):
-  NARS.print_info('[Listing tags]')
-  NARS.print_info("Filter name '{:}'".format(filter_name))
+  NARS.p_info('[Listing tags]')
+  NARS.p_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
   source_dir = filter_config.sourceDir
   NARS.have_dir_or_abort(source_dir, 'sourceDir')
-  NARS.print_info("Source directory '{:}'".format(source_dir))
+  NARS.p_info("Source directory '{:}'".format(source_dir))
 
   # Traverse directory, for every file extract properties, and add them to the
   # dictionary.
@@ -1444,17 +1413,17 @@ def do_taglist(filter_name):
   # This works on Python 3
   sorted_properties_dic = ((k, properties_dic[k]) for k in sorted(properties_dic, key=properties_dic.get, reverse=False))
     
-  NARS.print_info('[Tag histogram]')
+  NARS.p_info('[Tag histogram]')
   for key in sorted_properties_dic:
-    NARS.print_info('{:6d}'.format(key[1]) + '  ' + key[0])
+    NARS.p_info('{:6d}'.format(key[1]) + '  ' + key[0])
 
 #
 # Applies filter and prints filtered parent/clone list, ROMs you have, etc., in a
 # nice format.
 #
 def do_check(filter_name):
-  NARS.print_info('[Check-filter ROM]')
-  NARS.print_info("Filter name '{:}'".format(filter_name))
+  NARS.p_info('[Check-filter ROM]')
+  NARS.p_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
 
   # --- Filter ROMs ---
@@ -1475,7 +1444,7 @@ def do_check(filter_name):
   num_include_roms = 0
   num_exclude_roms = 0
   NARS.have_dir_or_abort(filter_config.sourceDir, 'sourceDir')
-  NARS.print_info("[List of scored parent/clone ROM sets]")
+  NARS.p_info("[List of scored parent/clone ROM sets]")
   for index_main in range(len(romMainList_list)):
     rom_object = romMainList_list[index_main]
     for index in range(len(rom_object.filenames)):
@@ -1509,44 +1478,44 @@ def do_check(filter_name):
       # --- Print ---
       # ~ Compact way ~
 #      if index == 0:
-#        NARS.print_info('\033[100m{0}\033[0m'.format(rom_object.setName.ljust(max_ROMSetName_width)) +
+#        NARS.p_info('\033[100m{0}\033[0m'.format(rom_object.setName.ljust(max_ROMSetName_width)) +
 #                        ' {:3d} '.format(rom_object.scores[index]) +
 #                        haveFlag + ' ' +  excludeFlag + ' ' + parentFlag + ' ' + copyFlag + '  ' +
 #                        rom_object.filenames[index])
 #      else:
-#        NARS.print_info(' '.rjust(max_ROMSetName_width) +
+#        NARS.p_info(' '.rjust(max_ROMSetName_width) +
 #                        ' {:3d} '.format(rom_object.scores[index]) +
 #                        haveFlag + ' ' +  excludeFlag + ' ' + parentFlag + ' ' + copyFlag + '  ' +
 #                        rom_object.filenames[index])
       # ~ Wide way ~
       if index == 0:
-        NARS.print_info('\033[7m{0}\033[0m'.format(rom_object.setName))
-      NARS.print_info(' {:3d} '.format(rom_object.scores[index]) +
+        NARS.p_info('\033[7m{0}\033[0m'.format(rom_object.setName))
+      NARS.p_info(' {:3d} '.format(rom_object.scores[index]) +
                       haveFlag + ' ' +  excludeFlag + ' ' + parentFlag + ' ' + copyFlag + '  ' +
                       rom_object.filenames[index])
 
-  NARS.print_info('[Report]')
-  NARS.print_info('Parents  {:5d}'.format(num_parents))
-  NARS.print_info('Clones   {:5d}'.format(num_clones))
-  NARS.print_info('ROMs     {:5d}'.format(num_roms))
-  NARS.print_info('Have     {:5d}'.format(num_have_roms))
-  NARS.print_info('Miss     {:5d}'.format(num_miss_roms))
-  NARS.print_info('Include  {:5d}'.format(num_include_roms))
-  NARS.print_info('Exclude  {:5d}'.format(num_exclude_roms))
+  NARS.p_info('[Report]')
+  NARS.p_info('Parents  {:5d}'.format(num_parents))
+  NARS.p_info('Clones   {:5d}'.format(num_clones))
+  NARS.p_info('ROMs     {:5d}'.format(num_roms))
+  NARS.p_info('Have     {:5d}'.format(num_have_roms))
+  NARS.p_info('Miss     {:5d}'.format(num_miss_roms))
+  NARS.p_info('Include  {:5d}'.format(num_include_roms))
+  NARS.p_info('Exclude  {:5d}'.format(num_exclude_roms))
 
 #
 #   Applies filter and updates (copies) ROMs
 #
 def do_update(filter_name):
-  NARS.print_info('[Copy/Update ROMs]')
-  NARS.print_info("Filter name '{:}'".format(filter_name))
+  NARS.p_info('[Copy/Update ROMs]')
+  NARS.p_info("Filter name '{:}'".format(filter_name))
   filter_config = get_Filter_from_Config(filter_name)
   sourceDir = filter_config.sourceDir
   destDir   = filter_config.destDir
   NARS.have_dir_or_abort(sourceDir, 'sourceDir')
   NARS.have_dir_or_abort(destDir, 'destDir')
-  NARS.print_info("Source directory      '{:}'".format(sourceDir))
-  NARS.print_info("Destination directory '{:}'".format(destDir))
+  NARS.p_info("Source directory      '{:}'".format(sourceDir))
+  NARS.p_info("Destination directory '{:}'".format(destDir))
 
   # --- Filter ROMs ---
   romMainList_list = filter_ROMs(filter_config)
@@ -1574,8 +1543,8 @@ def do_update(filter_name):
 # Checks for missing artwork and prints a report
 #
 def do_checkArtwork(filter_name):
-  NARS.print_info('[Check-ArtWork]')
-  NARS.print_info("Filter name '{:}'".format(filter_name))
+  NARS.p_info('[Check-ArtWork]')
+  NARS.p_info("Filter name '{:}'".format(filter_name))
 
   # --- Get configuration for the selected filter and check for errors ---
   filter_config = get_Filter_from_Config(filter_name)
@@ -1587,10 +1556,10 @@ def do_checkArtwork(filter_name):
   NARS.have_dir_or_abort(destDir, 'destDir')
   NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir')
   NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir')
-  NARS.print_info("Source directory        '{:}'".format(source_dir))
-  NARS.print_info("Destination directory   '{:}'".format(destDir))
-  NARS.print_info("Thumbs Source directory '{:}'".format(thumbsSourceDir))
-  NARS.print_info("Fanart Source directory '{:}'".format(fanartSourceDir))
+  NARS.p_info("Source directory        '{:}'".format(source_dir))
+  NARS.p_info("Destination directory   '{:}'".format(destDir))
+  NARS.p_info("Thumbs Source directory '{:}'".format(thumbsSourceDir))
+  NARS.p_info("Fanart Source directory '{:}'".format(fanartSourceDir))
 
   # --- Obtain main parent/clone list, either based on DAT or filelist ---
   romMainList_list = get_PClone_main_list(filter_config)
@@ -1606,7 +1575,7 @@ def do_checkArtwork(filter_name):
   artwork_copy_dic = optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config)
 
   # --- Print list in alphabetical order ---
-  NARS.print_info('[Artwork report]')
+  NARS.p_info('[Artwork report]')
   num_original_thumbs = 0
   num_subst_thumbs    = 0
   num_missing_thumbs  = 0
@@ -1614,7 +1583,7 @@ def do_checkArtwork(filter_name):
   num_subst_fanart    = 0
   num_missing_fanart  = 0
   for rom_base_name in sorted(roms_destDir_list):
-    NARS.print_info('\033[7m{0}\033[0m'.format(rom_base_name + ".zip"))
+    NARS.p_info('\033[7m{0}\033[0m'.format(rom_base_name + ".zip"))
     artwork_dic = artwork_copy_dic[rom_base_name]
 
     # --- Check thumb ---
@@ -1630,7 +1599,7 @@ def do_checkArtwork(filter_name):
       else:
         thumb_flag = '\033[32mHAVE\033[0m SUBST    THUMB '
         num_subst_thumbs += 1
-    NARS.print_info('{0}  {1}'.format(thumb_flag, artwork_name))
+    NARS.p_info('{0}  {1}'.format(thumb_flag, artwork_name))
 
     # --- Check fanart ---
     if artwork_dic['fanart'] is None:
@@ -1645,20 +1614,20 @@ def do_checkArtwork(filter_name):
       else:
         thumb_flag = '\033[32mHAVE\033[0m SUBST    FANART'
         num_subst_fanart += 1
-    NARS.print_info('{0}  {1}'.format(thumb_flag, artwork_name))
+    NARS.p_info('{0}  {1}'.format(thumb_flag, artwork_name))
 
-  NARS.print_info('[Report]')
-  NARS.print_info('ROMs in destDir  {:5d}'.format(len(roms_destDir_list)))
-  NARS.print_info('Have    Thumbs   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_thumbs + num_subst_thumbs,
+  NARS.p_info('[Report]')
+  NARS.p_info('ROMs in destDir  {:5d}'.format(len(roms_destDir_list)))
+  NARS.p_info('Have    Thumbs   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_thumbs + num_subst_thumbs,
                                                                                 num_original_thumbs, num_subst_thumbs))
-  NARS.print_info('Missing Thumbs   {:5d}'.format(num_missing_thumbs))
-  NARS.print_info('Have    Fanart   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_fanart + num_subst_fanart,
+  NARS.p_info('Missing Thumbs   {:5d}'.format(num_missing_thumbs))
+  NARS.p_info('Have    Fanart   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_fanart + num_subst_fanart,
                                                                                 num_original_fanart, num_subst_fanart))
-  NARS.print_info('Missing Fanart   {:5d}'.format(num_missing_fanart))
+  NARS.p_info('Missing Fanart   {:5d}'.format(num_missing_fanart))
 
 def do_update_artwork(filter_name):
-  NARS.print_info('[Updating/copying ArtWork]')
-  NARS.print_info("Filter name '{:}'".format(filter_name))
+  NARS.p_info('[Updating/copying ArtWork]')
+  NARS.p_info("Filter name '{:}'".format(filter_name))
 
   # --- Get configuration for the selected filter and check for errors
   filter_config = get_Filter_from_Config(filter_name)
@@ -1674,12 +1643,12 @@ def do_update_artwork(filter_name):
   NARS.have_dir_or_abort(fanart_source_dir, 'fanart_source_dir')
   NARS.have_dir_or_abort(thumbs_dest_dir, 'thumbs_dest_dir')
   NARS.have_dir_or_abort(fanart_dest_dir, 'fanart_dest_dir')
-  NARS.print_info("Source directory             '{:}'".format(source_dir))
-  NARS.print_info("Destination directory        '{:}'".format(dest_dir))
-  NARS.print_info("Thumbs Source directory      '{:}'".format(thumbs_source_dir))
-  NARS.print_info("Fanart Source directory      '{:}'".format(fanart_source_dir))
-  NARS.print_info("Thumbs Destination directory '{:}'".format(thumbs_dest_dir))
-  NARS.print_info("Fanart Destination directory '{:}'".format(fanart_dest_dir))
+  NARS.p_info("Source directory             '{:}'".format(source_dir))
+  NARS.p_info("Destination directory        '{:}'".format(dest_dir))
+  NARS.p_info("Thumbs Source directory      '{:}'".format(thumbs_source_dir))
+  NARS.p_info("Fanart Source directory      '{:}'".format(fanart_source_dir))
+  NARS.p_info("Thumbs Destination directory '{:}'".format(thumbs_dest_dir))
+  NARS.p_info("Fanart Destination directory '{:}'".format(fanart_dest_dir))
 
   # --- Obtain main parent/clone list, either based on DAT or filelist ---
   romMainList_list = get_PClone_main_list(filter_config)
@@ -1756,13 +1725,13 @@ args = parser.parse_args()
 if args.verbose:
   if args.verbose == 1:
     NARS.change_log_level(NARS.Log.verb)
-    NARS.print_info('Verbosity level set to VERBOSE')
+    NARS.p_info('Verbosity level set to VERBOSE')
   elif args.verbose == 2:
     NARS.change_log_level(NARS.Log.vverb)
-    NARS.print_info('Verbosity level set to VERY VERBOSE')
+    NARS.p_info('Verbosity level set to VERY VERBOSE')
   elif args.verbose >= 3:
     NARS.change_log_level(NARS.Log.debug)
-    NARS.print_info('Verbosity level set to DEBUG')
+    NARS.p_info('Verbosity level set to DEBUG')
 if args.log:
   __prog_option_log = 1
 if args.logto:
@@ -1789,7 +1758,7 @@ if command == 'list-nointro' or command == 'check-nointro' or \
     sys.exit(10)
 
 # --- Read configuration file ---
-configuration = parse_File_Config()
+parse_File_Config()
 
 # --- Positional arguments that don't require a filterName
 if   command == 'list':           do_list_filters()

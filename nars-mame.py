@@ -283,12 +283,6 @@ def trim_driver_string(driver_str):
 
     return driver_str
 
-def trim_list(input_list):
-  for index, item in enumerate(input_list):
-    input_list[index] = item.strip()
-
-  return input_list
-
 # Wildcard expansion range
 min_year = 1970
 max_year = 2016

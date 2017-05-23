@@ -48,7 +48,7 @@ __software_version = '0.2.0_alpha1'
 # -----------------------------------------------------------------------------
 # DEBUG functions
 # -----------------------------------------------------------------------------
-def dumpclean(obj):
+def debug_dumpclean(obj):
   if type(obj) == dict:
     for k, v in obj.items():
       if hasattr(v, '__iter__'):
@@ -111,22 +111,22 @@ def pprint(level, print_str):
       f_log.write(print_str) # python will convert \n to os.linesep
 
 # --- Some useful function overloads
-def print_error(print_str):
+def p_error(print_str):
   pprint(Log.error, print_str)
 
-def print_warn(print_str):
+def p_warn(print_str):
   pprint(Log.warn, print_str)
 
-def print_info(print_str):
+def p_info(print_str):
   pprint(Log.info, print_str)
 
-def print_verb(print_str):
+def p_verb(print_str):
   pprint(Log.verb, print_str)
 
-def print_vverb(print_str):
+def p_vverb(print_str):
   pprint(Log.vverb, print_str)
 
-def print_debug(print_str):
+def p_debug(print_str):
   pprint(Log.debug, print_str)
 
 # -----------------------------------------------------------------------------
@@ -134,22 +134,28 @@ def print_debug(print_str):
 # -----------------------------------------------------------------------------
 # Remove blank characters from string, at the beginning and the end.
 # If length of string is 0 after stripping then None is returned.
-def strip_string(string):
+def util_strip_string(string):
   str = string.strip(' \n\r\t')
   if len(str) < 1:
     str = None
 
   return str
 
+def util_trim_str_list(input_list):
+  for index, item in enumerate(input_list):
+    input_list[index] = item.strip()
+
+  return input_list
+
+# Adds a trailing '/' to directory names if not already present
+def util_sanitize_dir_name(dirName_str):
+  if dirName_str[-1] != '/': dirName_str = dirName_str + '/'
+
+  return dirName_str
+
 # -----------------------------------------------------------------------------
 # Filesystem low-level functions
 # -----------------------------------------------------------------------------
-# Adds a trailing '/' to directory names if not already present
-def sanitize_dir_name(dirName_str):
-  if dirName_str[-1] != '/':
-    dirName_str = dirName_str + '/'
-
-  return dirName_str
 
 # This function either succeeds or aborts the program. Check if file exists
 # before calling this.
