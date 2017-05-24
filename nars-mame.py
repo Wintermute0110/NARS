@@ -2934,14 +2934,14 @@ MAME_ARTWORK_LIST = [
 #
 def do_check_Artwork(filterName):
     NARS.print_info('[Check-ArtWork]')
-    NARS.print_info('Filter name = ' + filterName)
+    NARS.p_info('Filter name {0}'.format(filter_name))
 
     # --- Get configuration for the selected filter and check for errors ---
     filter_config = get_Filter_from_Config(filterName)
     destDir = filter_config['DestinationROMs']
     NARS.have_dir_or_abort(destDir, 'DestinationROMs')
 
-    # --- Check for missing paths ---
+    # --- Check for missing artwork paths ---
     # >> If source/dest path is '', disable that asset.
     # >> If source/dest path does not exist, disable that asset.
     enabled_asset_list = [False] * len(MAME_ARTWORK_LIST)

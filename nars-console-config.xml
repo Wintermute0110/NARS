@@ -18,34 +18,34 @@
   <Source     >/home/kodi/roms/roms-nintendo-snes/</Source>
   <Destination>/home/kodi/NUC-remote/ROMs/roms-nintendo-snes/</Destination>
    -->
-  <Source     >./source/</Source>
-  <Destination>./dest/</Destination>
+  <SourceROMs     >./source/</SourceROMs>
+  <DestinationROMs>./dest/</DestinationROMs>
 
-  <SourceTitles    >./artwork-test-source/titles/</SourceTitles>
-  <SourceSnaps     >./artwork-test-source/snaps/</SourceSnaps>
-  <SourceFanarts   >./artwork-test-source/fanarts/</SourceFanarts>
-  <SourceBanners   >./artwork-test-source/banners/</SourceBanners>
-  <SourceClearlogos>./artwork-test-source/clearlogos/</SourceClearlogos>
-  <SourceBoxfronts >./artwork-test-source/boxfronts/</SourceBoxfronts>
-  <SourceBoxbacks  >./artwork-test-source/boxbacks/</SourceBoxbacks>
-  <SourceCartridges>./artwork-test-source/cartridges/</SourceCartridges>
-  <SourceFlyers    >./artwork-test-source/flyers/</SourceFlyers>
-  <SourceMaps      >./artwork-test-source/maps/</SourceMaps>
-  <SourceManuals   >./artwork-test-source/manuals/</SourceManuals>
-  <SourceTrailers  >./artwork-test-source/trailers/</SourceTrailers>
+  <SourceTitles    >./artwork-source/titles/</SourceTitles>
+  <SourceSnaps     >./artwork-source/snaps/</SourceSnaps>
+  <SourceFanarts   ></SourceFanarts>
+  <SourceBanners   >./artwork-source/banners/</SourceBanners>
+  <SourceClearlogos>./artwork-source/clearlogos/</SourceClearlogos>
+  <SourceBoxfronts >./artwork-source/boxfronts/</SourceBoxfronts>
+  <SourceBoxbacks  >./artwork-source/boxbacks/</SourceBoxbacks>
+  <SourceCartridges>./artwork-source/cartridges/</SourceCartridges>
+  <SourceFlyers    ></SourceFlyers>
+  <SourceMaps      ></SourceMaps>
+  <SourceManuals   ></SourceManuals>
+  <SourceTrailers  ></SourceTrailers>
 
-  <DestinationTitles    >./artwork-test-dest/titles/</DestinationTitles>
-  <DestinationSnaps     >./artwork-test-dest/snaps/</DestinationSnaps>
-  <DestinationFanarts   >./artwork-test-dest/fanarts/</DestinationFanarts>
-  <DestinationBanners   >./artwork-test-dest/banners/</DestinationBanners>
-  <DestinationClearlogos>./artwork-test-dest/clearlogos/</DestinationClearlogos>
-  <DestinationBoxfronts >./artwork-test-dest/boxfront/</DestinationBoxfronts>
-  <DestinationBoxbacks  >./artwork-test-dest/boxback/</DestinationBoxbacks>
-  <DestinationCartridges>./artwork-test-dest/cartridges/</DestinationCartridges>
-  <DestinationFlyers    >./artwork-test-dest/flyers/</DestinationFlyers>
-  <DestinationMaps      >./artwork-test-dest/manuals/</DestinationMaps>
-  <DestinationManuals   >./artwork-test-dest/manuals/</DestinationManuals>
-  <DestinationTrailers  >./artwork-test-dest/trailers/</DestinationTrailers>
+  <DestinationTitles    >./artwork-dest/titles/</DestinationTitles>
+  <DestinationSnaps     >./artwork-dest/snaps/</DestinationSnaps>
+  <DestinationFanarts   ></DestinationFanarts>
+  <DestinationBanners   >./artwork-dest/banners/</DestinationBanners>
+  <DestinationClearlogos>./artwork-dest/clearlogos/</DestinationClearlogos>
+  <DestinationBoxfronts >./artwork-dest/boxfront/</DestinationBoxfronts>
+  <DestinationBoxbacks  >./artwork-dest/boxback/</DestinationBoxbacks>
+  <DestinationCartridges>./artwork-dest/cartridges/</DestinationCartridges>
+  <DestinationFlyers    ></DestinationFlyers>
+  <DestinationMaps      ></DestinationMaps>
+  <DestinationManuals   ></DestinationManuals>
+  <DestinationTrailers  ></DestinationTrailers>
 </collection>
 
 </ROMcollections>

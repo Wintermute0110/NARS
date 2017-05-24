@@ -38,6 +38,24 @@ __prog_option_clean_NFOs = 0
 __prog_option_clean_ArtWork = 0
 __prog_option_sync = 0
 
+# -------------------------------------------------------------------------------------------------
+A_NAME   = 0
+A_SOURCE = 1
+A_DEST   = 2
+NARS_ARTWORK_LIST = [
+    ('Titles',     'SourceTitles',     'DestinationTitles'),
+    ('Snaps',      'SourceSnaps',      'DestinationSnaps'),
+    ('Fanarts',    'SourceFanarts',    'DestinationFanarts'),
+    ('Banners',    'SourceBanners',    'DestinationBanners'),
+    ('Clearlogos', 'SourceClearlogos', 'DestinationClearlogos'),
+    ('Boxfronts',  'SourceBoxfronts',  'DestinationBoxfronts'),
+    ('Boxbacks',   'SourceBoxbacks',   'DestinationBoxbacks'),
+    ('Cartridges', 'SourceCartridges', 'DestinationCartridges'),
+    ('Flyers',     'SourceFlyers',     'DestinationFlyers'),
+    ('Manuals',    'SourceManuals',    'DestinationManuals'),
+    ('Trailers',   'SourceTrailers',   'DestinationTrailers')
+]
+
 # -----------------------------------------------------------------------------
 # Configuration file stuff
 # -----------------------------------------------------------------------------
@@ -55,7 +73,7 @@ class Config:
             'excludeTags'      : '',
             'excludeGame'      : '',
 
-            'Source'           : '', 'Destination'    : '',
+            'SourceROMs'       : '', 'DestinationROMs' : '',
 
             'SourceTitles'     : '', 'DestinationTitles'     : '',
             'SourceSnaps'      : '', 'DestinationSnaps'      : '',
@@ -111,7 +129,7 @@ def parse_File_Config():
                 if filter_child.text is None: continue
                 
                 # >> Directory tags
-                if filter_child.tag in ['Source', 'Destination',
+                if filter_child.tag in ['SourceROMs', 'DestinationROMs',
                                         'SourceTitles', 'SourceSnaps', 'SourceFanarts', 'SourceBanners',
                                         'SourceClearlogos', 'SourceBoxfronts', 'SourceBoxbacks', 'SourceCartridges',
                                         'SourceFlyers', 'SourceMaps', 'SourceManuals', 'SourceTrailers',
@@ -301,7 +319,7 @@ def update_ROM_list(rom_list, sourceDir, destDir):
       if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:5.2f}% '.format(percentage))
       num_updated_roms += 1
-      NARS.print_verb('<Updated> ' + romFileName)
+      NARS.p_verb('<Updated> ' + romFileName)
     elif ret == -1:
       if NARS.log_level >= NARS.Log.verb:
         sys.stdout.write('{:5.2f}% '.format(percentage))
@@ -472,7 +490,7 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
         if NARS.log_level >= NARS.Log.verb:
           sys.stdout.write('{:5.2f}% '.format(percentage))
         num_updated_thumbs += 1
-        NARS.print_verb('<Updated Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
+        NARS.p_verb('<Updated Thumb > {0} ---> {1}'.format(art_baseName, rom_baseName))
       else:
         print_error('Wrong value returned by copy_ArtWork_file()')
         sys.exit(10)
@@ -495,7 +513,7 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
         if NARS.log_level >= NARS.Log.verb:
           sys.stdout.write('{:5.2f}% '.format(percentage))
         num_updated_fanart += 1
-        NARS.print_verb('<Updated Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
+        NARS.p_verb('<Updated Fanart> {0} ---> {1}'.format(art_baseName, rom_baseName))
       else:
         print_error('Wrong value returned by copy_ArtWork_file()')
         sys.exit(10)
@@ -511,6 +529,7 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
   NARS.p_info('Updated fanart  {:5d}'.format(num_updated_fanart))
   NARS.p_info('Missing fanart  {:5d}'.format(num_missing_fanart))
 
+#
 # Artwork may be available for some of the parent/clones in the ROM set, but
 # not for the filtered ROMs. This function test against alll
 #
@@ -527,98 +546,56 @@ def update_ArtWork_files(filter_config, artwork_copy_dic):
 # Checking if artwork was replaced is easy: 
 #   if romName is     equal to fileBaseName, it is original artwork.
 #   if romName is not equal to fileBaseName, it is substituted artwork.
+#
 def optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config):
-  __debug_optimize_ArtWork = 0
+    __debug_optimize_ArtWork = 1
 
-  NARS.p_info('[Optimising ArtWork file list]')
-  thumbsSourceDir = filter_config.thumbsSourceDir
-  thumbsDestDir   = filter_config.thumbsDestDir
-  fanartSourceDir = filter_config.fanartSourceDir
-  fanartDestDir   = filter_config.fanartDestDir
+    NARS.p_info('[Optimising ArtWork file list]')
+    thumbsSourceDir = filter_config.thumbsSourceDir
+    thumbsDestDir   = filter_config.thumbsDestDir
+    fanartSourceDir = filter_config.fanartSourceDir
+    fanartDestDir   = filter_config.fanartDestDir
 
-  # --- Check that directories exist ---
-  if not os.path.isdir(thumbsSourceDir):
-    NARS.print_error('thumbsSourceDir not found ' + thumbsSourceDir)
-    sys.exit(10)
-  if not os.path.isdir(thumbsDestDir):
-    NARS.print_error('thumbsDestDir not found ' + thumbsDestDir)
-    sys.exit(10)
-  if not os.path.isdir(fanartSourceDir):
-    NARS.print_error('fanartSourceDir not found ' + fanartSourceDir)
-    sys.exit(10)
-  if not os.path.isdir(fanartDestDir):
-    NARS.print_error('fanartDestDir not found ' + fanartDestDir)
-    sys.exit(10)
+    # - For every ROM to be copied (filtered) check if ArtWork exists. If not,
+    #   try artwork of other ROMs in the parent/clone set.
+    artwork_copy_dic = {}
+    for rom_copy_item in sorted(roms_destDir_list):
+        artworkBaseName = rom_copy_item
+        ROMFullName = rom_copy_item + '.zip'
+        artwork_copy_dic[rom_copy_item] = { 'thumb': None, 'fanart' : None}
+        if __debug_optimize_ArtWork: 
+            print('{{Testing ROM}} {0}'.format(ROMFullName))
 
-  # - For every ROM to be copied (filtered) check if ArtWork exists. If not,
-  #   try artwork of other ROMs in the parent/clone set.
-  artwork_copy_dic = {}
-  for rom_copy_item in sorted(roms_destDir_list):
-    artworkBaseName = rom_copy_item
-    ROMFullName = rom_copy_item + '.zip'
-    artwork_copy_dic[rom_copy_item] = { 'thumb': None, 'fanart' : None}
-    if __debug_optimize_ArtWork: 
-      print('{{Testing ROM}} {0}'.format(ROMFullName))
-    
-    # --- Check Thumbs ---
-    # First check if we have the original artwork
-    thumbPath = thumbsSourceDir + artworkBaseName + '.png'
-    if __debug_optimize_ArtWork: print('Testing original    thumb  {0}'.format(thumbPath))
-    if os.path.isfile(thumbPath):
-      if __debug_optimize_ArtWork: print('Found   original    thumb  {0}'.format(thumbPath))
-      artwork_copy_dic[rom_copy_item]['thumb'] = rom_copy_item
-    else:
-      # If not found walk through the pclone list
-      # Locate in which pClone object set the destDir ROM is
-      file = rom_copy_item + '.zip'
-      pclone_list = []
-      for pclone_obj in romMainList_list:
-        if file in pclone_obj.filenames:
-          pclone_list = pclone_obj.filenames
-          break
-      if len(pclone_list) == 0:
-        NARS.print_error('Logical error')
-        sys.exit(10)
-      # Check if artwork exists for every from of this set
-      for pclone_rom_full_name in pclone_list:
-        pclone_rom_base_name, ext = os.path.splitext(pclone_rom_full_name)
-        thumbPath = thumbsSourceDir + pclone_rom_base_name + '.png'
-        if __debug_optimize_ArtWork: print('Testing substituted thumb  {0}'.format(thumbPath))
+        # --- Check Thumbs ---
+        # First check if we have the original artwork
+        thumbPath = thumbsSourceDir + artworkBaseName + '.png'
+        if __debug_optimize_ArtWork: print('Testing original    thumb  {0}'.format(thumbPath))
         if os.path.isfile(thumbPath):
-          if __debug_optimize_ArtWork: print('Found   substituted thumb  {0}'.format(thumbPath))
-          artwork_copy_dic[rom_copy_item]['thumb'] = pclone_rom_base_name
-          break
+            if __debug_optimize_ArtWork: print('Found   original    thumb  {0}'.format(thumbPath))
+            artwork_copy_dic[rom_copy_item]['thumb'] = rom_copy_item
+        else:
+            # If not found walk through the pclone list
+            # Locate in which pClone object set the destDir ROM is
+            file = rom_copy_item + '.zip'
+            pclone_list = []
+            for pclone_obj in romMainList_list:
+                if file in pclone_obj.filenames:
+                    pclone_list = pclone_obj.filenames
+                    break
+            if len(pclone_list) == 0:
+                NARS.print_error('Logical error')
+                sys.exit(10)
+            # Check if artwork exists for every from of this set
+            for pclone_rom_full_name in pclone_list:
+                pclone_rom_base_name, ext = os.path.splitext(pclone_rom_full_name)
+                thumbPath = thumbsSourceDir + pclone_rom_base_name + '.png'
+                if __debug_optimize_ArtWork: print('Testing substituted thumb  {0}'.format(thumbPath))
+                if os.path.isfile(thumbPath):
+                    if __debug_optimize_ArtWork: print('Found   substituted thumb  {0}'.format(thumbPath))
+                    artwork_copy_dic[rom_copy_item]['thumb'] = pclone_rom_base_name
+                    break
 
-    # --- Check Fanart ---
-    # First check if we have the original artwork
-    thumbPath = fanartSourceDir + artworkBaseName + '.png'
-    if __debug_optimize_ArtWork: print('Testing original    fanart {0}'.format(thumbPath))
-    if os.path.isfile(thumbPath):
-      if __debug_optimize_ArtWork: print('Found   original    fanart {0}'.format(thumbPath))
-      artwork_copy_dic[rom_copy_item]['fanart'] = rom_copy_item
-    else:
-      # If not found walk through the pclone list
-      # Locate in which pClone object set the destDir ROM is
-      file = rom_copy_item + '.zip'
-      pclone_list = []
-      for pclone_obj in romMainList_list:
-        if file in pclone_obj.filenames:
-          pclone_list = pclone_obj.filenames
-          break
-      if len(pclone_list) == 0:
-        print_error('Logical error')
-        sys.exit(10)
-      # Check if artwork exists for every from of this set
-      for pclone_rom_full_name in pclone_list:
-        pclone_rom_base_name, ext = os.path.splitext(pclone_rom_full_name)
-        thumbPath = fanartSourceDir + pclone_rom_base_name + '.png'
-        if __debug_optimize_ArtWork: print('Testing substituted fanart {0}'.format(thumbPath))
-        if os.path.isfile(thumbPath):
-          if __debug_optimize_ArtWork: print('Found   substituted fanart {0}'.format(thumbPath))
-          artwork_copy_dic[rom_copy_item]['fanart'] = pclone_rom_base_name
-          break
-
-  return artwork_copy_dic
+    return artwork_copy_dic
 
 def clean_ArtWork_destDir(filter_config, artwork_copy_dic):
   NARS.p_info('[Cleaning ArtWork]')
@@ -863,7 +840,7 @@ def get_Tag_dic(romMainList_list):
 def get_NoIntro_Main_PClone_list(filter_config):
   __debug_parse_NoIntro_XML_Config = 0
   
-  XML_filename = filter_config.NoIntro_XML
+  XML_filename = filter_config['NoIntroDat']
   tree = NARS.XML_read_file_ElementTree(XML_filename, 'Parsing No-Intro XML DAT')
 
   # --- Raw list: literal information from the XML
@@ -1200,12 +1177,12 @@ def get_Scores_and_Filter(romMain_list, rom_Tag_dic, filter_config):
 # Gets main PClone ROM list, either using a No-Intro DAT or guessing by the ROMs in sourceDir
 #
 def get_PClone_main_list(filter_config):
-  if filter_config.NoIntro_XML is None:
-    NARS.p_info('Using directory listing')
-    romMainList_list = get_directory_Main_PClone_list(filter_config)
-  else:
+  if filter_config['NoIntroDat']:
     NARS.p_info('Using No-Intro parent/clone DAT')
     romMainList_list = get_NoIntro_Main_PClone_list(filter_config)
+  else:
+    NARS.p_info('Using directory listing')
+    romMainList_list = get_directory_Main_PClone_list(filter_config)
 
   return romMainList_list
 
@@ -1241,19 +1218,19 @@ def do_list_filters():
     # --- For every collection, iterate over the elements ---
     for collectionEL in collection:
       if collectionEL.tag == 'source':
-        NARS.print_verb('Source'.ljust(list_ljust) + collectionEL.text)
+        NARS.p_verb('Source'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'dest':
-        NARS.print_verb('Destination'.ljust(list_ljust) + collectionEL.text)
+        NARS.p_verb('Destination'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'NoIntroDat' and collectionEL.text is not None:
         NARS.p_info('NoIntroDat'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'filterUpTags' and collectionEL.text is not None:
-        NARS.print_verb('filterUpTags'.ljust(list_ljust) + collectionEL.text)
+        NARS.p_verb('filterUpTags'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'filterDownTags' and collectionEL.text is not None:
-        NARS.print_verb('filterDownTags'.ljust(list_ljust) + collectionEL.text)
+        NARS.p_verb('filterDownTags'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'includeTags' and collectionEL.text is not None:
-        NARS.print_verb('includeTags'.ljust(list_ljust) + collectionEL.text)
+        NARS.p_verb('includeTags'.ljust(list_ljust) + collectionEL.text)
       elif collectionEL.tag == 'excludeTags' and collectionEL.text is not None:
-        NARS.print_verb('excludeTags'.ljust(list_ljust) + collectionEL.text)
+        NARS.p_verb('excludeTags'.ljust(list_ljust) + collectionEL.text)
 
     # Test if all mandatory elements are there
 
@@ -1360,7 +1337,7 @@ def do_check_nointro(filter_name):
     if file.endswith(".zip"):
       if file in nointro_roms:
         have_roms += 1
-        NARS.print_verb('\033[32m{   Have ROM}\033[0m  ' + file)
+        NARS.p_verb('\033[32m{   Have ROM}\033[0m  ' + file)
       else:
         unknown_roms += 1
         NARS.p_info('\033[33m{Unknown ROM}\033[0m  ' + file)
@@ -1543,87 +1520,96 @@ def do_update(filter_name):
 # Checks for missing artwork and prints a report
 #
 def do_checkArtwork(filter_name):
-  NARS.p_info('[Check-ArtWork]')
-  NARS.p_info("Filter name '{:}'".format(filter_name))
+    NARS.p_info('[Check-ArtWork]')
+    NARS.p_info('Filter name {0}'.format(filter_name))
 
-  # --- Get configuration for the selected filter and check for errors ---
-  filter_config = get_Filter_from_Config(filter_name)
-  source_dir = filter_config.sourceDir
-  destDir = filter_config.destDir
-  thumbsSourceDir = filter_config.thumbsSourceDir
-  fanartSourceDir = filter_config.fanartSourceDir
-  NARS.have_dir_or_abort(source_dir, 'sourceDir')
-  NARS.have_dir_or_abort(destDir, 'destDir')
-  NARS.have_dir_or_abort(thumbsSourceDir, 'thumbsSourceDir')
-  NARS.have_dir_or_abort(fanartSourceDir, 'fanartSourceDir')
-  NARS.p_info("Source directory        '{:}'".format(source_dir))
-  NARS.p_info("Destination directory   '{:}'".format(destDir))
-  NARS.p_info("Thumbs Source directory '{:}'".format(thumbsSourceDir))
-  NARS.p_info("Fanart Source directory '{:}'".format(fanartSourceDir))
+    # --- Get configuration for the selected filter and check for errors ---
+    filter_config = get_Filter_from_Config(filter_name)
+    source_dir = filter_config['SourceROMs']
+    destDir    = filter_config['DestinationROMs']
+    NARS.have_dir_or_abort(source_dir, 'sourceDir')
+    NARS.have_dir_or_abort(destDir, 'destDir')
+    NARS.p_info("Source directory        '{:}'".format(source_dir))
+    NARS.p_info("Destination directory   '{:}'".format(destDir))
 
-  # --- Obtain main parent/clone list, either based on DAT or filelist ---
-  romMainList_list = get_PClone_main_list(filter_config)
+    # --- Check for missing artwork paths ---
+    # >> If source/dest path is '', disable that asset.
+    # >> If source/dest path does not exist, disable that asset.
+    enabled_asset_list = [False] * len(NARS_ARTWORK_LIST)
+    for index, item in enumerate(NARS_ARTWORK_LIST):
+        asset_name = item[A_NAME]
+        source_dir = filter_config[item[A_SOURCE]]
+        dest_dir   = filter_config[item[A_DEST]]
+        NARS.p_info('Checking {0} directories'.format(asset_name))
+        SourceConfigured   = True if source_dir else False
+        DestConfigured     = True if dest_dir else False
+        SourceExists       = True if os.path.isdir(source_dir) else False
+        DestExists         = True if os.path.isdir(dest_dir) else False
+        enabled_asset_list[index] = True if (SourceConfigured and DestConfigured and \
+                                             SourceExists and DestExists) else False
 
-  # --- Create a list of ROMs in destDir ---
-  roms_destDir_list = []
-  for file in os.listdir(destDir):
-    if file.endswith(".zip"):
-      thisFileName, thisFileExtension = os.path.splitext(file)
-      roms_destDir_list.append(thisFileName)
+    # --- Obtain main parent/clone list, either based on DAT or source_dir file list ---
+    romMainList_list = get_PClone_main_list(filter_config)
 
-  # --- Replace missing artwork for alternative artwork in the parent/clone set ---
-  artwork_copy_dic = optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config)
+    # --- Create a list of ROMs in destDir ---
+    roms_destDir_list = NARS.fs_create_dir_list_files(destDir, '.zip')
 
-  # --- Print list in alphabetical order ---
-  NARS.p_info('[Artwork report]')
-  num_original_thumbs = 0
-  num_subst_thumbs    = 0
-  num_missing_thumbs  = 0
-  num_original_fanart = 0
-  num_subst_fanart    = 0
-  num_missing_fanart  = 0
-  for rom_base_name in sorted(roms_destDir_list):
-    NARS.p_info('\033[7m{0}\033[0m'.format(rom_base_name + ".zip"))
-    artwork_dic = artwork_copy_dic[rom_base_name]
+    # --- Replace missing artwork with alternative artwork in the parent/clone set ---
+    artwork_copy_dic = optimize_ArtWork_list(roms_destDir_list, romMainList_list, filter_config)
 
-    # --- Check thumb ---
-    if artwork_dic['thumb'] is None:
-      thumb_flag = '\033[31mMISS\033[0m          THUMB '
-      artwork_name = ''
-      num_missing_thumbs += 1
-    else:
-      artwork_name = artwork_dic['thumb'] + '.png'
-      if artwork_dic['thumb'] == rom_base_name:
-        thumb_flag = '\033[32mHAVE ORIGINAL\033[0m THUMB '
-        num_original_thumbs += 1
-      else:
-        thumb_flag = '\033[32mHAVE\033[0m SUBST    THUMB '
-        num_subst_thumbs += 1
-    NARS.p_info('{0}  {1}'.format(thumb_flag, artwork_name))
+    # --- Print list in alphabetical order
+    NARS.p_info('[Artwork report]')
+    num_original = 0
+    num_replaced = 0
+    num_have_thumbs = 0
+    num_missing_thumbs = 0
+    NARS.p_info('Game            '
+                'Title  Snaps  Fan   Mrqee  Clogo    Cab   CPan   PCBs  Flyer    Man    Tra')
+    for rom_baseName in sorted(roms_destDir_list):
+        # NARS.print_info("Game        " + rom_baseName + ".zip")
+        if rom_baseName not in artwork_copy_dic:
+            print(' Not found')
+            art_baseName = ''
+        else:
+            art_baseName = artwork_copy_dic[rom_baseName]
 
-    # --- Check fanart ---
-    if artwork_dic['fanart'] is None:
-      thumb_flag = '\033[31mMISS\033[0m          FANART'
-      artwork_name = ''
-      num_missing_fanart += 1
-    else:
-      artwork_name = artwork_dic['fanart'] + '.png'
-      if artwork_dic['fanart'] == rom_base_name:
-        thumb_flag = '\033[32mHAVE ORIGINAL\033[0m FANART'
-        num_original_fanart += 1
-      else:
-        thumb_flag = '\033[32mHAVE\033[0m SUBST    FANART'
-        num_subst_fanart += 1
-    NARS.p_info('{0}  {1}'.format(thumb_flag, artwork_name))
+        # >> Has artwork been replaced?
+        if rom_baseName != art_baseName:
+            num_replaced += 1
+            # print(' Replaced   ' + art_baseName)
+        else:
+            num_original += 1
+            # print(' Original   ' + art_baseName)
 
-  NARS.p_info('[Report]')
-  NARS.p_info('ROMs in destDir  {:5d}'.format(len(roms_destDir_list)))
-  NARS.p_info('Have    Thumbs   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_thumbs + num_subst_thumbs,
-                                                                                num_original_thumbs, num_subst_thumbs))
-  NARS.p_info('Missing Thumbs   {:5d}'.format(num_missing_thumbs))
-  NARS.p_info('Have    Fanart   {:5d} (Original {:5d}  Subst {:5d})'.format(num_original_fanart + num_subst_fanart,
-                                                                                num_original_fanart, num_subst_fanart))
-  NARS.p_info('Missing Fanart   {:5d}'.format(num_missing_fanart))
+        # --- Check if artwork exist ---
+        have_asset_list = [False] * len(MAME_ARTWORK_LIST)
+        for index, item in enumerate(MAME_ARTWORK_LIST):
+            if not enabled_asset_list[index]: continue
+            source_dir = filter_config[item[A_SOURCE]]
+            thumb_Source_fullFileName = source_dir + art_baseName + '.png'
+            if os.path.isfile(thumb_Source_fullFileName):
+                num_have_thumbs += 1
+                have_asset_list[index] = True
+            else:
+                num_missing_thumbs += 1
+                have_asset_list[index] = False
+
+        # --- Print information ---
+        asset_num = len(MAME_ARTWORK_LIST)
+        info_str = ''
+        for index, item in enumerate(MAME_ARTWORK_LIST):
+            if not enabled_asset_list[index]: info_str += '    DIS'
+            else:
+                info_str += '   \033[32mHAVE\033[0m' if have_asset_list[index] else '   \033[31mMISS\033[0m'
+        NARS.print_info('{0:<12}  {1}'.format(rom_baseName, info_str))
+
+    NARS.print_info('[Report]')
+    NARS.print_info('Number of ROMs in destDir  = ' + str(len(roms_destDir_list)))
+    NARS.print_info('Number of ArtWork found    = ' + str(len(artwork_copy_dic)))
+    NARS.print_info('Number of original ArtWork = ' + str(num_original))
+    NARS.print_info('Number of replaced ArtWork = ' + str(num_replaced))
+    NARS.print_info('Number of have Thumbs      = ' + str(num_have_thumbs))
+    NARS.print_info('Number of missing Thumbs   = ' + str(num_missing_thumbs))
 
 def do_update_artwork(filter_name):
   NARS.p_info('[Updating/copying ArtWork]')
